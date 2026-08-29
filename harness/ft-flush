@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Release the model server's accumulated KV cache.
+
+    ft-flush                unload, then report
+    ft-flush --status       report only, unload nothing
+    ft-flush --if-above N   unload only if resident memory exceeds N GiB
+    ft-flush --force        unload even while a run holds the lock
+
+oMLX keeps KV cache between requests and never returns it. After a dozen requests
+the resident figure has grown by gigabytes and eventually a prefill is refused:
+
+    Prefill would require ~40.32 GB peak (current 33.51 GB + KV+SDPA 6.80 GB)
+    but metal_cap ceiling is 35.57 GB
+
+That reads like a context problem and is not one -- the chat it refused was 4,868
+tokens. `current` is the accumulation; `KV+SDPA` is what this request needs. The
+fix is to unload, which releases both.
+
+Unloading costs one model load (~10 s here) on the next request. Blind flushing
+before every request is what the pilot did; a run here is many small requests
+rather than one large one, so this flushes on a threshold instead -- same
+protection, a fraction of the reload cost. --if-above is how ft-go calls it.
+"""
+import json, os, sys, urllib.error, urllib.request
+
+BASE = os.environ.get("OMLX_BASE", "http://localhost:9050/v1").rstrip("/")
+ROOT = BASE[:-3] if BASE.endswith("/v1") else BASE
+KEY = os.environ.get("OMLX_KEY", "")
+LOCK = os.environ.get("FT_LOCK", "/tmp/fieldtest-run.lock")
+GiB = 2 ** 30
+
+
+def call(path, method="GET"):
+    req = urllib.request.Request(
+        ROOT + path, method=method,
+        headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"},
+        data=b"{}" if method == "POST" else None)
+    try:
+        with urllib.request.urlopen(req, timeout=180) as r:
+            return r.status, json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:
+        return e.code, {"error": e.read().decode()[:300]}
+    except Exception as e:                                    # server down, socket refused
+        return 0, {"error": repr(e)[:300]}
+
+
+def status():
+    code, d = call("/v1/models/status")
+    if code != 200:
+        print(f"  server unreachable at {ROOT}: {d.get('error')}", file=sys.stderr)
+        sys.exit(2)
+    m = (d.get("models") or [{}])[0]
+    return {
+        "resident": d.get("current_model_memory", 0) / GiB,
+        "ceiling": d.get("final_ceiling", 0) / GiB,
+        "weights": m.get("estimated_size", 0) / GiB,
+        "loaded": bool(m.get("loaded")),
+        "id": m.get("id", "?"),
+        "window": m.get("max_context_window"),
+        "max_tokens": m.get("max_tokens"),
+    }
+
+
+def report(s, prefix="  "):
+    state = "loaded" if s["loaded"] else "unloaded"
+    print(f"{prefix}{s['id']}  {state}")
+    print(f"{prefix}resident {s['resident']:.2f} GiB   weights {s['weights']:.2f} GiB   "
+          f"ceiling {s['ceiling']:.2f} GiB")
+    print(f"{prefix}window {s['window']}   max_tokens {s['max_tokens']}")
+    if s["loaded"] and s["weights"] and s["resident"] > s["weights"] * 1.05:
+        print(f"{prefix}accumulated above weights: {s['resident'] - s['weights']:.2f} GiB")
+
+
+args = sys.argv[1:]
+s = status()
+
+if "--status" in args:
+    report(s)
+    sys.exit(0)
+
+if "--if-above" in args:
+    try:
+        limit = float(args[args.index("--if-above") + 1])
+    except (IndexError, ValueError):
+        print("usage: ft-flush --if-above <GiB>", file=sys.stderr)
+        sys.exit(64)
+    if s["resident"] <= limit:
+        print(f"  resident {s['resident']:.2f} GiB is at or below {limit:.2f} GiB; keeping the model")
+        sys.exit(0)
+    print(f"  resident {s['resident']:.2f} GiB exceeds {limit:.2f} GiB")
+
+if "--force" not in args and os.path.exists(LOCK):
+    try:
+        holder = open(LOCK).read().strip()
+    except OSError:
+        holder = "unknown"
+    print(f"  a run holds {LOCK} ({holder}); refusing to unload the model out from under it")
+    print("  --force overrides, and the run will hang forever if you are wrong")
+    sys.exit(1)
+
+if not s["loaded"]:
+    print("  already unloaded")
+    report(s)
+    sys.exit(0)
+
+code, d = call(f"/v1/models/{s['id']}/unload", method="POST")
+if code == 200:
+    print(f"  unloaded {s['id']}")
+else:
+    print(f"  unload answered {code}: {str(d.get('error'))[:200]}")
+report(status())

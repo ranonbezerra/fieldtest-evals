@@ -1,0 +1,23 @@
+# deps / builds
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# env & secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# local model artifacts
+*.gguf
+*.safetensors
+harness/selftest/runs/
+problems/*/judging/

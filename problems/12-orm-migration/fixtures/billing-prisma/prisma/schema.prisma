@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id           String    @id @db.Uuid
+  name         String
+  currency     String    @db.Char(3)
+  invoiceCount Int       @default(0) @map("invoice_count")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  invoices     Invoice[]
+
+  @@map("accounts")
+}
+
+model Invoice {
+  id          String            @id @db.Uuid
+  accountId   String            @map("account_id") @db.Uuid
+  number      String            @unique
+  status      String            @default("draft")
+  totalMinor  BigInt            @map("total_minor")
+  issuedAt    DateTime?         @map("issued_at") @db.Timestamptz(6)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  account     Account           @relation(fields: [accountId], references: [id])
+  lineItems   InvoiceLineItem[]
+
+  @@index([accountId])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id             String  @id @db.Uuid
+  invoiceId      String  @map("invoice_id") @db.Uuid
+  position       Int
+  description    String
+  quantity       Int
+  unitPriceMinor BigInt  @map("unit_price_minor")
+  invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_line_items")
+}

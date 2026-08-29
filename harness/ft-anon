@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Stage a problem's runs for blind judging.
+
+    ft-anon 01                    stage every run of problem 01
+    ft-anon 01 --out /tmp/judge   somewhere other than the default
+    ft-anon 01 --key              print the mapping and nothing else
+
+Copies each run into `judging/run-01/`, `run-02/`, … in shuffled order, and strips
+the model's identity from `meta.yaml` while keeping everything that is evidence:
+the counters, the throughput, the revision count, the failures.
+
+Doing this by hand is the step that gets skipped, and a judge who can name the model
+is not judging blind. The mapping is written to `KEY.json` in the staging root -- read
+it after the verdicts, not before.
+"""
+import argparse, json, os, random, shutil, sys
+from pathlib import Path
+
+ROOT = Path(os.environ["FT_ROOT"])
+# Kept: it is evidence. Dropped: it names the runner or the model.
+DROP = {"model", "quantization", "architecture", "server", "runner", "date"}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("problem")
+    ap.add_argument("--out")
+    ap.add_argument("--seed", type=int, default=0, help="0 means genuinely shuffled")
+    ap.add_argument("--key", action="store_true", help="print an existing mapping and exit")
+    a = ap.parse_args()
+
+    hits = sorted(p for p in (ROOT / "problems").iterdir()
+                  if p.is_dir() and (p.name.startswith(a.problem) or a.problem in p.name))
+    if len(hits) != 1:
+        sys.exit(f"ft-anon: '{a.problem}' matches {[h.name for h in hits]}")
+    prob = hits[0]
+    out = Path(a.out) if a.out else prob / "judging"
+
+    if a.key:
+        k = out / "KEY.json"
+        print(k.read_text() if k.exists() else f"no mapping at {k}")
+        return 0
+
+    runs = sorted(d for d in (prob / "runs").glob("*/variant-*") if (d / "workspace").is_dir())
+    if not runs:
+        sys.exit(f"ft-anon: no runs under {(prob / 'runs').relative_to(ROOT)}")
+
+    if out.exists():
+        sys.exit(f"ft-anon: {out.relative_to(ROOT)} exists. Judging is not re-entered "
+                 f"either -- move it aside.")
+    out.mkdir(parents=True)
+
+    order = list(runs)
+    random.Random(a.seed or None).shuffle(order)
+    key = {}
+    for i, src in enumerate(order, start=1):
+        dst = out / f"run-{i:02d}"
+        dst.mkdir()
+        for name in ("workspace", "steps"):
+            if (src / name).is_dir():
+                shutil.copytree(src / name, dst / name)
+        for name in ("PLAN.md", "transcript.md", "GATE.md", "ASSUMPTIONS.md", "DESIGN.md"):
+            if (src / name).is_file():
+                shutil.copyfile(src / name, dst / name)
+        m = src / "meta.yaml"
+        if m.is_file():
+            try:
+                d = json.loads(m.read_text())
+                # Phase records carry the model id too.
+                for p in d.get("phases", []):
+                    for f in ("model", "runner"):
+                        p.pop(f, None)
+                clean = {k: v for k, v in d.items() if k not in DROP}
+                clean["identity"] = "withheld for blind judging"
+                (dst / "telemetry.json").write_text(json.dumps(clean, indent=2) + "\n")
+            except json.JSONDecodeError:
+                print(f"  warning: {m} is not readable JSON; not staged", file=sys.stderr)
+        key[dst.name] = str(src.relative_to(ROOT))
+        print(f"  run-{i:02d}  <-  {src.relative_to(prob / 'runs')}")
+
+    (out / "KEY.json").write_text(json.dumps(key, indent=2) + "\n")
+    print(f"\n{len(order)} run(s) staged in {out.relative_to(ROOT)}")
+    print("KEY.json holds the mapping. Judge first, then read it.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

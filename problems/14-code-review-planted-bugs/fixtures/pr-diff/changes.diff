@@ -1,0 +1,195 @@
+diff --git a/prisma/migrations/20240918_add_wallet_top_ups/migration.sql b/prisma/migrations/20240918_add_wallet_top_ups/migration.sql
+new file mode 100644
+--- /dev/null
++++ b/prisma/migrations/20240918_add_wallet_top_ups/migration.sql
+@@ -0,0 +1,16 @@
++CREATE TABLE "wallet_top_ups" (
++  "id"            UUID PRIMARY KEY,
++  "wallet_id"     UUID NOT NULL REFERENCES "wallets"("id"),
++  "amount_minor"  BIGINT NOT NULL,
++  "provider_ref"  TEXT NOT NULL,
++  "status"        TEXT NOT NULL DEFAULT 'accepted',
++  "created_at"    TIMESTAMPTZ NOT NULL DEFAULT now()
++);
++
++CREATE INDEX "wallet_top_ups_wallet_id_idx" ON "wallet_top_ups" ("wallet_id");
++CREATE UNIQUE INDEX "wallet_top_ups_provider_ref_key" ON "wallet_top_ups" ("provider_ref");
++
++-- "recent activity" strip on the account screen
++ALTER TABLE "wallets" ADD COLUMN "last_top_up_at" TIMESTAMPTZ NOT NULL;
+
+diff --git a/src/wallet/provider-x.client.ts b/src/wallet/provider-x.client.ts
+new file mode 100644
+--- /dev/null
++++ b/src/wallet/provider-x.client.ts
+@@ -0,0 +1,44 @@
++import { Injectable } from '@nestjs/common';
++
++export interface ChargeAccepted {
++  reference: string;
++  status: 'accepted' | 'declined';
++  raw: Record<string, unknown>;
++}
++
++@Injectable()
++export class ProviderXClient {
++  private readonly base = 'https://api.provider-x.example/v2';
++
++  async charge(input: {
++    cardToken: string;
++    amountMinor: bigint;
++    idempotencyKey: string;
++  }): Promise<ChargeAccepted> {
++    const apiKey = process.env.PROVIDER_X_API_KEY || '';
++
++    const res = await fetch(`${this.base}/charges`, {
++      method: 'POST',
++      headers: {
++        authorization: `Bearer ${apiKey}`,
++        'idempotency-key': input.idempotencyKey,
++        'content-type': 'application/json',
++      },
++      body: JSON.stringify({
++        card_token: input.cardToken,
++        amount: input.amountMinor.toString(),
++      }),
++    });
++
++    if (res.status !== 202) {
++      throw new Error(`provider-x rejected the charge: ${res.status}`);
++    }
++
++    const body = (await res.json()) as { reference: string; [k: string]: unknown };
++    return { reference: body.reference, status: 'accepted', raw: body };
++  }
++}
+
+diff --git a/src/wallet/top-ups.controller.ts b/src/wallet/top-ups.controller.ts
+new file mode 100644
+--- /dev/null
++++ b/src/wallet/top-ups.controller.ts
+@@ -0,0 +1,31 @@
++import { Body, Controller, Post } from '@nestjs/common';
++import { CurrentUser } from '../auth/current-user.decorator.js';
++import type { User } from '../auth/types.js';
++import { TopUpsService } from './top-ups.service.js';
++
++export interface CreateTopUpDto {
++  cardToken: string;
++  amountMinor: string;
++  idempotencyKey: string;
++}
++
++export interface TopUpResponse {
++  id: string;
++  amountMinor: bigint;
++  status: string;
++  providerRef: string;
++  providerRaw: Record<string, unknown>;
++}
++
++@Controller('wallet/top-ups')
++export class TopUpsController {
++  constructor(private readonly topUps: TopUpsService) {}
++
++  @Post()
++  async create(
++    @CurrentUser() user: User,
++    @Body() dto: CreateTopUpDto,
++  ): Promise<TopUpResponse> {
++    return this.topUps.create(user.walletId, dto);
++  }
++}
+
+diff --git a/src/wallet/top-ups.service.ts b/src/wallet/top-ups.service.ts
+new file mode 100644
+--- /dev/null
++++ b/src/wallet/top-ups.service.ts
+@@ -0,0 +1,49 @@
++import { Injectable } from '@nestjs/common';
++import type { PrismaClient } from './prisma.js';
++import { ProviderXClient } from './provider-x.client.js';
++import { WalletService } from './wallet.service.js';
++import type { CreateTopUpDto, TopUpResponse } from './top-ups.controller.js';
++
++@Injectable()
++export class TopUpsService {
++  constructor(
++    private readonly prisma: PrismaClient,
++    private readonly provider: ProviderXClient,
++    private readonly wallet: WalletService,
++  ) {}
++
++  async create(walletId: string, dto: CreateTopUpDto): Promise<TopUpResponse> {
++    const amountMinor = BigInt(dto.amountMinor);
++
++    const accepted = await this.provider.charge({
++      cardToken: dto.cardToken,
++      amountMinor,
++      idempotencyKey: dto.idempotencyKey,
++    });
++
++    const topUp = await this.prisma.walletTopUp.create({
++      data: {
++        id: crypto.randomUUID(),
++        walletId,
++        amountMinor,
++        providerRef: accepted.reference,
++        status: 'accepted',
++      },
++    });
++
++    await this.wallet.credit(walletId, amountMinor, `top-up ${topUp.id}`);
++
++    await this.prisma.wallet.update({
++      where: { id: walletId },
++      data: { lastTopUpAt: new Date() },
++    });
++
++    return {
++      id: topUp.id,
++      amountMinor: topUp.amountMinor,
++      status: topUp.status,
++      providerRef: topUp.providerRef,
++      providerRaw: accepted.raw,
++    };
++  }
++}
+
+diff --git a/src/wallet/wallet.service.ts b/src/wallet/wallet.service.ts
+--- a/src/wallet/wallet.service.ts
++++ b/src/wallet/wallet.service.ts
+@@ -10,11 +10,11 @@ export class WalletService {
+    * Credit a wallet. Called only from the webhook handler, once the provider has
+    * confirmed the money actually settled -- an accepted charge is not a settled one.
+    */
+-  async credit(walletId: string, amountMinor: bigint, reason: string): Promise<void> {
++  async credit(walletId: string, amountMinor: bigint, memo: string): Promise<void> {
+     await this.prisma.$transaction(async (tx) => {
+       await tx.wallet.update({
+         where: { id: walletId },
+         data: { balanceMinor: { increment: amountMinor } },
+       });
+       await tx.ledgerEntry.create({
+-        data: { walletId, amountMinor, type: 'CREDIT', reason },
++        data: { walletId, amountMinor, type: 'CREDIT', reason: memo },
+       });
+     });
+   }
+
+diff --git a/src/webhooks/webhooks.controller.ts b/src/webhooks/webhooks.controller.ts
+--- a/src/webhooks/webhooks.controller.ts
++++ b/src/webhooks/webhooks.controller.ts
+@@ -58,6 +58,12 @@ export class WebhooksController {
+       case 'wallet.credited':
+         if (body.data.accountId && body.data.amountMinor) {
+           await this.credits.credit(body.data.accountId, body.data.amountMinor);
+         }
+         break;
++
++      case 'topup.settled':
++        // @ts-expect-error provider types are generated and lag the sandbox by a
++        // release; the field exists on the wire. Tracked in PLAT-2291.
++        await this.topUps.markSettled(body.data.topUpReference);
++        break;
+     }

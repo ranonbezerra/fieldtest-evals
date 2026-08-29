@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""One request to the model under test. One prefill, one generation, no loop.
+
+    ft-run --instruction step.md [--system CHEATSHEET.md] [--read a.ts --read b.ts]
+           --raw out/response.md [--file src/thing.ts] [--label plan]
+
+Everything the model sees is on this command line. It has no tools, no shell and
+no ability to read anything not passed with --read, which is the point: an
+agentic loop grows its own context -- every file read, every file written, every
+re-sent workspace listing goes back in -- and once the conversation is trimmed to
+fit, the oldest turn goes first. The oldest turn is the problem statement. The run
+then finishes, plausibly, against instructions no longer in the window.
+
+A single request cannot do that. There is nothing to grow and nothing to trim.
+
+--file extracts the fenced block from the reply and writes it. The model never
+writes a file itself, so the file boundary is absolute rather than a request the
+model may decline: a run cannot touch anything the phase did not name.
+
+Every request leaves a .usage.json beside its raw reply. The token counters are
+the diagnostic -- input almost never binds, output does, and thinking is paid out
+of the output ceiling, so a phase that needed 1,900 tokens of code can spend
+15,000 and write nothing.
+"""
+import argparse, json, os, re, sys, time, urllib.error, urllib.request
+from pathlib import Path
+
+BASE = os.environ.get("OMLX_BASE", "http://localhost:9050/v1").rstrip("/")
+KEY = os.environ.get("OMLX_KEY", "")
+MODEL = os.environ.get("OMLX_MODEL", "Qwen3.8-27B-MLX-6bit").removeprefix("openai/")
+TEMPERATURE = float(os.environ.get("FT_TEMPERATURE", "0.6"))
+TOP_P = float(os.environ.get("FT_TOP_P", "0.95"))
+TOP_K = int(os.environ.get("FT_TOP_K", "20"))
+MAX_TOKENS = int(os.environ.get("FT_MAX_TOKENS", "16384"))
+WINDOW = int(os.environ.get("FT_CONTEXT_WINDOW", "32768"))
+TIMEOUT = int(os.environ.get("FT_REQUEST_TIMEOUT", "3600"))
+
+FENCE = re.compile(r"^[ \t]*```[^\n]*\n(.*?)^[ \t]*```[ \t]*$", re.S | re.M)
+
+
+def read(p):
+    return Path(p).read_text(encoding="utf-8", errors="replace")
+
+
+def build_user(reads, instruction):
+    """Read-only references first, instruction last.
+
+    Last is deliberate: the instruction is what must survive being far from the
+    start of a long prompt, and it is the thing every later phase re-states.
+    """
+    parts = []
+    for p in reads:
+        body = read(p).rstrip("\n")
+        parts.append(f"===== BEGIN read-only reference: {p} =====\n{body}\n"
+                     f"===== END read-only reference: {p} =====")
+    if parts:
+        parts.append(
+            "The blocks above are reference material. Rely on them; never reproduce "
+            "them and never rewrite them. They are not part of what you must produce.")
+    parts.append(instruction.strip())
+    return "\n\n".join(parts)
+
+
+def extract_file(text):
+    """The largest fenced block, or the whole reply if it has no fence.
+
+    Largest rather than first: a reply that opens with a fenced snippet of the
+    signature it is about to implement would otherwise write the snippet.
+    """
+    blocks = FENCE.findall(text)
+    if not blocks:
+        return text.strip() + "\n", False
+    return max(blocks, key=len).rstrip("\n") + "\n", True
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--instruction", required=True, help="file holding the instruction, or - for stdin")
+    ap.add_argument("--system", help="file loaded as the system message (the cheatsheet)")
+    ap.add_argument("--read", action="append", default=[], help="read-only reference; repeatable")
+    ap.add_argument("--raw", required=True, help="where to write the complete reply")
+    ap.add_argument("--file", help="also extract the fenced block and write it here")
+    ap.add_argument("--verbatim", action="store_true",
+                    help="write the reply as-is instead of extracting a fenced block; "
+                         "required when the artifact itself contains fences, such as the plan")
+    ap.add_argument("--label", default="step", help="name for this request in the log")
+    ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS)
+    ap.add_argument("--no-thinking", action="store_true",
+                    help="disable reasoning; the model's default is on, so this is a deviation to record")
+    a = ap.parse_args()
+
+    instruction = sys.stdin.read() if a.instruction == "-" else read(a.instruction)
+    missing = [p for p in a.read if not Path(p).is_file()]
+    if missing:
+        # Referential closure, enforced by the harness: a phase may leave a body
+        # unwritten and may never name a reference that does not resolve.
+        print(f"ft-run: unresolved references: {' '.join(missing)}", file=sys.stderr)
+        return 3
+
+    messages = []
+    if a.system:
+        messages.append({"role": "system", "content": read(a.system)})
+    messages.append({"role": "user", "content": build_user(a.read, instruction)})
+
+    # Pre-flight budget check. The server refuses hard where the client would have
+    # trimmed gracefully, so the client is given the same number and stops first.
+    est = sum(len(m["content"]) for m in messages) // 3
+    if est + a.max_tokens > WINDOW:
+        print(f"ft-run: [{a.label}] prompt ~{est} tokens + {a.max_tokens} output exceeds "
+              f"the {WINDOW} window. Split the phase; do not raise the window.", file=sys.stderr)
+        return 4
+
+    payload = {
+        "model": MODEL, "messages": messages,
+        "temperature": TEMPERATURE, "top_p": TOP_P, "top_k": TOP_K,
+        "max_tokens": a.max_tokens, "stream": False,
+    }
+    if a.no_thinking:
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
+
+    req = urllib.request.Request(
+        BASE + "/chat/completions", method="POST",
+        headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"},
+        data=json.dumps(payload).encode())
+
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            body = json.loads(r.read())
+        err = None
+    except urllib.error.HTTPError as e:
+        body, err = {}, f"HTTP {e.code}: {e.read().decode()[:600]}"
+    except Exception as e:
+        body, err = {}, repr(e)[:600]
+    wall = time.time() - t0
+
+    Path(a.raw).parent.mkdir(parents=True, exist_ok=True)
+    usage_path = Path(a.raw).with_suffix(Path(a.raw).suffix + ".usage.json")
+
+    if err:
+        Path(a.raw).write_text(f"REQUEST FAILED\n\n{err}\n", encoding="utf-8")
+        usage_path.write_text(json.dumps(
+            {"label": a.label, "error": err, "wall_seconds": round(wall, 1)}, indent=2))
+        print(f"ft-run: [{a.label}] {err}", file=sys.stderr)
+        return 5
+
+    choice = (body.get("choices") or [{}])[0]
+    msg = choice.get("message", {}) or {}
+    content = msg.get("content") or ""
+    reasoning = msg.get("reasoning_content") or msg.get("reasoning") or ""
+    finish = choice.get("finish_reason")
+    u = body.get("usage", {}) or {}
+    out_tokens = u.get("completion_tokens", 0)
+    # oMLX reports its own timings: total_time excludes the model load, so a phase
+    # that paid for a reload is not scored as if generation were slow.
+    server_time = u.get("total_time") or wall
+    load_time = u.get("model_load_duration") or 0.0
+    tps = round(out_tokens / server_time, 1) if server_time else None
+
+    # The reasoning is kept because it is the diagnostic. A phase that ends with
+    # nothing written is either reasoning about a reference it cannot read -- the
+    # question restarts -- or carrying more decisions than fit, where the reasoning
+    # is correct and simply does not converge. The two want opposite fixes and look
+    # identical from outside.
+    parts = [f"# {a.label}", ""]
+    if reasoning:
+        parts += ["## reasoning", "", "```", reasoning.strip(), "```", ""]
+    parts += ["## reply", "", content.strip() or "(empty)", ""]
+    Path(a.raw).write_text("\n".join(parts), encoding="utf-8")
+
+    record = {
+        "label": a.label, "model": MODEL,
+        "temperature": TEMPERATURE, "top_p": TOP_P, "top_k": TOP_K,
+        "max_tokens": a.max_tokens, "context_window": WINDOW,
+        "thinking": not a.no_thinking,
+        "prompt_tokens": u.get("prompt_tokens"), "completion_tokens": out_tokens,
+        "reasoning_chars": len(reasoning), "content_chars": len(content),
+        "finish_reason": finish,
+        "output_ceiling_hit": finish == "length" or out_tokens >= a.max_tokens,
+        "wall_seconds": round(wall, 1),
+        "server_seconds": round(server_time, 1),
+        "model_load_seconds": round(load_time, 1),
+        "output_tokens_per_second": tps,
+        "reads": a.read, "system": a.system,
+    }
+    usage_path.write_text(json.dumps(record, indent=2))
+
+    flag = ""
+    if record["output_ceiling_hit"]:
+        # Not a wrong answer: no answer. Read the reasoning to learn which cause.
+        flag = "  <-- OUTPUT CEILING HIT"
+    print(f"[{a.label}] in {u.get('prompt_tokens')}/{WINDOW}  "
+          f"out {out_tokens}/{a.max_tokens}  think {len(reasoning)}c  "
+          f"{wall:.0f}s  {tps} tok/s  {finish}{flag}")
+
+    if a.file:
+        text, fenced = (content.strip() + "\n", True) if a.verbatim else extract_file(content)
+        if not content.strip():
+            print(f"ft-run: [{a.label}] empty reply; {a.file} not written", file=sys.stderr)
+            return 6
+        Path(a.file).parent.mkdir(parents=True, exist_ok=True)
+        Path(a.file).write_text(text, encoding="utf-8")
+        n = len(text.encode())
+        print(f"         wrote {a.file} ({n} bytes{'' if fenced else ', UNFENCED reply'})")
+        if n == 0:
+            return 6
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

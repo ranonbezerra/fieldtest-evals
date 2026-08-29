@@ -1,0 +1,1 @@
+{"_note":"api-fast is the loader variant; its cycle is already broken","variant-a":"fixtures/api","variant-b":"fixtures/api-fast","variant-c":"fixtures/api"}

@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Report terms a cheatsheet shares with any rubric's must-haves.
+
+    ft-lint-cheatsheet [cheatsheet.md ...]
+
+A cheatsheet is loaded as the system message of every request in a run. Anything in
+it that a rubric grades is handed to the model for free, and the run then measures
+the harness. This finds the candidates and prints the line each appears on; the call
+is yours, because "hold" the verb and "hold" the reservation look identical to a
+grep and only one of them is a leak.
+"""
+import re, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+FUNCTION = set("""a an the and or of to in on for with is are be been being was were
+by as that this it its from at into out only never always must may can could would
+should each every one two three do does did done what which when where how why than
+then so if any all both same other others new use used using write written read not
+no nor but yet own too very just about above below over under again further more most
+some such own here there we you your our their they them he she his her him i me my
+mine ours yours theirs will shall have has had having get got make makes made take
+takes given give gives go goes come comes rather without within across after before
+between during through per via also still even like unlike whether either neither""".split())
+WORD = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*")
+
+
+def phrases(text, n=(2, 3)):
+    """N-grams, lowercased, with pure-function-word grams dropped.
+
+    Unigrams were tried first and are useless here: 'listed', 'nothing' and 'task'
+    all collide with some rubric by chance, and burying two real leaks under thirty
+    false ones is the same as having no check. A shared *phrase* is evidence; a
+    shared word is English.
+    """
+    body = re.sub(r"[`*_#|>]", " ", re.sub(r"```.*?```", " ", text, flags=re.S))
+    out = set()
+    for sentence in re.split(r"[.;:!?\n]", body):
+        w = [x.lower().strip(".-") for x in WORD.findall(sentence)]
+        w = [x for x in w if len(x) > 1]
+        for k in n:
+            for i in range(len(w) - k + 1):
+                g = w[i:i + k]
+                if all(x in FUNCTION for x in g):
+                    continue
+                out.add(" ".join(g))
+    return out
+
+
+terms = phrases
+
+
+def gate_text(rubric):
+    """Only the must-have table: the graded criteria describe quality, not answers."""
+    t = rubric.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"##\s*Gate.*?(?=\n##\s|\Z)", t, re.S | re.I)
+    return m.group(0) if m else t
+sheets = [Path(p) for p in sys.argv[1:]] or sorted(
+    list((ROOT / "harness" / "cheatsheet").glob("*.md")) +
+    list(ROOT.glob("problems/*/CHEATSHEET.md")))
+sheets = [s for s in sheets if s.name != "README.md"]
+
+gates, given = {}, {}
+for r in sorted(ROOT.glob("problems/*/rubric.md")):
+    prob = r.parent.name
+    gates[prob] = terms(gate_text(r))
+    # A term the variant already states is not a leak: the model receives it either
+    # way. Only what the cheatsheet adds on top of the statement can hand anything over.
+    given[prob] = set().union(*[terms(v.read_text(encoding="utf-8", errors="replace"))
+                                for v in (r.parent / "variants").glob("*.md")]) \
+        if (r.parent / "variants").is_dir() else set()
+
+# A term in most rubrics is English, not an answer. One in a few is domain vocabulary.
+spread = {}
+for g in gates.values():
+    for t in g:
+        spread[t] = spread.get(t, 0) + 1
+GENERIC = {t for t, n in spread.items() if n > 4}
+
+worst = 0
+for sheet in sheets:
+    text = sheet.read_text(encoding="utf-8", errors="replace")
+    mine = terms(text)
+    hits = {}
+    for prob, g in gates.items():
+        for t in sorted((mine & g) - given[prob] - GENERIC):
+            hits.setdefault(t, []).append(prob)
+    try:
+        shown = sheet.relative_to(ROOT)
+    except ValueError:
+        shown = sheet
+    print(f"\n=== {shown} ===")
+    if not hits:
+        print("  clean: nothing it says is both graded and absent from the statement")
+        continue
+    for t, probs in sorted(hits.items(), key=lambda kv: -len(kv[1])):
+        lines = [l.strip() for l in text.splitlines()
+                 if re.search(rf"\b{re.escape(t)}\w*\b", l, re.I)]
+        print(f"  \"{t}\" — graded by {', '.join(probs)}, and their statements never say it")
+        for l in lines[:2]:
+            print(f"      | {l[:100]}")
+        worst += 1
+print(f"\n{worst} term(s) to judge by hand: each is graded somewhere, and the model "
+      f"would not have had it without this file. Judge whether it is the answer or "
+      f"merely the vocabulary.")

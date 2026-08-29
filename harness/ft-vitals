@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""What the host has left, and what that does to the model's ceiling.
+
+    ft-vitals                 one sample, human-readable
+    ft-vitals --json          one sample, machine-readable
+    ft-vitals --watch 30      a sample every 30s until killed
+    ft-vitals --gate          exit non-zero if the host is too loaded to measure on
+
+WHY THIS EXISTS
+
+A 48 GiB machine running a 22 GiB model has less headroom than it looks. The
+server's own ceiling is not a constant: `final_ceiling` was observed at 37.44,
+36.48 and 32.36 GiB within one session, falling as the rest of the machine took
+memory. The same request can therefore be served, be slow, or be refused outright
+depending on what else is open -- and the refusal reads like a context problem.
+
+Worse, the failure is silent before it is loud. Under swap pressure generation
+slows by an order of magnitude with no error anywhere, so a run records a real
+tokens-per-second that is a measurement of the host, not the model.
+
+Editors, language servers, Docker VMs and a parallel build all compete for the
+same pool. A campaign is run on an otherwise quiet machine, and this records
+whether it actually was.
+"""
+import argparse, json, os, re, subprocess, sys, time, urllib.request
+
+GiB = 2 ** 30
+
+
+def sh(cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=15).stdout
+    except Exception:
+        return ""
+
+
+def memory():
+    total = int(sh(["sysctl", "-n", "hw.memsize"]).strip() or 0)
+    out = sh(["vm_stat"])
+    m = re.search(r"page size of (\d+)", out)
+    ps = int(m.group(1)) if m else 16384
+
+    def pages(label):
+        mm = re.search(rf"{label}:\s+(\d+)", out)
+        return int(mm.group(1)) * ps if mm else 0
+
+    swap = sh(["sysctl", "-n", "vm.swapusage"])
+    used = re.search(r"used\s*=\s*([\d.]+)M", swap)
+    swtot = re.search(r"total\s*=\s*([\d.]+)M", swap)
+
+    free_pct = None
+    mp = sh(["memory_pressure"])
+    fm = re.search(r"free percentage:\s*(\d+)", mp)
+    if fm:
+        free_pct = int(fm.group(1))
+
+    return {
+        "total_gib": round(total / GiB, 2),
+        "free_gib": round(pages(r"Pages free") / GiB, 2),
+        "wired_gib": round(pages(r"Pages wired down") / GiB, 2),
+        "compressed_gib": round(pages(r"Pages occupied by compressor") / GiB, 2),
+        "swap_used_gib": round(float(used.group(1)) / 1024, 2) if used else None,
+        "swap_total_gib": round(float(swtot.group(1)) / 1024, 2) if swtot else None,
+        "free_percent": free_pct,
+    }
+
+
+def server():
+    base = os.environ.get("OMLX_BASE", "http://localhost:9050/v1").rstrip("/")
+    root = base[:-3] if base.endswith("/v1") else base
+    req = urllib.request.Request(
+        root + "/v1/models/status",
+        headers={"Authorization": f"Bearer {os.environ.get('OMLX_KEY', '')}"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            d = json.loads(r.read())
+    except Exception as e:
+        return {"reachable": False, "error": repr(e)[:120]}
+    m = (d.get("models") or [{}])[0]
+    ceiling = d.get("final_ceiling", 0) / GiB
+    resident = d.get("current_model_memory", 0) / GiB
+    return {
+        "reachable": True,
+        "loaded": bool(m.get("loaded")),
+        # Not a constant. This is the number that decides whether a prefill is
+        # served or refused, and it moves with host pressure.
+        "ceiling_gib": round(ceiling, 2),
+        "resident_gib": round(resident, 2),
+        "headroom_gib": round(ceiling - resident, 2),
+    }
+
+
+def hogs(n=5):
+    out = sh(["ps", "-axo", "rss,comm"])
+    rows = []
+    for line in out.splitlines()[1:]:
+        parts = line.strip().split(None, 1)
+        if len(parts) != 2:
+            continue
+        try:
+            rss = int(parts[0]) * 1024
+        except ValueError:
+            continue
+        if rss > 200 * 2 ** 20:
+            rows.append({"gib": round(rss / GiB, 2), "command": parts[1].split("/")[-1][:40]})
+    rows.sort(key=lambda r: -r["gib"])
+    return rows[:n]
+
+
+# A run measured under these conditions is measuring the machine.
+LIMITS = {"swap_used_gib": 2.0, "free_percent": 15, "headroom_gib": 4.0}
+
+
+def verdict(sample):
+    reasons = []
+    mem, srv = sample["memory"], sample["server"]
+    if (mem.get("swap_used_gib") or 0) > LIMITS["swap_used_gib"]:
+        reasons.append(f"swap in use: {mem['swap_used_gib']} GiB "
+                       f"(over {LIMITS['swap_used_gib']}) -- generation slows by an "
+                       f"order of magnitude with no error anywhere")
+    if mem.get("free_percent") is not None and mem["free_percent"] < LIMITS["free_percent"]:
+        reasons.append(f"free memory {mem['free_percent']}% "
+                       f"(under {LIMITS['free_percent']}%)")
+    if srv.get("reachable") and srv.get("loaded") and \
+       srv.get("headroom_gib", 99) < LIMITS["headroom_gib"]:
+        reasons.append(f"server headroom {srv['headroom_gib']} GiB "
+                       f"(under {LIMITS['headroom_gib']}) -- a prefill may be refused "
+                       f"with a message that reads like a context problem")
+    return reasons
+
+
+def sample():
+    return {"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "memory": memory(),
+            "server": server(), "largest": hogs()}
+
+
+def render(s):
+    m, srv = s["memory"], s["server"]
+    print(f"  host   {m['free_gib']:.1f} GiB free of {m['total_gib']:.0f}   "
+          f"wired {m['wired_gib']:.1f}   compressed {m['compressed_gib']:.1f}   "
+          f"free {m['free_percent']}%")
+    print(f"  swap   {m['swap_used_gib']} of {m['swap_total_gib']} GiB used")
+    if srv.get("reachable"):
+        print(f"  server ceiling {srv['ceiling_gib']} GiB   resident {srv['resident_gib']} GiB   "
+              f"headroom {srv['headroom_gib']} GiB   "
+              f"{'loaded' if srv['loaded'] else 'unloaded'}")
+    else:
+        print(f"  server unreachable: {srv.get('error')}")
+    for h in s["largest"]:
+        print(f"         {h['gib']:5.2f} GiB  {h['command']}")
+    for r in verdict(s):
+        print(f"  PRESSURE  {r}")
+
+
+a = argparse.ArgumentParser()
+a.add_argument("--json", action="store_true")
+a.add_argument("--watch", type=int, metavar="SECONDS")
+a.add_argument("--gate", action="store_true",
+               help="exit 1 when the host is too loaded for a comparable measurement")
+args = a.parse_args()
+
+if args.watch:
+    try:
+        while True:
+            s = sample()
+            print(json.dumps(s) if args.json else "", flush=True)
+            if not args.json:
+                render(s)
+                print(flush=True)
+            time.sleep(args.watch)
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+s = sample()
+if args.json:
+    print(json.dumps({**s, "pressure": verdict(s)}, indent=2))
+else:
+    render(s)
+if args.gate and verdict(s):
+    sys.exit(1)

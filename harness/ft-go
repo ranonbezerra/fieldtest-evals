@@ -1,0 +1,528 @@
+#!/usr/bin/env python3
+"""Run one model against one variant of one problem, end to end.
+
+    ft-go 01 a                     runner=api,   spec=model   (the default pairing)
+    ft-go 01 a --runner aider      the same phases, driven through aider
+    ft-go 01 a --spec ladder       implementation only, from the reference's level-2 spec
+    ft-go 01 a --dry-run           print the phases and spend nothing
+    ft-go 01 a --resume            continue a run that was interrupted
+
+TWO AXES, HELD SEPARATE
+
+  --runner  api | aider     how the request reaches the model. The third runner,
+                            `chat` (Cline, or oMLX's own chat), is not scriptable
+                            and is run by hand -- see harness/conditions.md, which
+                            documents all three and what each costs.
+  --spec    model | ladder  where the specification comes from: the model's own
+                            phase-0 plan, or the reference's level-2 spec. Running
+                            `ladder` after a `model` failure separates "cannot
+                            design this" from "cannot implement this".
+
+THE SHAPE, AND WHY IT IS THIS SHAPE
+
+An agentic loop cannot be used: it grows its own context until the conversation is
+trimmed, and what is trimmed first is the problem statement. A single request
+cannot be used either: the deliverables here are a schema, a module, a worker and
+three test files, and the server's output ceiling is 16,384 tokens with thinking
+paid out of the same budget. Neither measures the model.
+
+So the work is decomposed without being designed:
+
+  phase 0   the model writes PLAN.md -- files, schema, types, signatures, error
+            codes, state machine. No bodies. It is a level-2 specification, and
+            the model under test is the one who writes it.
+  phase i   one file per request. Context is the cheatsheet, the variant, the
+            model's own PLAN.md, and the already-written files this one depends
+            on -- read-only. Nothing else. No tools, no exploration.
+  gate      typecheck, then up to two repairs carrying the compiler's exact
+            messages and the files the errors name.
+
+Phase 0 is where the design is judged: M1..Mn are visible in the plan before a
+line of code is spent. And because the plan resolving the references is the
+model's own, nothing has been decided for it.
+"""
+import argparse, json, os, re, shutil, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(os.environ["FT_ROOT"])
+HARNESS = ROOT / "harness"
+LOCK = Path(os.environ.get("FT_LOCK", "/tmp/fieldtest-run.lock"))
+MODEL = os.environ.get("OMLX_MODEL", "unknown").removeprefix("openai/")
+FLUSH_ABOVE = float(os.environ.get("FT_FLUSH_ABOVE_GIB", "26"))
+MAX_REPAIRS = 2
+MAX_AUTO_READS = 4
+
+MANIFEST = re.compile(r"<!--\s*manifest\s*(.*?)-->", re.S | re.I)
+ROW = re.compile(r"^\s*(?:\d+[.)]\s*)?(?P<path>[\w./@-]+\.[A-Za-z0-9]+)\s*\|(?P<rest>.*)$")
+READS = re.compile(r"reads:\s*(?P<r>[^|]*)", re.I)
+TS_ERR = re.compile(r"^(?P<file>[^\s(][^(]*?)\((?P<line>\d+),\d+\):\s*error\s+TS\d+:", re.M)
+QUOTED = re.compile(r"['\"]([A-Z][A-Za-z0-9_]{2,})['\"]")
+
+
+def say(msg=""):
+    print(msg, flush=True)
+
+
+def run(cmd, cwd=None, timeout=1800, env=None):
+    e = {**os.environ, **(env or {})}
+    try:
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                           timeout=timeout, env=e)
+        return p.returncode, (p.stdout or "") + (p.stderr or "")
+    except subprocess.TimeoutExpired:
+        return 124, f"timed out after {timeout}s"
+    except FileNotFoundError:
+        return 127, f"{cmd[0]}: not found"
+
+
+def resolve_problem(token):
+    # A path is taken as given, which is how harness/selftest is run: the machinery
+    # is exercised on something that costs minutes before a campaign costs hours.
+    direct = Path(token)
+    if direct.is_dir() and (direct / "variants").is_dir():
+        return direct.resolve()
+    hits = sorted(p for p in (ROOT / "problems").iterdir()
+                  if p.is_dir() and (p.name.startswith(token) or token in p.name))
+    if len(hits) != 1:
+        sys.exit(f"ft-go: '{token}' matches {[h.name for h in hits]}; be specific")
+    return hits[0]
+
+
+def parse_manifest(plan_text):
+    """Files, in order, each with the already-written files it depends on."""
+    body = MANIFEST.search(plan_text)
+    scope = body.group(1) if body else plan_text
+    out, seen = [], set()
+    for line in scope.splitlines():
+        m = ROW.match(line)
+        if not m:
+            continue
+        path = m.group("path").strip().lstrip("./")
+        if path in seen or path.lower().endswith((".md",)) and path.lower() != "design.md":
+            if path in seen:
+                continue
+        rest = m.group("rest")
+        rm = READS.search(rest)
+        deps = []
+        if rm:
+            deps = [d.strip().lstrip("./") for d in re.split(r"[,\s]+", rm.group("r"))
+                    if d.strip() and d.strip() not in {"-", "none", "None"}]
+        seen.add(path)
+        out.append({"path": path, "reads": deps,
+                    "note": re.sub(r"reads:[^|]*", "", rest).strip(" |")})
+    return out, bool(body)
+
+
+def auto_reads(errors, workspace):
+    """Load, read-only, the files that define the names the compiler could not find.
+
+    A repair can only fix what the model can read. `'type' does not exist in type
+    'AuditEvent'` names a shape without showing it, so a retry buys another guess
+    at a closed door -- watched over five attempts, the guesses start repeating.
+    The error names what it could not see, so resolving it is deterministic, and
+    that is not the same as letting the model go looking, which stays forbidden.
+    """
+    names = {n for n in QUOTED.findall(errors)}
+    found = []
+    for name in sorted(names):
+        pat = rf"export\s+(?:default\s+)?(?:abstract\s+)?(?:interface|type|class|enum|const|function)\s+{name}\b"
+        for f in sorted(workspace.rglob("*.ts")) + sorted(workspace.rglob("*.tsx")):
+            if "node_modules" in f.parts:
+                continue
+            try:
+                if re.search(pat, f.read_text(encoding="utf-8", errors="replace")):
+                    found.append(f)
+                    break
+            except OSError:
+                pass
+        if len(found) >= MAX_AUTO_READS:
+            break
+    return found[:MAX_AUTO_READS]
+
+
+def fingerprint(paths):
+    return {str(p): (p.stat().st_size if p.exists() else -1) for p in paths}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("problem")
+    ap.add_argument("variant")
+    ap.add_argument("--runner", choices=["api", "aider"], default="api")
+    ap.add_argument("--spec", choices=["model", "ladder"], default="model")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--no-gate", action="store_true")
+    ap.add_argument("--no-install", action="store_true")
+    ap.add_argument("--max-files", type=int, default=20)
+    ap.add_argument("--ignore-pressure", action="store_true",
+                    help="run even though the host is too loaded for a comparable "
+                         "measurement. Recorded in meta.yaml either way.")
+    a = ap.parse_args()
+
+    prob = resolve_problem(a.problem)
+    vslug = a.variant if a.variant.startswith("variant-") else f"variant-{a.variant}"
+    variant = prob / "variants" / f"{vslug}.md"
+    if not variant.is_file():
+        sys.exit(f"ft-go: no {variant}")
+    cheatsheet = prob / "CHEATSHEET.md"
+    if not cheatsheet.is_file():
+        cheatsheet = HARNESS / "cheatsheet" / "typescript-nestjs.md"
+    if not cheatsheet.is_file():
+        sys.exit("ft-go: no cheatsheet for this problem and no harness default")
+
+    slug = re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9.-]", "-", MODEL.lower())).strip("-")
+    tag = slug + ("" if a.runner == "api" else f"--{a.runner}") \
+               + ("" if a.spec == "model" else f"--{a.spec}")
+    RUNNER = HARNESS / ("ft-run" if a.runner == "api" else "ft-aider")
+    rundir = prob / "runs" / tag / vslug
+    ws, steps = rundir / "workspace", rundir / "steps"
+
+    if rundir.exists() and not (a.resume or a.dry_run):
+        sys.exit(f"ft-go: {rundir} already exists. A run is never re-entered and a "
+                 f"workspace is never edited after the fact -- move it aside first.")
+
+    say(f"problem   {prob.name}")
+    say(f"variant   {vslug}")
+    say(f"model     {MODEL}")
+    say(f"runner    {a.runner}")
+    say(f"spec      {a.spec}")
+    say(f"run dir   {rundir.relative_to(ROOT)}")
+    say()
+
+    if a.dry_run:
+        say("phases: 0 plan -> N files from the plan's manifest -> gate -> capture")
+        say(f"cheatsheet {cheatsheet.relative_to(ROOT)}")
+        return 0
+
+    # --- host pressure ------------------------------------------------------
+    # A 48 GiB machine running a 22 GiB model has less headroom than it looks, and
+    # the server's ceiling is not a constant: it was observed at 37.44, 36.48 and
+    # 32.36 GiB within one session, falling as the rest of the machine took memory.
+    # Under swap pressure, generation slows by an order of magnitude with no error
+    # anywhere -- so a run started here records a tokens-per-second that measures
+    # the host. Refuse by default; record what was true either way.
+    def vitals():
+        try:
+            out = subprocess.run([str(HARNESS / "ft-vitals"), "--json"],
+                                 capture_output=True, text=True, timeout=60)
+            return json.loads(out.stdout or "{}")
+        except Exception as e:
+            return {"error": repr(e)[:120]}
+
+    baseline = vitals()
+    pressure = baseline.get("pressure") or []
+    if pressure:
+        say("host pressure:")
+        for r in pressure:
+            say(f"  {r}")
+        if not a.ignore_pressure:
+            say("\nRefusing to start. Numbers measured here are the machine's, not the")
+            say("model's. Close what is holding memory, or pass --ignore-pressure to")
+            say("record the run with the pressure noted.")
+            return 2
+        say("  --ignore-pressure: continuing, and recording that this run is not")
+        say("  comparable to one taken on a quiet machine.\n")
+
+    ws.mkdir(parents=True, exist_ok=True)
+    steps.mkdir(parents=True, exist_ok=True)
+
+    # --- seed the workspace -------------------------------------------------
+    # Problems from 09 on are edits to existing code, not greenfield. The variant
+    # says "the fixture is in fixtures/x"; workspace.json says which, per variant.
+    # node_modules and build output are never copied: they are large, they are
+    # stale the moment they are copied, and they are not the artifact.
+    manifest = prob / "workspace.json"
+    if manifest.is_file() and not any(ws.iterdir()):
+        spec = json.loads(manifest.read_text())
+        src_rel = spec.get(vslug)
+        if src_rel:
+            src = prob / src_rel
+            if not src.is_dir():
+                sys.exit(f"ft-go: workspace.json names {src_rel}, which is not there")
+            shutil.copytree(
+                src, ws, dirs_exist_ok=True,
+                ignore=shutil.ignore_patterns("node_modules", "dist", ".git",
+                                              "*.tsbuildinfo", "coverage"))
+            n = sum(1 for _ in ws.rglob("*") if _.is_file())
+            say(f"workspace seeded from {src_rel} ({n} files)")
+            if spec.get("_note"):
+                say(f"  {spec['_note']}")
+            say()
+    LOCK.write_text(f"{prob.name} {vslug} pid {os.getpid()}\n")
+    t_start = time.time()
+    phases, failures = [], []
+    host_samples = [baseline] if baseline else []
+
+    def flush():
+        run([str(HARNESS / "ft-flush"), "--if-above", str(FLUSH_ABOVE)])
+        # Sampled per phase, not once: pressure that appears mid-run is exactly the
+        # case where a slow phase gets misread as a slow model.
+        host_samples.append(vitals())
+
+    def ft_run(label, instruction, raw, reads=(), out_file=None, system=None,
+               verbatim=False):
+        cmd = [str(RUNNER), "--label", label, "--instruction", "-", "--raw", str(raw)]
+        if system:
+            cmd += ["--system", str(system)]
+        for r in reads:
+            cmd += ["--read", str(r)]
+        if out_file:
+            cmd += ["--file", str(out_file)]
+            # The plan and any markdown deliverable contain fenced blocks of their
+            # own, so "take the fenced block" would mutilate them.
+            if verbatim or str(out_file).endswith(".md"):
+                cmd += ["--verbatim"]
+        if a.runner == "aider":
+            cmd += ["--workdir", str(ws)]
+        p = subprocess.run(cmd, input=instruction, text=True)
+        u = Path(str(raw) + ".usage.json")
+        rec = json.loads(u.read_text()) if u.exists() else {"label": label}
+        rec["exit"] = p.returncode
+        rec.setdefault("runner", a.runner)
+        phases.append(rec)
+        if p.returncode != 0:
+            failures.append({"phase": label, "exit": p.returncode,
+                             "reason": _why(rec, out_file)})
+        return p.returncode
+
+    def _why(rec, out_file):
+        """Name the failure in the terms that decide what to do about it."""
+        if rec.get("error"):
+            return f"request failed: {str(rec['error'])[:160]}"
+        if rec.get("output_ceiling_hit"):
+            return ("output ceiling reached: no answer rather than a wrong one. "
+                    "Read the reasoning — a question that restarts is an unresolved "
+                    "reference; a question decided is a phase carrying too much.")
+        if out_file and (not Path(out_file).exists() or Path(out_file).stat().st_size == 0):
+            return "reply produced no file content"
+        return "runner exited non-zero"
+
+    try:
+        # ---- phase 0: the model writes its own level-2 specification ----------
+        plan_md = rundir / "PLAN.md"
+        if not (a.resume and plan_md.exists()):
+            flush()
+            if a.spec == "ladder":
+                src = prob / "ladder" / "L2-spec.md"
+                if not src.is_file():
+                    sys.exit(f"ft-go: --spec ladder needs {src}")
+                shutil.copyfile(src, plan_md)
+                say("[plan] taken from the ladder spec; phase 0 not run")
+                phases.append({"label": "plan", "source": "ladder", "exit": 0,
+                               "runner": "none"})
+            else:
+                instruction = (HARNESS / "instructions" / "phase0-plan.md").read_text()
+                rc = ft_run("plan", instruction, steps / "00-plan.md",
+                            reads=[variant], out_file=plan_md, system=cheatsheet,
+                            verbatim=True)
+                if rc != 0:
+                    say("\nphase 0 produced no plan. That is the result: record it and stop.")
+                    return 1
+
+        plan_text = plan_md.read_text(encoding="utf-8", errors="replace")
+        manifest, fenced = parse_manifest(plan_text)
+        if not manifest:
+            say("\nPLAN.md carries no readable manifest. Recorded as a plan-phase failure.")
+            (rundir / "GATE.md").write_text("plan produced no machine-readable manifest\n")
+            return 1
+        manifest = manifest[: a.max_files]
+        say(f"\nmanifest: {len(manifest)} files"
+            f"{'' if fenced else '  (recovered without a manifest block)'}")
+        for m in manifest:
+            say(f"  {m['path']}" + (f"   <- {', '.join(m['reads'])}" if m["reads"] else ""))
+        say()
+
+        # ---- phases 1..N: one file per request --------------------------------
+        tmpl = (HARNESS / "instructions" / "phase-file.md").read_text()
+        written = []
+        for i, item in enumerate(manifest, start=1):
+            target = ws / item["path"]
+            if a.resume and target.exists() and target.stat().st_size > 0:
+                say(f"[{i:02d}] {item['path']} already written; skipping")
+                written.append(target)
+                continue
+            flush()
+            reads = [variant, plan_md]
+            for d in item["reads"]:
+                dp = ws / d
+                if dp.is_file() and dp.stat().st_size > 0:
+                    reads.append(dp)
+            instruction = (tmpl.replace("{{PATH}}", item["path"])
+                               .replace("{{NOTE}}", item["note"] or "as the plan specifies"))
+            ft_run(f"{i:02d}-{Path(item['path']).name}", instruction,
+                   steps / f"{i:02d}-{Path(item['path']).name}.md",
+                   reads=reads, out_file=target, system=cheatsheet)
+            written.append(target)
+
+        empty = [p for p in written if not p.exists() or p.stat().st_size == 0]
+        # The exit code is not the signal: a runner can report success having created
+        # the files and never filled them. Fingerprint what the plan declared.
+        say()
+        say(f"files written: {len(written) - len(empty)}/{len(written)}")
+        for p in empty:
+            say(f"  EMPTY  {p.relative_to(ws)}")
+
+        # ---- gate: typecheck, then repair with the compiler's exact words ------
+        gate = {"ran": False, "passed": None, "repairs": 0, "log": ""}
+        if not a.no_gate:
+            if (ws / "package.json").exists() and not (ws / "node_modules").exists() \
+               and not a.no_install:
+                say("\n[gate] installing dependencies")
+                rc, out = run(["pnpm", "install", "--ignore-scripts"], cwd=ws, timeout=1800)
+                gate["log"] += f"$ pnpm install -> {rc}\n{out[-2000:]}\n"
+            if (ws / "tsconfig.json").exists():
+                gate["ran"] = True
+                for attempt in range(MAX_REPAIRS + 1):
+                    rc, out = run(["npx", "--no-install", "tsc", "--noEmit"], cwd=ws, timeout=900)
+                    gate["log"] += f"\n$ tsc --noEmit (attempt {attempt}) -> {rc}\n{out[-6000:]}\n"
+                    if rc == 0:
+                        gate["passed"] = True
+                        say(f"[gate] typecheck clean{' after repair' if attempt else ''}")
+                        break
+                    say(f"[gate] typecheck failed ({out.count('error TS')} errors)")
+                    if attempt == MAX_REPAIRS:
+                        gate["passed"] = False
+                        break
+                    bad = {Path(m.group("file").strip()) for m in TS_ERR.finditer(out)}
+                    bad = [ws / b for b in bad if (ws / b).is_file()]
+                    if not bad:
+                        gate["passed"] = False
+                        break
+                    extra = auto_reads(out, ws)
+                    say(f"[gate] repairing {len(bad)} file(s)"
+                        + (f", loading {len(extra)} definition(s) read-only" if extra else ""))
+                    rtmpl = (HARNESS / "instructions" / "phase-repair.md").read_text()
+                    for f in bad:
+                        rel = f.relative_to(ws)
+                        gate["repairs"] += 1
+                        reads = [variant, plan_md] + [e for e in extra if e != f]
+                        ft_run(f"repair{attempt+1}-{f.name}",
+                               (rtmpl.replace("{{PATH}}", str(rel))
+                                     .replace("{{ERRORS}}", out[-4000:])),
+                               steps / f"repair{attempt+1}-{f.name}.md",
+                               reads=reads, out_file=f, system=cheatsheet)
+            else:
+                say("\n[gate] no tsconfig.json in the workspace; typecheck skipped")
+        (rundir / "GATE.md").write_text(gate["log"] or "gate not run\n", encoding="utf-8")
+
+        # ---- capture ----------------------------------------------------------
+        wall = time.time() - t_start
+        parts = [f"# Transcript — {prob.name} / {vslug} / {MODEL}", "",
+                 "Every request, in order, with its reasoning. Nothing is elided.", ""]
+        for s in sorted(steps.glob("*.md")):
+            parts.append(s.read_text(encoding="utf-8", errors="replace"))
+            parts.append("\n---\n")
+        (rundir / "transcript.md").write_text("\n".join(parts), encoding="utf-8")
+
+        tot_in = sum(p.get("prompt_tokens") or 0 for p in phases)
+        tot_out = sum(p.get("completion_tokens") or 0 for p in phases)
+        gen_s = sum(p.get("server_seconds") or 0 for p in phases)
+        load_s = sum(p.get("model_load_seconds") or 0 for p in phases)
+        rates = [p["output_tokens_per_second"] for p in phases
+                 if p.get("output_tokens_per_second")]
+        ceilings = [p["label"] for p in phases if p.get("output_ceiling_hit")]
+        for p in empty:
+            failures.append({"phase": str(p.relative_to(ws)), "exit": None,
+                             "reason": "declared by the plan, came back empty"})
+        if gate["passed"] is False:
+            failures.append({"phase": "gate", "exit": None,
+                             "reason": f"typecheck still failing after {MAX_REPAIRS} repairs"})
+        pressured = [s for s in host_samples if s.get("pressure")]
+        if pressured:
+            failures.append({
+                "phase": "host", "exit": None,
+                "reason": f"memory pressure during {len(pressured)} of {len(host_samples)} "
+                          f"samples: {pressured[0]['pressure'][0][:120]}. Throughput here "
+                          f"is the machine's, not the model's."})
+        meta = {
+            "model": MODEL, "quantization": "6-bit (MLX, group_size 64, affine)",
+            "architecture": "Qwen3.5 hybrid — 64 layers, full attention every 4th",
+            "server": "oMLX", "runner": "fieldtest harness ft-go",
+            "condition": a.condition,
+            "problem": prob.name, "variant": vslug,
+            "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "wall_seconds": round(wall), "wall_minutes": round(wall / 60, 1),
+            "parameters": {
+                "temperature": float(os.environ.get("FT_TEMPERATURE", 0.6)),
+                "top_p": float(os.environ.get("FT_TOP_P", 0.95)),
+                "top_k": int(os.environ.get("FT_TOP_K", 20)),
+                "max_tokens": int(os.environ.get("FT_MAX_TOKENS", 16384)),
+                "context_window": int(os.environ.get("FT_CONTEXT_WINDOW", 32768)),
+                "thinking": True,
+            },
+            "runner": a.runner, "spec_source": a.spec,
+            "requests": len(phases),
+            "tokens": {
+                "prompt_total": tot_in,
+                "completion_total": tot_out,
+                "are_estimates": a.runner == "aider",
+            },
+            "throughput": {
+                "output_tokens_per_second_mean": round(sum(rates) / len(rates), 1) if rates else None,
+                "output_tokens_per_second_overall": round(tot_out / gen_s, 1) if gen_s else None,
+                "generation_seconds": round(gen_s),
+                "model_load_seconds": round(load_s),
+                "overhead_seconds": round(wall - gen_s - load_s),
+            },
+            "revisions": {
+                "self_repairs": gate["repairs"],
+                "max_allowed": MAX_REPAIRS,
+                "note": "revisions by the model under test, carrying the compiler's "
+                        "exact messages. A repaired run is not a pass.",
+            },
+            "host": {
+                "pressure_samples": len([s for s in host_samples if s.get("pressure")]),
+                "samples": len(host_samples),
+                "started_under_pressure": bool(pressure),
+                "ran_with_ignore_pressure": bool(a.ignore_pressure),
+                "ceiling_gib_min": min((s.get("server", {}).get("ceiling_gib")
+                                        for s in host_samples
+                                        if s.get("server", {}).get("ceiling_gib")), default=None),
+                "ceiling_gib_max": max((s.get("server", {}).get("ceiling_gib")
+                                        for s in host_samples
+                                        if s.get("server", {}).get("ceiling_gib")), default=None),
+                "swap_used_gib_max": max((s.get("memory", {}).get("swap_used_gib") or 0
+                                          for s in host_samples), default=None),
+                "free_percent_min": min((s.get("memory", {}).get("free_percent")
+                                         for s in host_samples
+                                         if s.get("memory", {}).get("free_percent") is not None),
+                                        default=None),
+                "trace": host_samples,
+            },
+            "output_ceiling_hits": ceilings,
+            "files_declared": len(manifest),
+            "files_empty": [str(p.relative_to(ws)) for p in empty],
+            "gate": {"ran": gate["ran"], "passed": gate["passed"], "repairs": gate["repairs"]},
+            "failures": failures,
+            "phases": phases,
+        }
+        (rundir / "meta.yaml").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+
+        say()
+        say(f"wall {wall/60:.1f} min   requests {len(phases)}   "
+            f"in {tot_in}   out {tot_out}"
+            + (f"   {round(tot_out/gen_s,1)} tok/s" if gen_s else ""))
+        say(f"generation {gen_s/60:.1f} min   model loads {load_s:.0f}s   "
+            f"gate+io {max(0, wall-gen_s-load_s)/60:.1f} min")
+        if ceilings:
+            say(f"OUTPUT CEILING HIT on: {', '.join(ceilings)}  <-- read the reasoning first")
+        if gate["repairs"]:
+            say(f"REVISED x{gate['repairs']} by the model itself — not a pass; read this run first")
+        if pressured:
+            say(f"HOST UNDER PRESSURE in {len(pressured)}/{len(host_samples)} samples "
+                f"— throughput here is not comparable")
+        if failures:
+            say(f"\nfailures ({len(failures)}):")
+            for f in failures:
+                say(f"  {f['phase']}: {f['reason']}")
+        say(f"\nartifacts in {rundir.relative_to(ROOT)}")
+        say("next: run the variant's own tests, then judge with harness/judge-prompt.md")
+        return 0
+    finally:
+        LOCK.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

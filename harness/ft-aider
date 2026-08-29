@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""One aider invocation. Same interface as ft-run, so ft-go can swap conditions.
+
+    ft-aider --instruction - --raw steps/03.md --file src/x.ts --read PLAN.md ...
+
+This is the pilot's runner, kept as a measured condition rather than replaced by
+one. It is a real way to work -- a fast, adaptable command -- and the eval has to
+say what it costs, not assume.
+
+What it adds over talking to the API directly:
+
+  + aider parses the reply and writes the files, so a reply carrying several
+    files lands correctly without the harness inventing a convention
+  + `--read` is a first-class notion, and aider physically cannot write outside
+    the files given as editable
+  + it is the same tool the pilot used, so the numbers here are comparable to
+    that record
+
+What it costs, and why the API condition exists:
+
+  - aider prepends its own system prompt and edit-format instructions. That is
+    unmeasured context inside a 16,384-token output ceiling that thinking is also
+    paid out of, and it is not the same for every model
+  - the token counters come from aider's estimate, not the server's usage block,
+    so tok/s here is wall-clock and not comparable line-for-line with the API
+    condition's server timing
+  - a reply that fails aider's fenced-listing convention writes nothing, and that
+    failure looks exactly like a model that produced nothing
+
+Everything else is held identical: one request, whole-file format, no repo map,
+no auto-commits, and the same generation parameters.
+"""
+import argparse, json, os, re, subprocess, sys, time
+from pathlib import Path
+
+BASE = os.environ.get("OMLX_BASE", "http://localhost:9050/v1").rstrip("/")
+KEY = os.environ.get("OMLX_KEY", "")
+MODEL = os.environ.get("OMLX_MODEL", "Qwen3.8-27B-MLX-6bit")
+if not MODEL.startswith("openai/"):
+    MODEL = "openai/" + MODEL          # aider routes bare ids elsewhere
+TEMPERATURE = os.environ.get("FT_TEMPERATURE", "0.6")
+TIMEOUT = int(os.environ.get("FT_REQUEST_TIMEOUT", "3600"))
+
+TOKENS = re.compile(r"(?:Tokens?|Input|Output):?\s*~?([\d,]+)", re.I)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--instruction", required=True)
+    ap.add_argument("--system", help="loaded read-only; aider owns the system message")
+    ap.add_argument("--read", action="append", default=[])
+    ap.add_argument("--raw", required=True)
+    ap.add_argument("--file", help="the one file aider may write")
+    ap.add_argument("--label", default="step")
+    ap.add_argument("--max-tokens", type=int, default=int(os.environ.get("FT_MAX_TOKENS", 16384)))
+    ap.add_argument("--no-thinking", action="store_true")
+    ap.add_argument("--verbatim", action="store_true", help="accepted and ignored; aider writes files itself")
+    ap.add_argument("--workdir", help="aider's working directory (default: the target file's parent)")
+    a = ap.parse_args()
+
+    instruction = sys.stdin.read() if a.instruction == "-" else Path(a.instruction).read_text()
+    missing = [p for p in a.read if not Path(p).is_file()]
+    if missing:
+        print(f"ft-aider: unresolved references: {' '.join(missing)}", file=sys.stderr)
+        return 3
+
+    # aider has no system-message flag: the cheatsheet becomes the first read-only
+    # file instead. Same content, one layer further from the model than in the API
+    # condition -- which is itself part of what the comparison measures.
+    reads = ([a.system] if a.system else []) + a.read
+    raw = Path(a.raw)
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    workdir = Path(a.workdir) if a.workdir else (Path(a.file).parent if a.file else Path.cwd())
+    workdir.mkdir(parents=True, exist_ok=True)
+
+    msg = (instruction.strip() + "\n\n"
+           "Reply with file listings only, in aider's whole-file format: the path on "
+           "its own line, then a fenced block holding the complete file. Never a "
+           "partial file, never an 'unchanged' comment, never prose, never a question. "
+           "Files given read-only are references: rely on them, never rewrite them.")
+
+    cmd = [
+        "aider",
+        "--model", MODEL, "--weak-model", MODEL,
+        "--openai-api-base", BASE, "--openai-api-key", KEY,
+        "--edit-format", "whole", "--map-tokens", "0",
+        "--no-git", "--no-auto-commits", "--no-show-model-warnings",
+        "--no-check-update", "--analytics-disable", "--no-stream",
+        "--temperature", str(TEMPERATURE),
+        "--chat-language", "english",
+        "--chat-history-file", str(raw.with_suffix(".aider.chat.md")),
+        "--input-history-file", str(raw.with_suffix(".aider.input")),
+        "--llm-history-file", str(raw.with_suffix(".aider.llm.jsonl")),
+        "--yes-always", "--message", msg,
+    ]
+    for r in reads:
+        cmd += ["--read", str(Path(r).resolve())]
+    if a.file:
+        # Load-bearing: aider only writes files already in the chat. Omit this and
+        # it replies in prose, produces no listings, and the run ends having written
+        # nothing -- which reads exactly like a model that had nothing to say.
+        cmd.append(str(Path(a.file).resolve()))
+
+    t0 = time.time()
+    p = subprocess.run(cmd, cwd=str(workdir), capture_output=True, text=True, timeout=TIMEOUT)
+    wall = time.time() - t0
+    out = (p.stdout or "") + (p.stderr or "")
+
+    raw.write_text(f"# {a.label} (aider)\n\n## aider session\n\n```\n{out.strip()}\n```\n",
+                   encoding="utf-8")
+
+    size = Path(a.file).stat().st_size if a.file and Path(a.file).exists() else 0
+    nums = [int(n.replace(",", "")) for n in TOKENS.findall(out)]
+    rec = {
+        "label": a.label, "runner": "aider", "model": MODEL,
+        "temperature": float(TEMPERATURE), "max_tokens": a.max_tokens,
+        "thinking": not a.no_thinking,
+        "prompt_tokens": nums[0] if nums else None,
+        "completion_tokens": nums[1] if len(nums) > 1 else None,
+        "token_counts_are_estimates": True,
+        "wall_seconds": round(wall, 1), "server_seconds": round(wall, 1),
+        "output_tokens_per_second": (round(nums[1] / wall, 1)
+                                     if len(nums) > 1 and wall else None),
+        "finish_reason": None,
+        "output_ceiling_hit": "hit a token limit" in out.lower()
+                              or "exceeded" in out.lower() and "token" in out.lower(),
+        "exit": p.returncode,
+        "bytes_written": size,
+        "reads": reads,
+    }
+    Path(str(raw) + ".usage.json").write_text(json.dumps(rec, indent=2))
+
+    print(f"[{a.label}] aider exit {p.returncode}  {wall:.0f}s  wrote {size} bytes")
+    if a.file and size == 0:
+        # The exit code is not the signal. aider has exited 0 having created the
+        # files and never filled them.
+        print(f"ft-aider: [{a.label}] {a.file} is empty; exit code 0 does not mean written",
+              file=sys.stderr)
+        return 6
+    return 0 if p.returncode == 0 else 5
+
+
+if __name__ == "__main__":
+    sys.exit(main())

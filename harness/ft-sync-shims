@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Copy the canonical fixture shims into every fixture that uses them.
+# Fixtures are copied into run workspaces, so each must carry its own.
+set -euo pipefail
+root=$(cd "$(dirname "$0")/.." && pwd)
+n=0
+while IFS= read -r target; do
+  cp "$root/harness/fixtures-shims.d.ts" "$target"
+  echo "  ${target#"$root"/}"
+  n=$((n + 1))
+done < <(find "$root/problems" -name "_shims.d.ts" -not -path "*/consumer/*")
+echo "$n shim file(s) synced"
