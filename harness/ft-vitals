@@ -34,6 +34,28 @@ def sh(cmd):
         return ""
 
 
+def swap_rate(seconds=3.0):
+    """Pages moved to and from swap per second.
+
+    Occupancy is history; rate is pressure. A host can sit with gigabytes in swap
+    and be perfectly quiet -- those pages went out during an earlier episode and
+    nothing has needed them since. Gating a campaign on occupancy blocks a machine
+    that is fine, and an instrument that blocks a fine machine gets switched off.
+    """
+    def counters():
+        out = sh(["vm_stat"])
+        def n(label):
+            m = re.search(rf"{label}:\s+(\d+)", out)
+            return int(m.group(1)) if m else 0
+        return n("Swapins"), n("Swapouts")
+
+    a_in, a_out = counters()
+    time.sleep(seconds)
+    b_in, b_out = counters()
+    return {"swapins_per_sec": round((b_in - a_in) / seconds, 1),
+            "swapouts_per_sec": round((b_out - a_out) / seconds, 1)}
+
+
 def memory():
     total = int(sh(["sysctl", "-n", "hw.memsize"]).strip() or 0)
     out = sh(["vm_stat"])
@@ -142,7 +164,8 @@ def hogs(n=5):
 
 
 # A run measured under these conditions is measuring the machine.
-LIMITS = {"swap_used_gib": 2.0, "free_percent": 15, "headroom_gib": 4.0}
+# Rate, not occupancy. See swap_rate().
+LIMITS = {"swapouts_per_sec": 50, "free_percent": 15, "headroom_gib": 4.0}
 
 # Weights + KV at the harness window + SDPA workspace. What the server must be able
 # to hold before it can answer anything.
@@ -156,10 +179,11 @@ MODEL_MARGIN_GIB = 6.0
 def verdict(sample):
     reasons = []
     mem, srv = sample["memory"], sample["server"]
-    if (mem.get("swap_used_gib") or 0) > LIMITS["swap_used_gib"]:
-        reasons.append(f"swap in use: {mem['swap_used_gib']} GiB "
-                       f"(over {LIMITS['swap_used_gib']}) -- generation slows by an "
-                       f"order of magnitude with no error anywhere")
+    rate = sample.get("swap_rate") or {}
+    if (rate.get("swapouts_per_sec") or 0) > LIMITS["swapouts_per_sec"]:
+        reasons.append(f"actively paging out: {rate['swapouts_per_sec']}/s -- generation "
+                       f"slows by an order of magnitude with no error anywhere, and the "
+                       f"server dies rather than reporting it")
     if mem.get("free_percent") is not None and mem["free_percent"] < LIMITS["free_percent"]:
         reasons.append(f"free memory {mem['free_percent']}% "
                        f"(under {LIMITS['free_percent']}%)")
@@ -190,7 +214,8 @@ def verdict(sample):
 
 def sample():
     return {"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "memory": memory(),
-            "server": server(), "largest": hogs(), "docker": containers()}
+            "swap_rate": swap_rate(), "server": server(),
+            "largest": hogs(), "docker": containers()}
 
 
 def render(s):
@@ -201,7 +226,11 @@ def render(s):
     if not s["server"].get("loaded"):
         print(f"  model  needs {MODEL_NEEDS_GIB} GiB   "
               f"margin {m['available_gib'] - MODEL_NEEDS_GIB:+.1f} GiB")
-    print(f"  swap   {m['swap_used_gib']} of {m['swap_total_gib']} GiB used")
+    r = s.get("swap_rate") or {}
+    quiet = (r.get("swapouts_per_sec") or 0) == 0 and (r.get("swapins_per_sec") or 0) == 0
+    print(f"  swap   {m['swap_used_gib']} of {m['swap_total_gib']} GiB occupied   "
+          f"in {r.get('swapins_per_sec')}/s  out {r.get('swapouts_per_sec')}/s"
+          f"{'   (quiet — occupancy is residue, not pressure)' if quiet else ''}")
     if srv.get("reachable"):
         print(f"  server ceiling {srv['ceiling_gib']} GiB   resident {srv['resident_gib']} GiB   "
               f"headroom {srv['headroom_gib']} GiB   "

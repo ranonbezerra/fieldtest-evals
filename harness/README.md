@@ -34,6 +34,7 @@ harness/
 | weights resident | 22.27 GiB |
 | server | oMLX, OpenAI-compatible, on a 48 GB Apple Silicon Mac |
 | reasoning | **on by default** (`thinking_default: true`), and paid out of the output budget |
+| generation | **~10.6 tok/s on a quiet host**, stable across phases. Under swap pressure the same model measured 5.1 — that figure was the machine, not the model |
 
 ## Fixed parameters
 
@@ -86,7 +87,26 @@ Two consequences worth stating plainly:
 
 ## The ceiling that actually decides runs
 
-Input is almost never the problem. **Output is, and thinking is paid out of it.**
+Input is almost never the problem. **Output is, and thinking is paid out of it** — and on this model that is not a
+caveat, it is the dominant cost. It is also **specific to the planning phase**.
+Measured across one self-test run on a task small enough to answer in two files:
+
+| phase | output tokens | reasoning | wall |
+|---|--:|--:|--:|
+| plan | 16,249 / 16,384 | 63,171 chars | 25 min |
+| `src/money.ts` | 2,361 | 7,517 chars | 4 min |
+| `test/money.test.ts` | 7,068 | 26,492 chars | 11 min |
+
+The implementation phases are comfortable. **Phase 0 succeeded by 135 tokens on a
+trivial task**, which means it will not fit for a real one — and the failure mode is
+not a bad plan, it is no plan: the reply is cut off mid-reasoning, and because the
+thinking never closes, the server cannot separate it and returns 68 KB of
+deliberation as the answer. `ft-go` now detects a ceiling hit in phase 0 and records
+it as a failure rather than writing the reasoning to `PLAN.md`.
+
+The open question, and the next thing to measure: `ft-run --no-thinking` on the plan
+phase. Reasoning is 97% of that phase's output. Whether the plan survives without it
+is an experiment, not an assumption.
 Neither counter shows the reasoning, so a phase that needed 1,900 tokens of code can
 spend 15,000 and write nothing. Every request records `output_ceiling_hit`, and when
 it fires the run is not a wrong answer — it is no answer.

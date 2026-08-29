@@ -89,16 +89,26 @@ def resolve_problem(token):
     return hits[0]
 
 
+# The instruction shows the manifest's shape by example, and a model that quotes the
+# instruction back reproduces the placeholder. Parsing it produced a run whose whole
+# file list was `path/to/file.ext`.
+PLACEHOLDER = re.compile(r"path/to/file|other/path|another\.ext|<name>|<file>", re.I)
+
+
 def parse_manifest(plan_text):
     """Files, in order, each with the already-written files it depends on."""
-    body = MANIFEST.search(plan_text)
-    scope = body.group(1) if body else plan_text
+    # The last block, not the first: anything before it is the plan quoting its brief.
+    blocks = MANIFEST.findall(plan_text)
+    body = blocks[-1] if blocks else None
+    scope = body if body else plan_text
     out, seen = [], set()
     for line in scope.splitlines():
         m = ROW.match(line)
         if not m:
             continue
         path = m.group("path").strip().lstrip("./")
+        if PLACEHOLDER.search(line):
+            continue
         if path in seen or path.lower().endswith((".md",)) and path.lower() != "design.md":
             if path in seen:
                 continue
@@ -111,7 +121,7 @@ def parse_manifest(plan_text):
         seen.add(path)
         out.append({"path": path, "reads": deps,
                     "note": re.sub(r"reads:[^|]*", "", rest).strip(" |")})
-    return out, bool(body)
+    return out, body is not None
 
 
 def auto_reads(errors, workspace):
@@ -317,6 +327,23 @@ def main():
                 rc = ft_run("plan", instruction, steps / "00-plan.md",
                             reads=[variant], out_file=plan_md, system=cheatsheet,
                             verbatim=True)
+                # A phase cut off at the ceiling did not answer; it was still
+                # thinking. Writing what came back as though it were the artifact is
+                # how a run continues against 68 KB of deliberation -- observed, and
+                # every later phase inherits it.
+                u = json.loads((steps / "00-plan.md.usage.json").read_text())
+                if u.get("output_ceiling_hit"):
+                    say("\nphase 0 hit the output ceiling: it was cut off mid-reasoning,")
+                    say("so what came back is not a plan. Recorded as the result.")
+                    plan_md.write_text(
+                        "PHASE 0 PRODUCED NO PLAN — output ceiling reached at "
+                        f"{u.get('completion_tokens')} tokens. The reply is in "
+                        "steps/00-plan.md and is reasoning, not a specification.\n")
+                    (rundir / "GATE.md").write_text("plan phase hit the output ceiling\n")
+                    failures.append({"phase": "plan", "exit": None,
+                                     "reason": "output ceiling reached while still "
+                                               "reasoning; no specification emitted"})
+                    return 1
                 if rc != 0:
                     say("\nphase 0 produced no plan. That is the result: record it and stop.")
                     return 1
@@ -440,7 +467,6 @@ def main():
             "model": MODEL, "quantization": "6-bit (MLX, group_size 64, affine)",
             "architecture": "Qwen3.5 hybrid — 64 layers, full attention every 4th",
             "server": "oMLX", "runner": "fieldtest harness ft-go",
-            "condition": a.condition,
             "problem": prob.name, "variant": vslug,
             "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "wall_seconds": round(wall), "wall_minutes": round(wall / 60, 1),

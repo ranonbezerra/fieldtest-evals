@@ -1,52 +1,50 @@
-Read the problem statement above. Before any code exists, produce the plan the
-implementation will follow.
+Write `PLAN.md` for the task above. It is a specification for whoever implements it,
+who will have this document and nothing else.
 
-Write `PLAN.md`. It is a specification. It is not an essay and it is not an
-implementation.
+Six sections, in this order, and nothing outside them:
 
-It must contain these sections, in this order:
+**1. Assumptions.** Decisions the statement leaves open, with the choice and one line
+of why. If it settles everything, write "none".
 
-**1. Assumptions.** Every decision the statement leaves open, the choice you made,
-and one line of why. If a decision would change the design and the statement does
-not settle it, it belongs here. If the statement settles everything, say so.
-
-**2. Data model.** The complete schema: every table or model, every column with its
-type, every constraint, index and unique key. Say what each nullable column means
-when it is null.
+**2. Data model.** Every table, model or persistent structure, with columns and types.
+Write "none" if the task has no persistence.
 
 **3. Types and signatures.** Every exported type, interface, enum, class and function
-signature the implementation will use, written out. Every error code and what raises
-it. Every ordering rule between two operations that could be written in either order.
+signature. Every error and what raises it. Every ordering rule between two operations
+that could be written in either order.
 
-**4. Control flow.** The state machine, the transaction boundaries, and what is inside
-each and what must not be. A table or short prose, not code.
+**4. Control flow.** State machine, transaction boundaries, what is inside each and
+what must not be. Prose or a table, not code.
 
-**5. Tests.** One line per test: what it proves, and what would have to be broken for
-it to fail.
+**5. Tests.** One line per test: what it proves.
 
-**6. Manifest.** Last, and machine-read. Exactly this form:
+**6. Manifest.** Last, and machine-read. Copy this shape exactly, replacing every part
+of it:
 
     <!-- manifest
-    path/to/file.ext | reads: other/path.ext, another.ext | what this file holds
+    src/thing.ts | reads: - | what it holds
+    test/thing.test.ts | reads: src/thing.ts | what it proves
     -->
 
-Manifest rules:
+A file may name under `reads:` only files listed above it. `reads: -` if none. Paths
+are relative to the repository root. List only files you will write.
 
-- Every file the implementation needs, in the order they must be written.
-- Under `reads:`, a file may name only files listed **above** it. `reads: -` if none.
-- Paths are relative to the repository root you are creating.
-- List only files you will actually write.
+---
 
-Rules for the plan itself:
+**Declare the types completely; leave the bodies out.** A body is local and can be
+written later against this document. A type is what the rest of the code must agree
+with, and getting it wrong is one design error that becomes several coding errors
+elsewhere.
 
-- **Declare the types completely; leave the bodies out.** A body is local and can be
-  written later against this document. A type is the thing the rest of the code has to
-  agree with, and getting it wrong is one design error that becomes several coding
-  errors somewhere else.
-- **Every symbol you name here must be resolvable here.** Whoever implements this has
-  no tools, no shell, no repository and nothing to read but this plan and the files its
-  manifest lists. A name you use and do not define cannot be looked up.
-- Nothing beyond the six sections.
+**Every symbol you name must be resolvable here.** Whoever implements this has no
+tools, no shell and nothing to read but this document and the files its manifest
+lists.
 
-Reply with the complete contents of `PLAN.md` and nothing else — no preamble, no
-closing remark.
+**Do not deliberate in the output.** Where the task leaves a convention open — which
+file something lives in, whether a config file is in scope, how a helper is named —
+**choose, write it in section 1 in one line, and move on.** A wrong convention is
+different, not wrong. Weighing one costs the budget this document needs.
+
+**You have a hard output limit.** Reaching it means no plan at all, which is worse
+than a terse one. Write the sections directly. No preamble, no working out, no
+closing remarks — begin at "## 1. Assumptions".
