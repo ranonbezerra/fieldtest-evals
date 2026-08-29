@@ -90,6 +90,31 @@ def server():
     }
 
 
+def containers():
+    """Docker is usually the largest single lever on this machine.
+
+    The VM is one process on the host, so `ps` attributes every container to it.
+    Counting them separately is what turns "Docker is using 7 GiB" into something
+    actionable: a daemon with no containers costs a fraction of a daemon running
+    someone else's whole microservice stack.
+
+    Generation needs no database. Docker is needed to *verify* a run, not to make
+    one -- so it can be down for the run and up afterwards.
+    """
+    out = sh(["docker", "ps", "--format", "{{.Names}}"])
+    if not out.strip():
+        return None
+    names = [n for n in out.splitlines() if n.strip()]
+    vm = 0.0
+    for line in sh(["ps", "-axo", "rss,comm"]).splitlines():
+        if "Virtualization.VirtualMachine" in line:
+            try:
+                vm = int(line.split()[0]) * 1024 / GiB
+            except (ValueError, IndexError):
+                pass
+    return {"running": len(names), "vm_gib": round(vm, 2), "names": names[:6]}
+
+
 def hogs(n=5):
     out = sh(["ps", "-axo", "rss,comm"])
     rows = []
@@ -110,6 +135,10 @@ def hogs(n=5):
 # A run measured under these conditions is measuring the machine.
 LIMITS = {"swap_used_gib": 2.0, "free_percent": 15, "headroom_gib": 4.0}
 
+# Weights + KV at the harness window + SDPA workspace. What the server must be able
+# to hold before it can answer anything.
+MODEL_NEEDS_GIB = 25.3
+
 
 def verdict(sample):
     reasons = []
@@ -121,6 +150,19 @@ def verdict(sample):
     if mem.get("free_percent") is not None and mem["free_percent"] < LIMITS["free_percent"]:
         reasons.append(f"free memory {mem['free_percent']}% "
                        f"(under {LIMITS['free_percent']}%)")
+    if not srv.get("loaded"):
+        # Also when the server is unreachable — which is exactly the state after it
+        # has died, and the state in which someone is about to restart it.
+        # The question that actually decides a run: can the model be loaded at all,
+        # or will loading it push the host into swap it does not have?
+        swap_free = (mem.get("swap_total_gib") or 0) - (mem.get("swap_used_gib") or 0)
+        short = MODEL_NEEDS_GIB - (mem.get("free_gib") or 0)
+        if short > swap_free:
+            reasons.append(
+                f"loading the model needs {MODEL_NEEDS_GIB} GiB against "
+                f"{mem.get('free_gib')} GiB free; the {short:.1f} GiB shortfall exceeds "
+                f"the {swap_free:.1f} GiB of swap left. This is the state in which the "
+                f"server died rather than slowed down")
     if srv.get("reachable") and srv.get("loaded") and \
        srv.get("headroom_gib", 99) < LIMITS["headroom_gib"]:
         reasons.append(f"server headroom {srv['headroom_gib']} GiB "
@@ -131,7 +173,7 @@ def verdict(sample):
 
 def sample():
     return {"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "memory": memory(),
-            "server": server(), "largest": hogs()}
+            "server": server(), "largest": hogs(), "docker": containers()}
 
 
 def render(s):
@@ -146,6 +188,10 @@ def render(s):
               f"{'loaded' if srv['loaded'] else 'unloaded'}")
     else:
         print(f"  server unreachable: {srv.get('error')}")
+    d = s.get("docker")
+    if d:
+        print(f"  docker {d['running']} container(s), VM {d['vm_gib']} GiB resident "
+              f"— not needed to make a run, only to verify one")
     for h in s["largest"]:
         print(f"         {h['gib']:5.2f} GiB  {h['command']}")
     for r in verdict(s):
