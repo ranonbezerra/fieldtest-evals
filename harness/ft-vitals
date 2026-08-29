@@ -54,9 +54,18 @@ def memory():
     if fm:
         free_pct = int(fm.group(1))
 
+    # macOS keeps `free` low on purpose: inactive, speculative and purgeable pages
+    # are all reclaimable without touching swap. Sizing against `free` alone made
+    # this tool report an 13.7 GiB shortfall on a machine with 2 GiB of real margin,
+    # which is the kind of wrong that gets an instrument ignored.
+    available = (pages(r"Pages free") + pages(r"Pages inactive")
+                 + pages(r"Pages speculative") + pages(r"Pages purgeable"))
+
     return {
         "total_gib": round(total / GiB, 2),
         "free_gib": round(pages(r"Pages free") / GiB, 2),
+        "available_gib": round(available / GiB, 2),
+        "anonymous_gib": round(pages(r"Anonymous pages") / GiB, 2),
         "wired_gib": round(pages(r"Pages wired down") / GiB, 2),
         "compressed_gib": round(pages(r"Pages occupied by compressor") / GiB, 2),
         "swap_used_gib": round(float(used.group(1)) / 1024, 2) if used else None,
@@ -138,6 +147,10 @@ LIMITS = {"swap_used_gib": 2.0, "free_percent": 15, "headroom_gib": 4.0}
 # Weights + KV at the harness window + SDPA workspace. What the server must be able
 # to hold before it can answer anything.
 MODEL_NEEDS_GIB = 25.3
+# Margin below which loading succeeds and the first thing that pushes — a build, a
+# browser tab, a container waking — puts the host back into the state where the
+# server dies. Measured: it died from roughly here.
+MODEL_MARGIN_GIB = 6.0
 
 
 def verdict(sample):
@@ -151,18 +164,22 @@ def verdict(sample):
         reasons.append(f"free memory {mem['free_percent']}% "
                        f"(under {LIMITS['free_percent']}%)")
     if not srv.get("loaded"):
-        # Also when the server is unreachable — which is exactly the state after it
-        # has died, and the state in which someone is about to restart it.
-        # The question that actually decides a run: can the model be loaded at all,
-        # or will loading it push the host into swap it does not have?
-        swap_free = (mem.get("swap_total_gib") or 0) - (mem.get("swap_used_gib") or 0)
-        short = MODEL_NEEDS_GIB - (mem.get("free_gib") or 0)
-        if short > swap_free:
+        # Also when the server is unreachable, which is exactly the state after it
+        # has died and the state someone is in when about to restart it.
+        avail = mem.get("available_gib") or 0
+        swap_left = (mem.get("swap_total_gib") or 0) - (mem.get("swap_used_gib") or 0)
+        margin = avail - MODEL_NEEDS_GIB
+        if margin < 0:
             reasons.append(
-                f"loading the model needs {MODEL_NEEDS_GIB} GiB against "
-                f"{mem.get('free_gib')} GiB free; the {short:.1f} GiB shortfall exceeds "
-                f"the {swap_free:.1f} GiB of swap left. This is the state in which the "
-                f"server died rather than slowed down")
+                f"the model does not fit: it needs {MODEL_NEEDS_GIB} GiB and "
+                f"{avail:.1f} GiB is available. Loading it goes to swap, and "
+                f"{swap_left:.1f} GiB of swap is left")
+        elif margin < MODEL_MARGIN_GIB:
+            reasons.append(
+                f"the model fits by {margin:.1f} GiB ({avail:.1f} available, "
+                f"{MODEL_NEEDS_GIB} needed), under the {MODEL_MARGIN_GIB} GiB margin. "
+                f"It will load, and the first thing that pushes puts the host back "
+                f"where the server died")
     if srv.get("reachable") and srv.get("loaded") and \
        srv.get("headroom_gib", 99) < LIMITS["headroom_gib"]:
         reasons.append(f"server headroom {srv['headroom_gib']} GiB "
@@ -178,9 +195,12 @@ def sample():
 
 def render(s):
     m, srv = s["memory"], s["server"]
-    print(f"  host   {m['free_gib']:.1f} GiB free of {m['total_gib']:.0f}   "
-          f"wired {m['wired_gib']:.1f}   compressed {m['compressed_gib']:.1f}   "
-          f"free {m['free_percent']}%")
+    print(f"  host   {m['available_gib']:.1f} GiB available of {m['total_gib']:.0f}   "
+          f"(free {m['free_gib']:.1f}, wired {m['wired_gib']:.1f}, "
+          f"compressed {m['compressed_gib']:.1f})")
+    if not s["server"].get("loaded"):
+        print(f"  model  needs {MODEL_NEEDS_GIB} GiB   "
+              f"margin {m['available_gib'] - MODEL_NEEDS_GIB:+.1f} GiB")
     print(f"  swap   {m['swap_used_gib']} of {m['swap_total_gib']} GiB used")
     if srv.get("reachable"):
         print(f"  server ceiling {srv['ceiling_gib']} GiB   resident {srv['resident_gib']} GiB   "
