@@ -166,6 +166,8 @@ def main():
     ap.add_argument("--no-gate", action="store_true")
     ap.add_argument("--no-install", action="store_true")
     ap.add_argument("--max-files", type=int, default=20)
+    ap.add_argument("--think-plan", action="store_true",
+                    help="leave reasoning on for phase 0. Off by default — see below.")
     ap.add_argument("--ignore-pressure", action="store_true",
                     help="run even though the host is too loaded for a comparable "
                          "measurement. Recorded in meta.yaml either way.")
@@ -272,8 +274,10 @@ def main():
         host_samples.append(vitals())
 
     def ft_run(label, instruction, raw, reads=(), out_file=None, system=None,
-               verbatim=False):
+               verbatim=False, no_thinking=False):
         cmd = [str(RUNNER), "--label", label, "--instruction", "-", "--raw", str(raw)]
+        if no_thinking:
+            cmd += ["--no-thinking"]
         if a.ignore_pressure and a.runner == "api":
             # ft-go already gated once, at the top. Gating again per phase would
             # abort a run midway on a transient spike, which loses the whole run.
@@ -328,9 +332,23 @@ def main():
                                "runner": "none"})
             else:
                 instruction = (HARNESS / "instructions" / "phase0-plan.md").read_text()
+                # Reasoning is ON for the model by default and stays on for every
+                # implementation phase, where it is productive: one file phase spent
+                # 7.5k characters of it on 2.3k tokens of clean code.
+                #
+                # Phase 0 is the exception, and it is not a preference. Measured on
+                # one task twice: with reasoning the plan filled 16,249 of 16,384
+                # tokens and took 25 minutes, on a problem answered in two small
+                # files; without it, 1,020 tokens in 102 seconds, and the plan came
+                # back longer. On a real problem (01, variant A) reasoning off
+                # produced a 14-file plan in 4,327 tokens that decided all eight of
+                # that problem's must-haves correctly.
+                #
+                # A phase that overflows its budget measures the ceiling, not the
+                # model. --think-plan restores the default and records that it did.
                 rc = ft_run("plan", instruction, steps / "00-plan.md",
                             reads=[variant], out_file=plan_md, system=cheatsheet,
-                            verbatim=True)
+                            verbatim=True, no_thinking=not a.think_plan)
                 # A phase cut off at the ceiling did not answer; it was still
                 # thinking. Writing what came back as though it were the artifact is
                 # how a run continues against 68 KB of deliberation -- observed, and
@@ -480,7 +498,7 @@ def main():
                 "top_k": int(os.environ.get("FT_TOP_K", 20)),
                 "max_tokens": int(os.environ.get("FT_MAX_TOKENS", 16384)),
                 "context_window": int(os.environ.get("FT_CONTEXT_WINDOW", 32768)),
-                "thinking": True,
+                "thinking": {"plan": bool(a.think_plan), "implementation": True},
             },
             "runner": a.runner, "spec_source": a.spec,
             "requests": len(phases),

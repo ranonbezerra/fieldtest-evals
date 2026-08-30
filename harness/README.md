@@ -104,9 +104,36 @@ thinking never closes, the server cannot separate it and returns 68 KB of
 deliberation as the answer. `ft-go` now detects a ceiling hit in phase 0 and records
 it as a failure rather than writing the reasoning to `PLAN.md`.
 
-The open question, and the next thing to measure: `ft-run --no-thinking` on the plan
-phase. Reasoning is 97% of that phase's output. Whether the plan survives without it
-is an experiment, not an assumption.
+### Reasoning is on everywhere except phase 0
+
+Measured, one axis at a time, on a settled host:
+
+| | task | reasoning | output tokens | wall | plan |
+|---|---|---|--:|--:|--:|
+| control | self-test | **on** | 16,249 / 16,384 | 25 min | 2,771 B |
+| A | self-test | off | **1,020** | **1m42** | 3,978 B |
+| B | problem 01, variant A | off | **4,327** | **7 min** | 16,257 B, 14 files |
+
+Sixteen times fewer tokens, fifteen times faster, and the plan came back *longer*.
+On the real problem it produced a 14-file manifest in correct topological order and
+**decided all eight of that problem's must-haves correctly** — hold rather than debit,
+a row lock for the reservation, the outbox inside the creation transaction, funds
+never released on retry exhaustion, integer minor units throughout.
+
+So: **reasoning off for phase 0, on for every implementation phase.** Not a
+preference. A phase that overflows its budget measures the ceiling rather than the
+model, and phase 0 with reasoning overflowed on a task answered in two small files.
+The implementation phases are the opposite case — one spent 7,500 characters of
+reasoning on 2,300 tokens of clean code — so nothing is switched off there.
+
+`--think-plan` restores the model's default and records that it did. `meta.yaml`
+carries `thinking: {plan, implementation}` per run, so no run is ambiguous about it.
+
+**What this does not establish.** One sample per cell. The control for problem 01 with
+reasoning on was started and killed when the host began paging, so *"the plan would
+overflow on a real problem"* remains an inference — a strong one, since a task a
+quarter the size overflowed, but not a measurement. And the plan above was judged by
+the operator against the rubric, not blind.
 Neither counter shows the reasoning, so a phase that needed 1,900 tokens of code can
 spend 15,000 and write nothing. Every request records `output_ceiling_hit`, and when
 it fires the run is not a wrong answer — it is no answer.
