@@ -84,7 +84,10 @@ see [`harness/conditions.md`](harness/conditions.md).
 
 And it cannot measure **what the model chooses to read**. The harness hands it exactly
 the files its own plan declared, deliberately, because letting it hunt is what inflates
-context until the problem statement is trimmed away. Answering *what would it open, and
-what would it ignore* needs a phase that does not exist yet: give it the file tree with
-no contents and let it request what it needs. That is a real gap, noted rather than
-papered over.
+context until the problem statement is trimmed away.
+
+That gap is designed out in [`docs/reading-phase.md`](docs/reading-phase.md): give it
+the file tree with no contents, let it request what it needs, give it exactly that.
+One request in, one list out — no loop, nothing to trim — and it measures recall,
+precision, ordering and calibration against a reference that already names the files a
+correct solution must have read. Not built yet.
