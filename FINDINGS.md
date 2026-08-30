@@ -18,9 +18,15 @@ Mac. Reasoning on by default.
 
 ## 1. The model
 
-### 1.1 Generation runs at ~10.6 tokens/second
+### 1.1 Generation runs at ~10.6 tokens/second, and slows as the prompt grows
 
 Measured across a complete self-test run on a quiet host, stable across phases.
+On a real problem it degrades within a run as later phases carry more context:
+**10.5 tok/s at 1.4k input tokens, 6.1 at 5.5k, 3.8 at 7.4k** — with the host
+clean, 0 of 13 samples under pressure. Attention cost, not memory.
+
+*Consequence for planning:* problem 01 variant A took **4.5 hours**, above the 2.7 h
+pessimistic estimate, because the estimate assumed a flat rate.
 **An earlier figure of 5.1 was wrong** — it was taken while the host was swapping, and
 it measured the swap file. Corrected here rather than deleted, because the mistake is
 the finding: throughput is not a property of the model alone.
@@ -73,6 +79,32 @@ harness wrote 68 KB of it to `PLAN.md` and continued as though it were a specifi
 
 *Changed:* `ft-go` treats a ceiling hit in phase 0 as a failure and writes no artifact.
 A phase that was cut off did not answer.
+
+### 1.4b Implementation phases fill the budget too, on the files that are hard
+
+The self-test suggested reasoning was only pathological in phase 0 — its two
+implementation phases used 14% and 43% of the budget. Problem 01, variant A,
+corrected that:
+
+| | phases | output | reasoning |
+|---|--:|---|---|
+| finished normally | 8 of 11 | 439 – 10,699 tokens | 1,725 – 44,882 chars |
+| **hit the ceiling** | **3 of 11** | 16,384 each | reply was deliberation |
+
+The three were the repository, the service and the spec — the three hardest files in
+the manifest. So it is not "phase 0 is special": **reasoning fills the budget whenever
+the model finds enough to deliberate about**, and on a real problem that is the files
+that matter most.
+
+Worse than an empty file: the extractor takes the largest fenced block from a reply
+full of code fragments, so one file was written beginning at `async processMessages()`
+with no class around it. **It looks like code.** An empty file announces itself; a
+plausible fragment does not.
+
+*Changed:* a file phase that hits the ceiling is retried once with reasoning off — the
+mode measured to produce an answer rather than fill the budget — and both attempts are
+kept. The default is still the model's own, and `meta.yaml` records
+`ceiling_retries_without_reasoning`.
 
 ### 1.5 The model plans well when given the budget to answer
 

@@ -264,7 +264,7 @@ def main():
             say()
     LOCK.write_text(f"{prob.name} {vslug} pid {os.getpid()}\n")
     t_start = time.time()
-    phases, failures = [], []
+    phases, failures, ceiling_retries = [], [], []
     host_samples = [baseline] if baseline else []
 
     def flush():
@@ -405,9 +405,24 @@ def main():
                     reads.append(dp)
             instruction = (tmpl.replace("{{PATH}}", item["path"])
                                .replace("{{NOTE}}", item["note"] or "as the plan specifies"))
-            ft_run(f"{i:02d}-{Path(item['path']).name}", instruction,
-                   steps / f"{i:02d}-{Path(item['path']).name}.md",
+            label = f"{i:02d}-{Path(item['path']).name}"
+            ft_run(label, instruction, steps / f"{label}.md",
                    reads=reads, out_file=target, system=cheatsheet)
+
+            # A file phase that hit the ceiling did not finish answering. The reply is
+            # deliberation with code fragments in it, and the extractor then writes a
+            # fragment -- one observed file began at `async processMessages()` with no
+            # class around it, which is worse than an empty file because it looks like
+            # code. Retry once with reasoning off: measured on the plan phase, that is
+            # the mode that produces an answer rather than filling the budget.
+            #
+            # Both attempts are kept. The first is what the model does by default.
+            u = Path(str(steps / f"{label}.md") + ".usage.json")
+            if u.is_file() and json.loads(u.read_text()).get("output_ceiling_hit"):
+                say(f"         ceiling hit — retrying {item['path']} with reasoning off")
+                ft_run(f"{label}-retry", instruction, steps / f"{label}-retry.md",
+                       reads=reads, out_file=target, system=cheatsheet, no_thinking=True)
+                ceiling_retries.append(item["path"])
             written.append(target)
 
         empty = [p for p in written if not p.exists() or p.stat().st_size == 0]
@@ -545,6 +560,7 @@ def main():
                 "trace": host_samples,
             },
             "output_ceiling_hits": ceilings,
+            "ceiling_retries_without_reasoning": ceiling_retries,
             "files_declared": len(manifest),
             "files_empty": [str(p.relative_to(ws)) for p in empty],
             "gate": {"ran": gate["ran"], "passed": gate["passed"], "repairs": gate["repairs"]},
@@ -561,6 +577,8 @@ def main():
             f"gate+io {max(0, wall-gen_s-load_s)/60:.1f} min")
         if ceilings:
             say(f"OUTPUT CEILING HIT on: {', '.join(ceilings)}  <-- read the reasoning first")
+        if ceiling_retries:
+            say(f"retried without reasoning after a ceiling hit: {', '.join(ceiling_retries)}")
         if gate["repairs"]:
             say(f"REVISED x{gate['repairs']} by the model itself — not a pass; read this run first")
         if pressured:
