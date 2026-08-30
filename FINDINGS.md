@@ -35,21 +35,35 @@ Not a model limit — the model's own config imposes none, and its architecture 
 *Changed:* the entire harness shape. The deliverables of a single problem do not fit in
 one reply, which is why work is decomposed into one file per request.
 
-### 1.3 Deliberation appears to expand to fill the budget, not the task
+### 1.3 With reasoning, output is bound by the budget. Without it, by the task.
 
-On the self-test — a task answered in two small files — reasoning consumed **16,249 of
-16,384 tokens**, 99.2% of the budget. The same task with reasoning off: **1,020
-tokens**. Sixteen times less, for a plan that came back *longer*.
+**Confirmed.** Four measurements, one axis, two task sizes:
 
-*Changed:* raising the server's output ceiling is off the table as a fix. Doubling it
-would buy a 32,000-token deliberation instead of a 16,000-token one, at twice the wall
+| | self-test (2 files) | problem 01 (14 files) |
+|---|--:|--:|
+| reasoning **on** | 16,249 / 16,384 — **99.2%** | **16,384 / 16,384 — 100%**, `finish_reason: length` |
+| reasoning **off** | 1,020 | 4,327 |
+
+Two tasks of very different size both consumed essentially the whole budget when
+reasoning was on. With it off, output scaled with the task instead — 1,020 to 4,327,
+roughly four times, which is about the ratio between the two tasks.
+
+The plan the model actually needed for problem 01 was 4,327 tokens. With reasoning on
+it spent 16,384 and emitted no plan at all: 68,531 bytes of deliberation returned as
+content (see 1.4).
+
+*Changed:* **raising the server's output ceiling is off the table as a fix.** Doubling
+it buys a 32,000-token deliberation instead of a 16,000-token one, at twice the wall
 time, with the same empty result. Memory would allow it — even 131,072 tokens of
-output fits with 6 GiB to spare — so the constraint is not what it looks like.
+output fits with 6 GiB to spare — so the constraint was never the one it looked like.
 
-> **Status: one sample.** A second measurement is in flight — the same real problem
-> with reasoning on. If it also lands near 16,300 the pattern is confirmed; if it
-> lands near 9,000 the consumption is proportional to the task and the self-test was
-> pathological. **Not yet resolved.**
+This is the mechanism behind a rule the pilot had already written down from
+experience: *raising the window to fix a truncation is the obvious move and usually
+the wrong one.*
+
+> **Caveat on the timing only.** The host began paging in C's final minutes, so its
+> 1,607 s is contaminated. The token count is not: a hard ceiling hit at exactly
+> 16,384 is the same number whatever the machine was doing.
 
 ### 1.4 A ceiling hit mid-reasoning returns the reasoning as the answer
 
