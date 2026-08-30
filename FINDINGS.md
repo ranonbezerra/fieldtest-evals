@@ -176,6 +176,24 @@ reason, and it would be dishonest to exempt its own.
 |---|---|---|
 | Sized the model against `Pages free` | Reported a **13.7 GiB shortfall on a host with 2 GiB of real margin**. macOS keeps `free` low on purpose | Size against available: free + inactive + speculative + purgeable |
 | Gated on swap **occupancy** | Blocked a healthy machine sitting on 4 GiB of residue from an earlier episode, with 0 swapins/s and 0 swapouts/s | Gate on **rate**, sampled. Occupancy is history; rate is pressure |
+| Read low `wired` as the model being paged out | **Emptied the campaign's first run.** MLX wires memory only while the GPU is working, so between requests `wired` drops to a few GiB with nothing evicted. Genuinely paged out: wired 3.6, compressed 24.2. Healthy and idle: wired 3.5, compressed 1.6 — identical in the figure being read | Require the compressor too. Only that figure separates them |
+
+**All three refused work on a machine that was fine.** That is not a coincidence, it
+is the shape of the mistake: each check was written from a failure I had just watched,
+and calibrated to catch that failure rather than to distinguish it from the healthy
+state that resembles it. A check built only from the bad case has never seen the good
+one.
+
+### 4.0b A gate in the wrong place empties a run instead of stopping it
+
+Worse than any false positive above, and a design error rather than a measurement one.
+`ft-go` gates on host pressure once, at the top — the decision point. Each phase then
+gated again through `ft-run`, so a run already in progress **abandoned itself file by
+file** and committed a plan with ten empty files beside it.
+
+*Changed:* pressure appearing mid-run is recorded — `host.pressure_samples`, and
+`host_pressure_at_send` per request — and the run is marked not comparable. A run you
+must discount is strictly more useful than no run at all.
 
 Both were found by running them against the real machine, not by reading them.
 
