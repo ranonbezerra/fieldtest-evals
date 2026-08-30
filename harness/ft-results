@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Build the results table from the verdicts on disk.
+
+    ft-results            print the table
+    ft-results --write    replace the table in README.md between its markers
+
+Hand-maintained tables rot, and a rotted results table is worse than none: it
+reads as current. This reads every `verdict.md` under `problems/*/runs/` and
+regenerates the section, so the README cannot drift from what was actually judged.
+
+A verdict file is YAML-ish in the shape of harness/verdict-template.md. Only four
+fields are needed here; the rest is for the reader of that run.
+"""
+import re, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+START = "<!-- results:start -->"
+END = "<!-- results:end -->"
+
+MARK = {"PASS": "✓", "PASS_WITH_NOTES": "~", "FAIL": "✗"}
+
+
+def field(text, name):
+    m = re.search(rf"^{name}:\s*(.+?)\s*$", text, re.M)
+    return m.group(1).strip() if m else None
+
+
+def collect():
+    """{model: {problem: {variant: verdict}}} plus the ladder and the notes line."""
+    out = {}
+    for v in sorted(ROOT.glob("problems/*/runs/*/variant-*/verdict.md")):
+        variant = v.parent.name.replace("variant-", "")
+        tag = v.parent.parent.name
+        problem = v.parent.parent.parent.parent.name
+        # tag is <model-slug> optionally + --aider / --ladder
+        model = tag.split("--")[0]
+        axes = tag.split("--")[1:]
+        text = v.read_text(encoding="utf-8", errors="replace")
+        rec = {
+            "verdict": field(text, "verdict"),
+            "gate": field(text, "gate"),
+            "failure_mode": field(text, "failure_mode"),
+            "would_merge": field(text, "would_merge"),
+            "notes": field(text, "notes"),
+        }
+        slot = "ladder" if "ladder" in axes else ("aider" if "aider" in axes else variant)
+        out.setdefault(model, {}).setdefault(problem, {})[slot] = rec
+    return out
+
+
+def failed_musts(gate):
+    """From `gate: [M1 ✓, M2 ✗, ...]` to `M2` — the actionable half of a FAIL."""
+    if not gate:
+        return ""
+    bad = re.findall(r"(M\d+)\s*✗", gate)
+    return ", ".join(bad)
+
+
+def render():
+    data = collect()
+    titles = {p.name: p.name.split("-", 1)[1].replace("-", " ")
+              for p in sorted((ROOT / "problems").iterdir()) if p.is_dir()}
+    lines = []
+
+    if not data:
+        lines += [
+            "No runs have been judged yet. The table below is the shape it will take;",
+            "every cell is filled by `harness/ft-results --write` from the `verdict.md`",
+            "files, never by hand.",
+            "",
+            "| # | Problem | A | B | C | L2 | What you can hand it |",
+            "|---|---|:-:|:-:|:-:|:-:|---|",
+        ]
+        for name in sorted(titles):
+            n, title = name.split("-", 1)[0], titles[name]
+            lines.append(f"| {n} | {title} | – | – | – | – | *not yet run* |")
+        return "\n".join(lines)
+
+    for model, problems in sorted(data.items()):
+        lines += [f"### {model}", "",
+                  "| # | Problem | A | B | C | L2 | What you can hand it |",
+                  "|---|---|:-:|:-:|:-:|:-:|---|"]
+        for name in sorted(titles):
+            got = problems.get(name, {})
+            n, title = name.split("-", 1)[0], titles[name]
+            cells = []
+            for slot in ("a", "b", "c", "ladder"):
+                r = got.get(slot)
+                if not r:
+                    cells.append("–")
+                    continue
+                mark = MARK.get((r["verdict"] or "").upper(), "?")
+                bad = failed_musts(r["gate"])
+                cells.append(f"{mark}<br><sub>{bad}</sub>" if bad else mark)
+            note = (got.get("a") or got.get("b") or got.get("c") or {}).get("notes") or ""
+            lines.append(f"| {n} | {title} | " + " | ".join(cells) + f" | {note} |")
+        lines.append("")
+    return "\n".join(lines)
+
+
+table = render()
+if "--write" in sys.argv:
+    p = ROOT / "README.md"
+    t = p.read_text()
+    if START not in t or END not in t:
+        sys.exit(f"README.md has no {START} / {END} markers")
+    head, rest = t.split(START, 1)
+    _, tail = rest.split(END, 1)
+    p.write_text(f"{head}{START}\n\n{table}\n\n{END}{tail}")
+    print(f"README.md updated ({table.count(chr(10)) + 1} lines)")
+else:
+    print(table)
