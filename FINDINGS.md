@@ -357,6 +357,30 @@ already wrote the rule down — *a chat agent cannot supervise a run* — about 
 This is the same rule with a different mechanism, and it was violated for most of a
 session.
 
+### 1.4d A ceiling hit produces plausible garbage in a third distinct way
+
+Three manifestations now, all from the same cause and each looking different:
+
+| | what was written |
+|---|---|
+| phase 0 | 68 KB of deliberation, saved as `PLAN.md` |
+| an implementation phase | a fragment beginning at `async processMessages()`, no class around it |
+| **another implementation phase** | **a file whose first line is ` ```ts `** and whose last line stops mid-statement |
+
+The third came from a reply carrying **43 fence markers** — the model deliberating in
+code blocks — so the largest-span heuristic captured a region that itself contained
+fences.
+
+*Changed:* stray fence lines are stripped from any extracted artifact, leading and
+trailing. Cheap, and never wrong: a line that is nothing but a fence is not part of
+the file. The retry remains the real fix; this is what stops a truncated reply from
+producing something that *looks* like a file when the retry does not get to run.
+
+*Which it did not, here.* The process was terminated between the ceiling hit and its
+retry, so the polluted file was the artifact on disk. Had it been judged, `payout.service.ts`
+would have read as the model failing to produce valid TypeScript — a defect that is
+entirely the harness's.
+
 ### 1.7 An unexplained gap between what the client waits and what the server counts
 
 Recorded as an open measurement, not a diagnosis.

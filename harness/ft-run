@@ -61,6 +61,23 @@ def build_user(reads, instruction):
     return "\n\n".join(parts)
 
 
+def strip_stray_fences(text):
+    """Remove fence lines that survived extraction.
+
+    A reply cut off mid-deliberation can carry dozens of fenced blocks — 43 in one
+    observed case — and the largest-span heuristic then captures a region that
+    itself contains fences. The file written began with ```ts on line one, which is
+    not valid in any language it claims to be. Cheap to strip, and never wrong: a
+    line that is nothing but a fence is never part of the artifact.
+    """
+    lines = text.splitlines()
+    while lines and lines[0].strip().startswith("```"):
+        lines.pop(0)
+    while lines and lines[-1].strip().startswith("```"):
+        lines.pop()
+    return "\n".join(lines)
+
+
 def extract_file(text):
     """The largest fenced block, or the whole reply if it has no fence.
 
@@ -69,8 +86,8 @@ def extract_file(text):
     """
     blocks = FENCE.findall(text)
     if not blocks:
-        return text.strip() + "\n", False
-    return max(blocks, key=len).rstrip("\n") + "\n", True
+        return strip_stray_fences(text.strip()) + "\n", False
+    return strip_stray_fences(max(blocks, key=len).rstrip("\n")) + "\n", True
 
 
 def main():
@@ -216,7 +233,8 @@ def main():
           f"{wall:.0f}s  {tps} tok/s  {finish}{flag}")
 
     if a.file:
-        text, fenced = (content.strip() + "\n", True) if a.verbatim else extract_file(content)
+        text, fenced = ((strip_stray_fences(content.strip()) + "\n", True)
+                       if a.verbatim else extract_file(content))
         if not content.strip():
             print(f"ft-run: [{a.label}] empty reply; {a.file} not written", file=sys.stderr)
             return 6
