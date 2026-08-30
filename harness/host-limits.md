@@ -54,6 +54,33 @@ on disk.
 Generation on this machine, unloaded, measures **~5 tokens/second**. There is no
 figure for generation under swap, because it did not finish.
 
+### "Loaded" is the server's word, and the host disagrees
+
+The state that precedes the server dying reads as healthy from the server alone:
+
+```
+server   ceiling 37.44 GiB   resident 22.27 GiB   headroom 15.17 GiB   loaded
+host     wired 3.6 GiB       compressed 24.2 GiB  available 12.4 GiB
+```
+
+The server says it holds 22.27 GiB. The host says only 3.6 GiB is wired and 24.2 GiB
+is sitting in the compressor. **The weights are out of memory.** The next request pays
+to bring them all back before it generates a token, and the server reports nothing
+unusual while that happens.
+
+`ft-vitals` flags it: `wired` far below what the server calls resident. The fix is to
+unload — the model reloads clean on the next request, at the cost of one model load.
+Measured here, immediately after:
+
+| | before | after `ft-flush` |
+|---|--:|--:|
+| compressed | 24.19 GiB | **0.80 GiB** |
+| available | 12.4 GiB | **34.6 GiB** |
+| margin over what the model needs | tight | **+9.3 GiB** |
+
+Twenty-three gigabytes of compressed memory returned for one fourteen-second reload.
+**Flush between runs, and flush after anything that made the host page.**
+
 ## What follows for a campaign
 
 **Run it on a quiet machine.** Not as hygiene — as a precondition for the numbers

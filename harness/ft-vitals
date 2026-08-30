@@ -204,6 +204,22 @@ def verdict(sample):
                 f"{MODEL_NEEDS_GIB} needed), under the {MODEL_MARGIN_GIB} GiB margin. "
                 f"It will load, and the first thing that pushes puts the host back "
                 f"where the server died")
+    if srv.get("reachable") and srv.get("loaded"):
+        # The server reports its own accounting and says "loaded" either way. The
+        # host is the one that knows whether the weights are still in memory: when
+        # `wired` sits far below what the server thinks is resident, they have been
+        # compressed or swapped out, and the next request pays to bring 22 GiB back.
+        # This is the state that preceded the server dying, and it reads as healthy
+        # from the server alone.
+        resident = srv.get("resident_gib") or 0
+        wired = mem.get("wired_gib") or 0
+        if resident > 1 and wired < resident * 0.5:
+            reasons.append(
+                f"the model is loaded but paged out: the server holds {resident:.1f} GiB "
+                f"resident while the host has only {wired:.1f} GiB wired and "
+                f"{mem.get('compressed_gib')} GiB compressed. The next request "
+                f"decompresses the weights first. Unload it — ft-flush — and let it "
+                f"reload clean")
     if srv.get("reachable") and srv.get("loaded") and \
        srv.get("headroom_gib", 99) < LIMITS["headroom_gib"]:
         reasons.append(f"server headroom {srv['headroom_gib']} GiB "
