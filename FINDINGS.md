@@ -393,3 +393,45 @@ spans.
 - **The `aider` and `chat` conditions have not been run.** Their costs are documented
   from the pilot's record and from this harness's design, not from measurements taken
   here.
+
+---
+
+## 6. Open predictions
+
+Written before the data, so they can be wrong rather than rationalised afterwards.
+
+### 6.1 The gate is disarmed by construction, and it should repeat on problem 02
+
+Problem 01's manifest declared ten files and no `tsconfig.json`, so `ft-go`'s typecheck
+could not run at all — and the run's most serious defect, an invented Prisma `lock`
+option, is one a typecheck catches in seconds.
+
+**This is not the model's failure.** Three pieces of evidence:
+
+- the variant's Deliverables list asks for schema, migration, module, tests and
+  `DESIGN.md`. It never mentions build configuration
+- the phase-0 instruction explicitly tells the model not to deliberate about it:
+  *"where the task leaves a convention open — which file something lives in, **whether
+  a config file is in scope**, how a helper is named — choose, write it in section 1
+  in one line, and move on"*
+- the plan recorded eleven substantive assumptions, including one about configuration
+  (intervals via environment variables, *"no hardcoded config"*). It read the
+  deliverables list correctly and did not consider `tsconfig` part of the scope
+
+So the chain is: a statement that does not ask for build config, feeding a gate that
+only runs when build config exists. **A gate that cannot fire is decorative** — which
+is precisely what problem 16 exists to measure, committed here in the harness itself.
+
+**Prediction:** problem 02 variant A will also omit build configuration, and its gate
+will also report `ran: false`.
+
+**If it repeats:** the harness supplies a minimal `package.json` and `tsconfig.json`
+before the gate, with the dependencies the cheatsheet declares. The model keeps
+delivering what the statement asks for; the gate becomes able to fire. Changing the
+statements instead would change what eighteen problems measure, and spend the model's
+budget writing config rather than solving the problem.
+
+**If it does not repeat:** the more interesting outcome. Two runs of the same harness
+diverging on whether config is in scope would mean the instruction leaves it genuinely
+open, and the fix is to settle it in the instruction rather than to paper over it in
+the gate.
