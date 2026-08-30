@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  supplier_key   String   @map("supplier_key")
+  amount_cents   Int      @map("amount_cents")
+  effective_date String   @map("effective_date")
+  txid           String   @unique @map("txid")
+  state          String   @map("state")
+  send_attempts  Int      @default(0) @map("send_attempts")
+  created_at     DateTime @default(now()) @map("created_at")
+  updated_at     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  send_events    SendEvent[]
+
+  @@index([state, effective_date])
+  @@map("orders")
+}
+
+model ReconcileRun {
+  id            String   @id @default(cuid())
+  window_from   DateTime @map("window_from")
+  window_to     DateTime @map("window_to")
+  matched_count Int      @map("matched_count")
+  created_at    DateTime @default(now()) @map("created_at")
+
+  @@map("reconcile_runs")
+}
+
+model SendEvent {
+  id             String   @id @default(cuid())
+  order_id       String   @map("order_id")
+  txid           String   @map("txid")
+  classification String   @map("classification")
+  raw_response   String   @map("raw_response")
+  created_at     DateTime @default(now()) @map("created_at")
+
+  order          Order    @relation(fields: [order_id], references: [id])
+
+  @@map("send_events")
+}

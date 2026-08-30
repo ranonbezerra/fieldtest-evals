@@ -52,14 +52,22 @@ Mpx/s, a 60% reduction on the same GPU the model runs on.
 
 | | before | after |
 |---|--:|--:|
-| `omlx-server` CPU share | ~20% | **53%** |
-| WindowServer | 38.6% | 25.2% |
-| editor renderer | 16.3% | 6.0% |
 | **generation** | **4.0 tok/s** | **7.9 tok/s** |
 
-Roughly double, on the same problem, same phase type, same model. Still short of the
-10.5 measured when the machine was otherwise idle, so contention remains — but the
-mechanism is established rather than suspected.
+Roughly double, on the same problem, the same kind of phase, the same model. Still
+short of the 10.5 measured when the machine was otherwise idle, so contention remains.
+
+**The mechanism is NOT established, and an earlier version of this entry claimed it
+was.** It reported CPU shares — the server rising from 20% to 53%, the compositor
+falling — from `ps -o %cpu`, which on macOS is the average over a process's entire
+lifetime rather than a sample. A server up sixteen hours and mostly idle reports
+single digits while it is generating, and the figure drifts on its own. Checked
+against `top -l 2`: `ps` said the server was at 0.7%, and `top` did not list it in the
+top six at all. **Both are right.** The model is GPU-bound; MLX uses almost no CPU.
+
+So the outcome stands — it was measured in tokens per second, on the same phase of the
+same problem — and the explanation attached to it did not. Which is the mistake
+described two paragraphs below, committed in the paragraph above it.
 
 **A note on which number to watch.** The first indicator to move was WindowServer's
 CPU falling, and it was the wrong one: it dropped after two displays were removed

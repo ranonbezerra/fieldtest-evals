@@ -138,8 +138,16 @@ def contention():
         pass
     cores = int(sh(["sysctl", "-n", "hw.ncpu"]).strip() or 0)
 
+    # `ps -o %cpu` on macOS is the average over the process's LIFETIME, not a
+    # sample. Read that way, a server up for sixteen hours and mostly idle reports
+    # single digits while it is generating, and the figure drifts on its own — it
+    # was used here to claim a CPU share had risen from 20% to 53%, which measured
+    # nothing at all. `top -l 2` samples; the first iteration is discarded because
+    # it is itself a lifetime average.
     rows, server_cpu = [], 0.0
-    for line in sh(["ps", "-axo", "%cpu,comm"]).splitlines()[1:]:
+    out = sh(["top", "-l", "2", "-n", "12", "-o", "cpu", "-stats", "cpu,command"])
+    block = out.split("COMMAND")[-1]
+    for line in block.splitlines():
         parts = line.strip().split(None, 1)
         if len(parts) != 2:
             continue
@@ -147,10 +155,10 @@ def contention():
             cpu = float(parts[0])
         except ValueError:
             continue
-        name = parts[1].split("/")[-1][:36]
+        name = parts[1].strip()[:36]
         if "omlx" in name.lower():
             server_cpu = max(server_cpu, cpu)
-        elif cpu > 25:
+        elif cpu > 25 and "top" not in name.lower():
             rows.append({"cpu": cpu, "command": name})
     rows.sort(key=lambda r: -r["cpu"])
 
@@ -160,6 +168,8 @@ def contention():
     if m:
         gpu = int(m.group(1))
 
+    # The model is GPU-bound: MLX uses very little CPU even while generating, so
+    # a low server_cpu is normal and is not evidence of anything.
     return {"load1": round(load, 2), "cores": cores, "gpu_percent": gpu,
             "server_cpu": server_cpu, "competitors": rows[:4]}
 
