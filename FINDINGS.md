@@ -296,6 +296,28 @@ or the phase instructions. It costs minutes and has already saved hours twice.
 
 ---
 
+### 1.6 It writes a thorough-looking suite whose critical test is decorative
+
+Problem 01 variant A produced seventeen tests covering every case the statement
+demands, including a correct distinction between ambiguous and definitive provider
+failure. Then the one test that had to catch the actual defect could not, for two
+reasons at once: it runs against an **in-memory fake of the repository**, so it never
+reaches the real code where the missing lock lives, and `Promise.allSettled` over a
+synchronous Map **is not concurrency** — single-threaded, the first payout completes
+before the second begins.
+
+`does not overdraw under concurrent creation` is green against an implementation that
+overdraws.
+
+*Why it matters beyond one run:* this is the failure the repository's own rubrics call
+hollow coverage, produced spontaneously and at a level that reads as diligence. An
+absent test is a gap someone can see. A green test named after the property it does
+not check is a claim.
+
+*Changed:* nothing in the harness — the rubric already gates on it. But it is the
+clearest argument yet for the rule that the operator runs the deliverable's tests and
+reads what they actually assert, rather than trusting a green suite.
+
 ## 5. What is not established
 
 - **One model, one machine.** Nothing here separates the model from this hardware.

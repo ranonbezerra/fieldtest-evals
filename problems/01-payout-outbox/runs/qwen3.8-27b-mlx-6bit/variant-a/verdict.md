@@ -6,7 +6,7 @@ plan_gate:    [M1 decided, M2 decided, M3 decided, M4 decided, M5 wrong,
                M6 decided, M7 decided, M8 decided]
 gate:         [M1 ✓, M2 ✗, M3 ✓, M4 ✗, M5 ✗, M6 ✓, M7 ✓, M8 ✓]
 
-graded:       {state_machine: 3, tx_boundaries: 2, errors: 2, tests: 1,
+graded:       {state_machine: 3, tx_boundaries: 2, errors: 2, tests: 2,
                quality: 2, process: 2}
 
 failure_mode: wrong_answer
@@ -56,6 +56,25 @@ notes: |
   Nothing caught the invented API because the workspace has no tsconfig.json — the
   model's manifest declared ten files and no build configuration, so the gate
   could not run. A typecheck would have failed on `lock` immediately.
+
+  On the tests — scored 2, revised up from 1 on re-reading. The breadth is real:
+  seventeen tests covering all three cases the statement demands, plus a genuine
+  distinction between an ambiguous and a definitive provider failure at retry
+  exhaustion, which is subtle and correct.
+
+  But the one test that had to bite cannot, for two independent reasons:
+
+      const results = await Promise.allSettled([p1, p2]);
+      expect(successes.length).toBe(1);
+
+  It runs against an in-memory fake of PayoutRepository, so it never reaches the
+  real repository where the missing lock lives. And Promise.allSettled over a
+  synchronous Map is not concurrency at all — single-threaded, p1 runs to
+  completion before p2 begins, so the interleaving it exists to test cannot occur.
+
+  `does not overdraw under concurrent creation` is therefore green against an
+  implementation that overdraws. That is worse than an absent test: an absent test
+  is a gap someone can see.
 
   Probe next: the ladder (--spec ladder). The plan decided seven of eight
   must-haves correctly, so this may be an implementation failure rather than a
