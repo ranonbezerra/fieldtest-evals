@@ -1,0 +1,30 @@
+{
+  "label": "11-payout.spec.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "prompt_tokens": 7505,
+  "completion_tokens": 16384,
+  "reasoning_chars": 0,
+  "content_chars": 67360,
+  "finish_reason": "length",
+  "output_ceiling_hit": true,
+  "wall_seconds": 5761.8,
+  "server_seconds": 3925.9,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 4.2,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/provider.types.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.errors.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

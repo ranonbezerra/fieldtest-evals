@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id             String    @id
+  settledBalance BigInt    @map("settled_balance")
+  reservedAmount BigInt    @map("reserved_amount")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  payouts        Payout[]
+  ledgerEntries  LedgerEntry[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String    @id @default(uuid())
+  accountId          String    @map("account_id")
+  amount             BigInt
+  destinationAddress String    @map("destination_address")
+  idempotencyKey     String    @unique @map("idempotency_key")
+  status             String
+  txHash             String?   @map("tx_hash")
+  attempts           Int       @default(0) @map("attempts")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  account            Account   @relation(fields: [accountId], references: [id])
+  ledgerEntries      LedgerEntry[]
+  message            Message?
+
+  @@map("payouts")
+}
+
+model LedgerEntry {
+  id        String   @id @default(uuid())
+  payoutId  String?  @map("payout_id")
+  accountId String   @map("account_id")
+  type      String
+  amount    BigInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payout    Payout?  @relation(fields: [payoutId], references: [id])
+  account   Account  @relation(fields: [accountId], references: [id])
+
+  @@map("ledger_entries")
+}
+
+model Message {
+  id        String    @id @default(uuid())
+  payoutId  String    @unique @map("payout_id")
+  status    String
+  attempts  Int       @default(0) @map("attempts")
+  lastError String?   @map("last_error")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  payout    Payout    @relation(fields: [payoutId], references: [id])
+
+  @@map("messages")
+}
