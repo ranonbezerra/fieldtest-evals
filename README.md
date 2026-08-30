@@ -69,6 +69,30 @@ code evaluation: automated tests for "does it work", per-problem rubric for
 everything tests can't see — with rubrics specific to each task, since generic
 rubrics systematically mis-evaluate.
 
+## What has been measured so far
+
+Full record with numbers and consequences in [`FINDINGS.md`](FINDINGS.md). The six
+that changed how this repository works:
+
+| | Finding | What it changed |
+|---|---|---|
+| 1 | Generation runs at **~10.6 tok/s**, and the output ceiling is **16,384 tokens with reasoning paid out of it** | The deliverables of one problem cannot fit in one reply. Hence the phase design |
+| 2 | On a task answered in two small files, reasoning filled **16,249 of 16,384 tokens**; the same task without it took **1,020** and produced a longer plan | Reasoning off for phase 0, on for implementation. Raising the server's ceiling would buy a bigger deliberation, not an answer |
+| 3 | With reasoning off, problem 01 produced a 14-file plan in **4,327 tokens** that decided **all eight of its must-haves correctly** | The phase design works on a real problem, not only on a toy |
+| 4 | The server's memory ceiling **moves with host load** — 37.44 to 32.36 GiB in one session — and under swap pressure the server **dies rather than slowing**. One phase ran 46 minutes and produced zero bytes | Both runners refuse to start on a paging host; every run records the ceiling's range |
+| 5 | The model can be **"loaded" and paged out at once**: the server reporting 22.27 GiB resident while the host held 3.6 GiB wired and 24.2 GiB compressed | `ft-vitals` flags it. Unloading returned 23 GiB for a fourteen-second reload |
+| 6 | The cheatsheet was **leaking two rubric answers** in sentences that read as good advice | `ft-lint-cheatsheet`, validated against a planted leak |
+
+Two of the instruments above were themselves wrong first, both in the direction that
+gets a check switched off — one sized the model against the wrong memory figure, the
+other gated on swap occupancy instead of swap rate. Recorded in `FINDINGS.md` §4,
+because a repository about checks that pass for the wrong reason does not get to
+exempt its own.
+
+**Not yet established:** no problem has been run end to end and judged; no judging has
+been blind; the `aider` and `chat` conditions have not been run. `FINDINGS.md` §5 is
+the list.
+
 ## How to use this repo
 
 ### 0. Prerequisites

@@ -230,6 +230,31 @@ Run `ladder` only on a problem that failed under `model`. It separates *cannot d
 this* from *cannot implement this*, and that is the finding that decides what you can
 hand the model.
 
+## Recording what a run taught you
+
+A verdict says what the model did on one problem. A **finding** says what the campaign
+learned, and those are different artifacts with different lifetimes.
+
+After a run, anything that would change how the next run is set up goes in
+[`../FINDINGS.md`](../FINDINGS.md), in the file's own shape: **what was measured, the
+number, and what it changed.** A finding with no consequence is an anecdote; a
+consequence with no number is a preference.
+
+Three rules that keep it usable rather than merely long:
+
+- **Correct in place.** When a later measurement contradicts an earlier entry, fix the
+  entry and say it was corrected. Two of the entries there are corrections of this
+  repository's own instruments. A findings file that only accumulates becomes a place
+  to argue from instead of a place to check.
+- **Mark what is one sample.** Entries carry their own status. One that is still in
+  flight says so rather than reading as settled.
+- **§5 is not optional.** What has *not* been established is the section that decays
+  fastest and matters most — it is what stops a reader trusting the rest further than
+  it goes.
+
+The six entries that changed how this repository works are summarised in the top-level
+[`README.md`](../README.md).
+
 ## Blind judging
 
 Stage runs into an anonymized tree (`run-01/`, `run-02/`, …) with `meta.yaml` removed
