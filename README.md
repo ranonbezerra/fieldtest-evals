@@ -76,30 +76,29 @@ model and expect back.**
 
 <!-- results:start -->
 
-No runs have been judged yet. The table below is the shape it will take;
-every cell is filled by `harness/ft-results --write` from the `verdict.md`
-files, never by hand.
+### qwen3.8-27b-mlx-6bit
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | – | – | – | – | *not yet run* |
-| 02 | reconciliation resend | – | – | – | – | *not yet run* |
-| 03 | read model projection | – | – | – | – | *not yet run* |
-| 04 | grounded llm product | – | – | – | – | *not yet run* |
-| 05 | onchain anchoring | – | – | – | – | *not yet run* |
-| 06 | multi tenant isolation | – | – | – | – | *not yet run* |
-| 07 | ingredient classification | – | – | – | – | *not yet run* |
-| 08 | infra debug | – | – | – | – | *not yet run* |
-| 09 | feature in conventions | – | – | – | – | *not yet run* |
-| 10 | adapt existing screen | – | – | – | – | *not yet run* |
-| 11 | behavior preserving refactor | – | – | – | – | *not yet run* |
-| 12 | orm migration | – | – | – | – | *not yet run* |
-| 13 | legacy characterization tests | – | – | – | – | *not yet run* |
-| 14 | code review planted bugs | – | – | – | – | *not yet run* |
-| 15 | wiring boot failure | – | – | – | – | *not yet run* |
-| 16 | migration that lied | – | – | – | – | *not yet run* |
-| 17 | token rotation reuse | – | – | – | – | *not yet run* |
-| 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+| 01 | payout outbox | ✗<br><sub>M2, M4, M5</sub> | – | – | – | Builds the whole shape correctly, then invents a Prisma locking API that does not exist — the one requirement that had to be atomic |
+| 02 | reconciliation resend | – | – | – | – |  |
+| 03 | read model projection | – | – | – | – |  |
+| 04 | grounded llm product | – | – | – | – |  |
+| 05 | onchain anchoring | – | – | – | – |  |
+| 06 | multi tenant isolation | – | – | – | – |  |
+| 07 | ingredient classification | – | – | – | – |  |
+| 08 | infra debug | – | – | – | – |  |
+| 09 | feature in conventions | – | – | – | – |  |
+| 10 | adapt existing screen | – | – | – | – |  |
+| 11 | behavior preserving refactor | – | – | – | – |  |
+| 12 | orm migration | – | – | – | – |  |
+| 13 | legacy characterization tests | – | – | – | – |  |
+| 14 | code review planted bugs | – | – | – | – |  |
+| 15 | wiring boot failure | – | – | – | – |  |
+| 16 | migration that lied | – | – | – | – |  |
+| 17 | token rotation reuse | – | – | – | – |  |
+| 18 | timing equal enumeration | – | – | – | – |  |
+
 
 <!-- results:end -->
 

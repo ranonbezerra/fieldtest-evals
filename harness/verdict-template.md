@@ -24,7 +24,9 @@ host:         {pressure_samples: n of m, ceiling_gib: [min, max],
                comparable: yes|no}
 
 would_merge:  yes | after_changes | no
-notes:        <3-6 lines, concrete>
+headline:     <ONE line: what a developer can hand this model on this problem>
+notes: |
+  <3-6 lines, concrete>
 ```
 
 ## Reading the fields
@@ -46,6 +48,10 @@ something the plan specified is the failure the whole gate exists to catch.
 with the machine's load, and under swap pressure the model server does not slow down —
 it dies. Any run with `pressure_samples > 0` is `comparable: no`, and its throughput
 is a measurement of the machine. See [`host-limits.md`](host-limits.md).
+
+**`headline`** is the only field that reaches the README's results table, and it is
+written for someone deciding what to hand the model — *"builds the shape but invents
+APIs under concurrency"*, not *"scored 2 on tx_boundaries"*. One line, no score.
 
 **`cost`** is context, not score. Slow is not wrong. `output_ceiling_hits` is not
 context: it means no answer rather than a wrong one, and `failure_mode` must say which

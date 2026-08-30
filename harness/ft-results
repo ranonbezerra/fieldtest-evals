@@ -42,7 +42,7 @@ def collect():
             "gate": field(text, "gate"),
             "failure_mode": field(text, "failure_mode"),
             "would_merge": field(text, "would_merge"),
-            "notes": field(text, "notes"),
+            "headline": field(text, "headline"),
         }
         slot = "ladder" if "ladder" in axes else ("aider" if "aider" in axes else variant)
         out.setdefault(model, {}).setdefault(problem, {})[slot] = rec
@@ -93,7 +93,7 @@ def render():
                 mark = MARK.get((r["verdict"] or "").upper(), "?")
                 bad = failed_musts(r["gate"])
                 cells.append(f"{mark}<br><sub>{bad}</sub>" if bad else mark)
-            note = (got.get("a") or got.get("b") or got.get("c") or {}).get("notes") or ""
+            note = (got.get("a") or got.get("b") or got.get("c") or {}).get("headline") or ""
             lines.append(f"| {n} | {title} | " + " | ".join(cells) + f" | {note} |")
         lines.append("")
     return "\n".join(lines)
