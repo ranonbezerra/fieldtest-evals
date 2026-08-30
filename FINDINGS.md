@@ -326,6 +326,31 @@ not check is a claim.
 clearest argument yet for the rule that the operator runs the deliverable's tests and
 reads what they actually assert, rather than trusting a green suite.
 
+### 1.7 An unexplained gap between what the client waits and what the server counts
+
+Recorded as an open measurement, not a diagnosis.
+
+| | wall | server `total_time` | gap |
+|---|--:|--:|--:|
+| problem 02, plan phase | 8.9 min | 8.9 min | **0** |
+| problem 02, schema phase | 67.1 min | 12.9 min | **54.2 min** |
+| problem 01, whole run | 303 min | 266 min | 37 min |
+
+The server reports thirteen minutes of work on a request the client waited
+sixty-seven for, while the phase immediately before it had no gap at all. A one-token
+probe fired while the campaign was generating took **12.63 s**, which suggests oMLX
+serialises and that `total_time` starts when generation starts rather than when the
+request arrives. That does not account for fifty-four minutes.
+
+*Consequence, which is certain even though the cause is not:* **tokens per second as
+recorded is optimistic**, because it is computed from the server's figure. Campaign
+planning must use wall time. Problem 01 took 5h04 by the clock against the 4h26 its
+throughput implied.
+
+*Not yet done:* instrument the gap directly — timestamp the request leaving and the
+first byte arriving — rather than inferring it from two numbers that measure different
+spans.
+
 ## 5. What is not established
 
 - **One model, one machine.** Nothing here separates the model from this hardware.
