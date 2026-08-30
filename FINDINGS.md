@@ -45,6 +45,41 @@ and still useful:
 
 `ft-vitals` now samples load, GPU utilisation, what share the server is getting, and
 any process above 25% CPU; it flags one above 80%.
+
+**Then it was tested by intervening, mid-run.** Four displays became two, and the
+remaining ultrawide went from 240 Hz to 60 — cutting compositing from 3,089 to 1,224
+Mpx/s, a 60% reduction on the same GPU the model runs on.
+
+| | before | after |
+|---|--:|--:|
+| `omlx-server` CPU share | ~20% | **53%** |
+| WindowServer | 38.6% | 25.2% |
+| editor renderer | 16.3% | 6.0% |
+| **generation** | **4.0 tok/s** | **7.9 tok/s** |
+
+Roughly double, on the same problem, same phase type, same model. Still short of the
+10.5 measured when the machine was otherwise idle, so contention remains — but the
+mechanism is established rather than suspected.
+
+**A note on which number to watch.** The first indicator to move was WindowServer's
+CPU falling, and it was the wrong one: it dropped after two displays were removed
+while throughput had not yet changed at all. The share the *server* was getting was a
+better proxy, and still only a proxy. Only tokens per second settled it, and it took
+forty minutes to arrive. A criterion moving in the expected direction is not the
+result — which is the same trap this repository measures in models.
+
+### 1.4c The ceiling retry, validated in production
+
+The first real ceiling hit of the campaign fired it. Same file, same phase:
+
+| | output | wall | result |
+|---|--:|--:|---|
+| reasoning on | 16,384 (ceiling) | 40 min | deliberation; the extractor would have written a fragment |
+| **retry, reasoning off** | **1,873** | **3.9 min** | complete file, imports and class intact |
+
+Nine times fewer tokens for a better artifact, and it is the same file whose first
+attempt in the discarded run produced code beginning at `async processMessages()` with
+no class around it.
 **An earlier figure of 5.1 was wrong** — it was taken while the host was swapping, and
 it measured the swap file. Corrected here rather than deleted, because the mistake is
 the finding: throughput is not a property of the model alone.
