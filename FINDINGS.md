@@ -326,6 +326,37 @@ not check is a claim.
 clearest argument yet for the rule that the operator runs the deliverable's tests and
 reads what they actually assert, rather than trusting a green suite.
 
+### 1.6b The agent watching the campaign was loading the machine it was measuring
+
+A controlled test, because five earlier attributions in this file were made from proxy
+indicators and were wrong. Fifteen samples of WindowServer's CPU with the session
+quiet, then twelve while the agent produced heavy tool output into the IDE:
+
+| | median | mean | range |
+|---|--:|--:|---|
+| session quiet | **27.3%** | 29.7% | 22.6 – 42.3 |
+| agent producing output | **46.8%** | 45.9% | 36.0 – 49.3 |
+
+**+19.4 points**, with the ranges barely overlapping — 3 of 15 baseline samples reach
+the loaded condition's minimum.
+
+Two corrections follow, and neither is comfortable:
+
+- The "43–49% WindowServer" quoted repeatedly while diagnosing a slowdown was **not a
+  state**. Baseline is ~27%. Nearly every reading was taken immediately after dumping
+  output to the screen — **the measurement was measuring the act of measuring.**
+- The mystery being investigated for several turns did not exist. There was no
+  unexplained compositor load; there was an observer.
+
+*What survives:* the display intervention, because it was measured in tokens per
+second on the same phase of the same problem — 4.0 to 7.9 — not in compositor CPU.
+*What does not:* every sentence attributing that gain to WindowServer.
+
+*Changed:* check on a run infrequently and in as few tool calls as possible. The pilot
+already wrote the rule down — *a chat agent cannot supervise a run* — about memory.
+This is the same rule with a different mechanism, and it was violated for most of a
+session.
+
 ### 1.7 An unexplained gap between what the client waits and what the server counts
 
 Recorded as an open measurement, not a diagnosis.
