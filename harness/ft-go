@@ -278,9 +278,14 @@ def main():
         cmd = [str(RUNNER), "--label", label, "--instruction", "-", "--raw", str(raw)]
         if no_thinking:
             cmd += ["--no-thinking"]
-        if a.ignore_pressure and a.runner == "api":
-            # ft-go already gated once, at the top. Gating again per phase would
-            # abort a run midway on a transient spike, which loses the whole run.
+        if a.runner == "api":
+            # ft-go gates once, at the top, and that is the decision point. Gating
+            # again per phase abandons a run midway and leaves every remaining file
+            # empty -- observed on the campaign's first run, where ten consecutive
+            # phases refused and the run committed nothing but a plan. Pressure that
+            # appears mid-run is recorded (host.pressure_samples, and per request in
+            # host_pressure_at_send) and the run is marked not comparable. That is
+            # strictly more useful than no run.
             cmd += ["--ignore-pressure"]
         if system:
             cmd += ["--system", str(system)]

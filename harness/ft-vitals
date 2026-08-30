@@ -205,19 +205,23 @@ def verdict(sample):
                 f"It will load, and the first thing that pushes puts the host back "
                 f"where the server died")
     if srv.get("reachable") and srv.get("loaded"):
-        # The server reports its own accounting and says "loaded" either way. The
-        # host is the one that knows whether the weights are still in memory: when
-        # `wired` sits far below what the server thinks is resident, they have been
-        # compressed or swapped out, and the next request pays to bring 22 GiB back.
-        # This is the state that preceded the server dying, and it reads as healthy
-        # from the server alone.
+        # Whether the weights are still in memory. `wired` alone is NOT the signal,
+        # and treating it as one blocked ten consecutive phases of a real run:
+        # MLX wires memory only while the GPU is working, so between requests
+        # `wired` drops to a few GiB with nothing evicted at all.
+        #
+        # The evidence of eviction is the COMPRESSOR. Genuinely paged out, measured:
+        # wired 3.6 GiB, compressed 24.2 GiB. Healthy and idle, measured: wired 3.5
+        # GiB, compressed 1.6 GiB. The first figure is identical; only the second
+        # tells them apart.
         resident = srv.get("resident_gib") or 0
         wired = mem.get("wired_gib") or 0
-        if resident > 1 and wired < resident * 0.5:
+        compressed = mem.get("compressed_gib") or 0
+        if resident > 1 and compressed > resident * 0.5 and wired < resident * 0.5:
             reasons.append(
                 f"the model is loaded but paged out: the server holds {resident:.1f} GiB "
-                f"resident while the host has only {wired:.1f} GiB wired and "
-                f"{mem.get('compressed_gib')} GiB compressed. The next request "
+                f"resident while the host has {wired:.1f} GiB wired and "
+                f"{compressed:.1f} GiB sitting in the compressor. The next request "
                 f"decompresses the weights first. Unload it — ft-flush — and let it "
                 f"reload clean")
     if srv.get("reachable") and srv.get("loaded") and \
