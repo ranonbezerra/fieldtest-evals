@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""Run a model against many problems, unattended, recovering from what goes wrong.
+
+    ft-campaign                          variant a of every problem, in order
+    ft-campaign --variants a,b           a then b, every problem
+    ft-campaign --problems 01,02,09      only these
+    ft-campaign --dry-run                print the queue and spend nothing
+
+It is a loop around ft-go with the four things that decide whether an overnight run
+produces results or a directory of half-finished workspaces:
+
+**It waits for the host instead of failing on it.** Memory pressure here is transient
+-- an editor's plugin host balloons, a browser opens a heavy tab -- and a campaign that
+aborts on the first spike finishes nothing. It polls, and only gives up on a run after
+the host has been unusable for a long time.
+
+**It restarts the server.** oMLX has died under pressure and has also been found in a
+state where the process is up, the control socket refuses, and nothing listens. Both
+are recoverable by relaunching, and neither is worth a human waking up for.
+
+**It flushes between runs.** The server keeps KV between requests, and the weights can
+end up compressed out of memory while the server still reports them resident. One
+fourteen-second reload returns twenty-odd gigabytes.
+
+**It commits each run as it lands, and regenerates the results table.** A campaign that
+writes everything at the end loses everything when it is interrupted.
+
+It never resumes into a run directory that already has a workspace: those are artifacts.
+"""
+import argparse, json, os, re, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(os.environ["FT_ROOT"])
+HARNESS = ROOT / "harness"
+# The plan lives in CAMPAIGN.md and is written by hand; this is the record.
+LOG = ROOT / "CAMPAIGN-LOG.md"
+
+# How long to wait for a loaded host to settle before giving up on one run.
+SETTLE_POLL_S = 120
+SETTLE_MAX_S = 3600
+SERVER_BOOT_S = 90
+
+# Docker is needed to verify these, never to make them. Flagged, not skipped.
+NEEDS_DOCKER = {"16-migration-that-lied"}
+
+
+def say(m=""):
+    stamp = datetime.now(timezone.utc).strftime("%H:%M")
+    print(f"[{stamp}] {m}" if m else "", flush=True)
+
+
+def sh(cmd, timeout=600, cwd=None):
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
+        return p.returncode, (p.stdout or "") + (p.stderr or "")
+    except subprocess.TimeoutExpired:
+        return 124, "timed out"
+    except FileNotFoundError:
+        return 127, f"{cmd[0]}: not found"
+
+
+def server_up():
+    rc, _ = sh(["lsof", "-nP", "-iTCP:9050", "-sTCP:LISTEN"], timeout=30)
+    return rc == 0
+
+
+def restart_server():
+    """Relaunch oMLX. Covers both the crash and the hung-with-no-socket state."""
+    say("server not listening — relaunching oMLX")
+    sh(["pkill", "-f", "/Applications/oMLX.app/Contents/MacOS/oMLX"], timeout=60)
+    time.sleep(3)
+    sh(["pkill", "-9", "-f", "/Applications/oMLX.app/Contents/MacOS/oMLX"], timeout=60)
+    time.sleep(2)
+    sh(["open", "-a", "oMLX"], timeout=60)
+    for _ in range(SERVER_BOOT_S // 3):
+        time.sleep(3)
+        if server_up():
+            say("server back")
+            return True
+    say("server did not come back")
+    return False
+
+
+def vitals():
+    rc, out = sh([str(HARNESS / "ft-vitals"), "--json"], timeout=120)
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError:
+        return {}
+
+
+def wait_for_host():
+    """Poll until the machine can produce a comparable measurement, or time out."""
+    waited = 0
+    while True:
+        if not server_up() and not restart_server():
+            return False
+        v = vitals()
+        reasons = v.get("pressure") or []
+        if not reasons:
+            return True
+        # The model being loaded-but-paged-out is fixable here rather than waited out.
+        if any("paged out" in r for r in reasons):
+            say("model paged out — flushing")
+            sh([str(HARNESS / "ft-flush")], timeout=300)
+            continue
+        if waited >= SETTLE_MAX_S:
+            say(f"host still loaded after {waited // 60} min; running anyway and "
+                f"marking the run not comparable")
+            return "ignore"
+        say(f"host loaded ({reasons[0][:80]}) — waiting {SETTLE_POLL_S}s "
+            f"[{waited // 60}/{SETTLE_MAX_S // 60} min]")
+        time.sleep(SETTLE_POLL_S)
+        waited += SETTLE_POLL_S
+
+
+def already_done(prob, vslug, slug):
+    ws = prob / "runs" / slug / vslug / "workspace"
+    return ws.is_dir() and any(ws.rglob("*"))
+
+
+def append_log(row):
+    head = ("# Campaign log\n\nWritten by `harness/ft-campaign` as each run lands. "
+            "One row per run.\n\n"
+            "| finished (UTC) | problem | variant | outcome | wall | out tokens | tok/s | "
+            "revisions | files | comparable |\n"
+            "|---|---|:-:|---|--:|--:|--:|:-:|:-:|:-:|\n")
+    if not LOG.exists():
+        LOG.write_text(head)
+    with LOG.open("a") as f:
+        f.write(row + "\n")
+
+
+def summarise(prob, vslug, slug, rc):
+    meta = prob / "runs" / slug / vslug / "meta.yaml"
+    if not meta.is_file():
+        return (f"| {datetime.now(timezone.utc):%Y-%m-%d %H:%M} | {prob.name} | {vslug[-1]} "
+                f"| **no meta** (exit {rc}) | – | – | – | – | – | – |")
+    d = json.loads(meta.read_text())
+    t = d.get("throughput", {})
+    h = d.get("host", {})
+    fails = d.get("failures", [])
+    empty = d.get("files_empty", [])
+    outcome = "ok" if not fails else f"**{len(fails)} failure(s)**: {fails[0]['reason'][:60]}"
+    comparable = "no" if h.get("pressure_samples") else "yes"
+    return (f"| {d.get('date','')[:16].replace('T',' ')} | {prob.name} | {vslug[-1]} "
+            f"| {outcome} | {d.get('wall_minutes')} min "
+            f"| {d.get('tokens',{}).get('completion_total')} "
+            f"| {t.get('output_tokens_per_second_overall')} "
+            f"| {d.get('revisions',{}).get('self_repairs')} "
+            f"| {d.get('files_declared',0) - len(empty)}/{d.get('files_declared',0)} "
+            f"| {comparable} |")
+
+
+def commit(prob, vslug, rc):
+    sh([str(HARNESS / "ft-results"), "--write"], timeout=120)
+    sh(["git", "add", "-A"], cwd=ROOT, timeout=300)
+    msg = (f"run: {prob.name} {vslug}\n\n"
+           f"Produced by harness/ft-campaign. The workspace is the code exactly as the "
+           f"model left it; it is never edited after the run. Telemetry in meta.yaml, "
+           f"every request with its reasoning in steps/, the row in CAMPAIGN.md.\n\n"
+           f"ft-go exit {rc}.\n\n"
+           f"Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>")
+    rc2, out = sh(["git", "commit", "-q", "-m", msg], cwd=ROOT, timeout=300)
+    if rc2 == 0:
+        sh(["git", "push", "-q", "origin", "main"], cwd=ROOT, timeout=600)
+        say("committed and pushed")
+    else:
+        say(f"nothing to commit ({out.strip()[:60]})")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--variants", default="a")
+    ap.add_argument("--problems", default="")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--max-hours", type=float, default=0, help="0 means no limit")
+    a = ap.parse_args()
+
+    model = os.environ.get("OMLX_MODEL", "unknown").removeprefix("openai/")
+    slug = re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9.-]", "-", model.lower())).strip("-")
+
+    wanted = [p.strip() for p in a.problems.split(",") if p.strip()]
+    problems = [p for p in sorted((ROOT / "problems").iterdir())
+                if p.is_dir() and (not wanted or any(p.name.startswith(w) for w in wanted))]
+
+    queue = [(p, f"variant-{v.strip()}") for v in a.variants.split(",")
+             for p in problems if (p / "variants" / f"variant-{v.strip()}.md").is_file()]
+    todo = [(p, v) for p, v in queue if not already_done(p, v, slug)]
+
+    say(f"model {model}")
+    say(f"queue {len(queue)} run(s), {len(queue) - len(todo)} already done, {len(todo)} to run")
+    for p, v in todo:
+        flag = "  [needs Docker to verify]" if p.name in NEEDS_DOCKER else ""
+        say(f"  {p.name} {v}{flag}")
+    if a.dry_run:
+        return 0
+
+    started = time.time()
+    done = 0
+    for prob, vslug in todo:
+        if a.max_hours and (time.time() - started) / 3600 > a.max_hours:
+            say(f"reached --max-hours {a.max_hours}; stopping cleanly")
+            break
+
+        say("")
+        say(f"=== {prob.name} {vslug}  ({done + 1}/{len(todo)}) ===")
+        state = wait_for_host()
+        if state is False:
+            say("cannot reach a server; stopping")
+            break
+
+        sh([str(HARNESS / "ft-flush"), "--if-above", "26"], timeout=300)
+
+        cmd = [str(HARNESS / "ft-go"), prob.name, vslug[-1]]
+        if state == "ignore":
+            cmd.append("--ignore-pressure")
+        rc, out = sh(cmd, timeout=6 * 3600)
+        for line in out.splitlines():
+            if line.strip():
+                print("   " + line, flush=True)
+
+        append_log(summarise(prob, vslug, slug, rc))
+        commit(prob, vslug, rc)
+        done += 1
+
+    say("")
+    say(f"campaign finished: {done} run(s) in {(time.time() - started) / 3600:.1f} h")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
