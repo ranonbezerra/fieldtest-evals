@@ -7,61 +7,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
-  id             String    @id
-  settledBalance BigInt    @map("settled_balance")
-  reservedAmount BigInt    @map("reserved_amount")
-  createdAt      DateTime  @default(now()) @map("created_at")
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
 
-  payouts        Payout[]
-  ledgerEntries  LedgerEntry[]
+enum MessageStatus {
+  PENDING
+  PROCESSING
+  DONE
+  DEAD
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+model Account {
+  id             String   @id @default(cuid()) @map("id")
+  settledBalance BigInt   @default(0) @map("settled_balance")
+  reservedAmount BigInt   @default(0) @map("reserved_amount")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  payouts Payout[]
 
   @@map("accounts")
 }
 
 model Payout {
-  id                 String    @id @default(uuid())
-  accountId          String    @map("account_id")
-  amount             BigInt
-  destinationAddress String    @map("destination_address")
-  idempotencyKey     String    @unique @map("idempotency_key")
-  status             String
-  txHash             String?   @map("tx_hash")
-  attempts           Int       @default(0) @map("attempts")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  id                 String       @id @default(cuid()) @map("id")
+  account            Account      @relation(fields: [accountId], references: [id])
+  accountId          String       @map("account_id")
+  amount             BigInt       @map("amount")
+  destinationAddress String       @map("destination_address")
+  status             PayoutStatus @default(CREATED) @map("status")
+  txHash             String?      @map("tx_hash")
+  attempts           Int          @default(0) @map("attempts")
+  lastError          String?      @map("last_error")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  processedAt        DateTime?    @map("processed_at")
+  completedAt        DateTime?    @map("completed_at")
 
-  account            Account   @relation(fields: [accountId], references: [id])
-  ledgerEntries      LedgerEntry[]
-  message            Message?
+  message PayoutMessage?
 
   @@map("payouts")
 }
 
-model LedgerEntry {
-  id        String   @id @default(uuid())
-  payoutId  String?  @map("payout_id")
-  accountId String   @map("account_id")
-  type      String
-  amount    BigInt
-  createdAt DateTime @default(now()) @map("created_at")
+model PayoutMessage {
+  id             String        @id @default(cuid()) @map("id")
+  payout         Payout        @relation(fields: [payoutId], references: [id])
+  payoutId       String        @unique @map("payout_id")
+  accountId      String        @map("account_id")
+  idempotencyKey String        @map("idempotency_key")
+  status         MessageStatus @default(PENDING) @map("status")
+  attempts       Int           @default(0) @map("attempts")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  claimedAt      DateTime?     @map("claimed_at")
 
-  payout    Payout?  @relation(fields: [payoutId], references: [id])
-  account   Account  @relation(fields: [accountId], references: [id])
-
-  @@map("ledger_entries")
+  @@unique([accountId, idempotencyKey], map: "uq_messages_account_idem")
+  @@map("payout_messages")
 }
 
-model Message {
-  id        String    @id @default(uuid())
-  payoutId  String    @unique @map("payout_id")
-  status    String
-  attempts  Int       @default(0) @map("attempts")
-  lastError String?   @map("last_error")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+model LedgerEntry {
+  id        String          @id @default(cuid()) @map("id")
+  accountId String          @map("account_id")
+  payoutId  String          @map("payout_id")
+  direction LedgerDirection @map("direction")
+  amount    BigInt          @map("amount")
+  createdAt DateTime        @default(now()) @map("created_at")
 
-  payout    Payout    @relation(fields: [payoutId], references: [id])
-
-  @@map("messages")
+  @@map("ledger_entries")
 }

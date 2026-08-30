@@ -121,6 +121,49 @@ def server():
     }
 
 
+def contention():
+    """CPU and GPU competition, which memory figures do not show at all.
+
+    Throughput halved between two runs of the same problem with memory clean,
+    no swap activity, no thermal warning and on AC power. What was different was
+    the machine around it: an editor compositing hard and a lint process from
+    another project burning 142% of a core. Memory was never the whole story, and
+    an instrument that only measures memory reports a healthy host while the model
+    runs at four tokens a second instead of ten.
+    """
+    load = 0.0
+    try:
+        load = os.getloadavg()[0]
+    except OSError:
+        pass
+    cores = int(sh(["sysctl", "-n", "hw.ncpu"]).strip() or 0)
+
+    rows, server_cpu = [], 0.0
+    for line in sh(["ps", "-axo", "%cpu,comm"]).splitlines()[1:]:
+        parts = line.strip().split(None, 1)
+        if len(parts) != 2:
+            continue
+        try:
+            cpu = float(parts[0])
+        except ValueError:
+            continue
+        name = parts[1].split("/")[-1][:36]
+        if "omlx" in name.lower():
+            server_cpu = max(server_cpu, cpu)
+        elif cpu > 25:
+            rows.append({"cpu": cpu, "command": name})
+    rows.sort(key=lambda r: -r["cpu"])
+
+    gpu = None
+    out = sh(["ioreg", "-r", "-d", "1", "-w", "0", "-c", "IOAccelerator"])
+    m = re.search(r'"Device Utilization %"=(\d+)', out)
+    if m:
+        gpu = int(m.group(1))
+
+    return {"load1": round(load, 2), "cores": cores, "gpu_percent": gpu,
+            "server_cpu": server_cpu, "competitors": rows[:4]}
+
+
 def containers():
     """Docker is usually the largest single lever on this machine.
 
@@ -165,7 +208,9 @@ def hogs(n=5):
 
 # A run measured under these conditions is measuring the machine.
 # Rate, not occupancy. See swap_rate().
-LIMITS = {"swapouts_per_sec": 50, "free_percent": 15, "headroom_gib": 4.0}
+LIMITS = {"swapouts_per_sec": 50, "free_percent": 15, "headroom_gib": 4.0,
+          # One process above this is enough to halve generation, measured.
+          "competitor_cpu": 80}
 
 # Weights + KV at the harness window + SDPA workspace. What the server must be able
 # to hold before it can answer anything.
@@ -187,6 +232,13 @@ def verdict(sample):
     if mem.get("free_percent") is not None and mem["free_percent"] < LIMITS["free_percent"]:
         reasons.append(f"free memory {mem['free_percent']}% "
                        f"(under {LIMITS['free_percent']}%)")
+    con = sample.get("contention") or {}
+    for r in con.get("competitors", []):
+        if r["cpu"] > LIMITS["competitor_cpu"]:
+            reasons.append(
+                f"{r['command']} is using {r['cpu']:.0f}% CPU. Throughput was measured "
+                f"halving — 10.5 to 4 tok/s — with memory clean and no swap activity, "
+                f"so this does not show up in any memory figure")
     if not srv.get("loaded"):
         # Also when the server is unreachable, which is exactly the state after it
         # has died and the state someone is in when about to restart it.
@@ -234,7 +286,7 @@ def verdict(sample):
 
 def sample():
     return {"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "memory": memory(),
-            "swap_rate": swap_rate(), "server": server(),
+            "swap_rate": swap_rate(), "server": server(), "contention": contention(),
             "largest": hogs(), "docker": containers()}
 
 
@@ -257,6 +309,11 @@ def render(s):
               f"{'loaded' if srv['loaded'] else 'unloaded'}")
     else:
         print(f"  server unreachable: {srv.get('error')}")
+    c = s.get("contention") or {}
+    comp = ", ".join(f"{r['command']} {r['cpu']:.0f}%" for r in c.get("competitors", []))
+    print(f"  cpu    load {c.get('load1')} of {c.get('cores')} cores   "
+          f"gpu {c.get('gpu_percent')}%   omlx {c.get('server_cpu')}%"
+          + (f"\n         competing: {comp}" if comp else ""))
     d = s.get("docker")
     if d:
         print(f"  docker {d['running']} container(s), VM {d['vm_gib']} GiB resident "

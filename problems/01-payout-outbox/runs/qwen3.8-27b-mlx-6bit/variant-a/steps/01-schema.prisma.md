@@ -3,144 +3,168 @@
 ## reasoning
 
 ```
-We need answer user's request: write exactly one file prisma/schema.prisma complete fenced block nothing else. Need follow plan. Need think in English? User request English. Need produce final only code block.
+We need answer user's request: write exactly one file prisma/schema.prisma based on PLAN.md. Need produce fenced code block only. Need reason in same language as user's request (English). Need ensure schema matches plan exactly. Let's analyze plan.
 
-We need construct Prisma schema per plan. Stack: TypeScript, NestJS, Prisma, PostgreSQL. ESM irrelevant. Conventions: table/column snake_case via @map/@@map. Need all tables, columns, relations, @@map.
+We need produce Prisma schema with datasource, generator? Plan says Prisma schema + migration. File: prisma/schema.prisma. Need include generator client, datasource db postgresql url env("DATABASE_URL"). Model names? Plan says tables mapped snake_case. It lists **`accounts`** (`@@map("accounts")`) etc. Prisma model names likely PascalCase? Convention: Class PascalCase, table snake_case via @@map. For models, likely Account, Payout, PayoutMessage, LedgerEntry? Need infer. Plan uses model names lowercase in bullets but says @@map. We need choose defensible: Prisma convention PascalCase model names; map to snake_case tables. But plan says "accounts" (`@@map("accounts")`) maybe model name accounts? In Prisma model names are PascalCase generally but can be any identifier? Usually model Account. Need align with plan: It says Table and column snake_case via @map/@@map. So model names probably PascalCase. But plan's section 2 headings: **`accounts`** (`@@map("accounts")`). It might mean table name. Use model Account @@@map? Actually @@map("accounts"). Similarly Payout, PayoutMessage, LedgerEntry.
 
-Plan data model:
-- datasource db? Need include generator and datasource? A complete schema.prisma must have generator client and datasource. Plan says all tables etc. Should include.
-- provider = "postgresql"
-- url = env("DATABASE_URL")
-
-Models:
-Account? Plan says accounts @@map. id String PK, settled_balance BigInt @map("settled_balance"), reserved_amount BigInt @map("reserved_amount"), created_at DateTime default now.
-Need relation to payouts? Plan says payouts account_id FK accounts.id. ledger_entries account_id FK. Could include relations. Need decide field names. Prisma model names PascalCase: Account, Payout, LedgerEntry, Message. Table map snake_case.
-Fields:
-model Account {
-  id String @id
-  settledBalance BigInt @map("settled_balance")
-  reservedAmount BigInt @map("reserved_amount")
-  createdAt DateTime @default(now()) @map("created_at")
-  payouts Payout[]
-  ledgerEntries LedgerEntry[]
-}
-
-But plan's repository getAccount returns Account. Prisma generated type Account includes relations maybe okay.
+Need fields exactly:
+Account:
+- id String @id @default(cuid()) @map("id")? They say `id: String @id @default(cuid())` — `@map("id")`. In Prisma, mapping id to id unnecessary but can include. Need include? Plan says @map("id"). We can include for all fields to be explicit. But if model field id maps id, okay.
+- settledBalance BigInt @default(0) @map("settled_balance")
+- reservedAmount BigInt @default(0) @map("reserved_amount")
+- createdAt DateTime @default(now()) @map("created_at")
 
 Payout:
-id String @id (uuid? Plan says PK uuid but Prisma can use @default(uuid())? Should we add default? Plan: id String, PK (uuid). Could use @default(uuid()) to generate. But if repository createPayoutWithMessage maybe passes id? Plan doesn't specify id generation in code. Could use @default(uuid()) to be safe. But if tests create directly with id? Not relevant. Need maybe cuid? Plan says uuid. Use @default(uuid()).
-accountId String @map("account_id")
-amount BigInt
-destinationAddress String @map("destination_address")
-idempotencyKey String @unique @map("idempotency_key")
-status String
-txHash String? @map("tx_hash")
-attempts Int @default(0) @map("attempts")
-createdAt DateTime @default(now()) @map("created_at")
-updatedAt DateTime @updatedAt @map("updated_at")
-account Account @relation(fields: [accountId], references: [id])
-ledgerEntries LedgerEntry[]
-message Message? // one-to-one unique
+- id String @id @default(cuid()) @map("id")
+- accountId String @map("account_id"), relation to accounts. Need relation attribute? Prisma requires relation if foreign key? We can define relation fields: account Account @relation(fields: [accountId], references: [id])? Plan says relation to accounts. Should include. In PayoutMessage also relation to payouts and maybe account? It says payoutId @unique, relation to payouts; accountId String. Could include account relation too? Plan only says relation to payouts for payoutId, accountId is string. But if PayoutMessage has accountId and maybe relation? It says `payoutId: String @unique` — `@map("payout_id")`, relation to `payouts`; `accountId: String` — `@map("account_id")`. It doesn't explicitly say relation to accounts for message. But we can add account relation? Need not over-add? It says implement exactly plan. Adding relation fields might be okay if implied by accountId? But "Do not add ... feature". Relations are schema structure. Plan says relation to accounts for payout.accountId, relation to payouts for message.payoutId. For ledger_entries: accountId, payoutId; plan doesn't explicitly mention relations but double-entry. Could include relations? Need decide.
 
-Need maybe index on status? Not specified. Do not add extra? Plan says all tables columns relations @@map. Could add indexes if plan? It doesn't mention indexes besides unique idempotencyKey and message payout_id unique. Avoid extra features? Indexes are schema but not requested. Maybe no indexes except unique.
+Prisma schema with BigInt and enums. Need unique index on PayoutMessage: @@unique([accountId, idempotencyKey], map: "uq_messages_account_idem"). Also payoutId @unique.
 
-LedgerEntry:
-id String @id @default(uuid())
-payoutId String? @map("payout_id")
-accountId String @map("account_id")
-type String
-amount BigInt
-createdAt DateTime @default(now()) @map("created_at")
-payout Payout? @relation(fields: [payoutId], references: [id])
-account Account @relation(fields: [accountId], references: [id])
+Enum PayoutStatus: CREATED, PROCESSING, SENT, COMPLETED, FAILED, NEEDS_REVIEW. In Prisma enum values can be uppercase. Map? Not specified. Use as is.
+MessageStatus: PENDING, PROCESSING, DONE, DEAD.
+LedgerDirection: CREDIT, DEBIT.
 
-Message:
-id String @id @default(uuid())
-payoutId String @unique @map("payout_id")
-status String
-attempts Int @default(0) @map("attempts")
-lastError String? @map("last_error")
-createdAt DateTime @default(now()) @map("created_at")
-updatedAt DateTime @updatedAt @map("updated_at")
-payout Payout @relation(fields: [payoutId], references: [id])
+Need migrations? Only schema file requested. No migration file.
 
-Need @@map:
-Account @@map("accounts")
-Payout @@map("payouts")
-LedgerEntry @@map("ledger_entries")
-Message @@map("messages")
+Need consider Prisma relation names and back-relations. If we add account relation in Payout, need Account has payouts Payout[]. If PayoutMessage has payout relation, Payout has message PayoutMessage? Since payoutId unique one-to-one. Could include. But plan only says relation to payouts. Adding back-relations is necessary in Prisma if using relation fields. If we don't add relation fields, just foreign key columns without relation? Prisma allows plain scalar FK without relation. But plan says "relation to accounts". In Prisma, relation is via `account Account @relation(...)`. That requires back-relation. Could be considered part of implementing relation. Need include minimal relations to satisfy.
 
-Potential issue BigInt in Prisma with PostgreSQL: supported. Need maybe @db.BigInt? For BigInt default is native bigint? In Prisma, BigInt maps to BIGINT. No need @db.BigInt but can add. If add @db.BigInt, okay. But plan says BIGINT/Postgres bigint. Could add for explicitness. But if using @default? no.
+Need think about schema validity with BigInt and defaults. Prisma supports BigInt @default(0). Yes.
 
-Need generator client provider maybe "prisma-client-js". Complete schema:
-generator client {
-  provider = "prisma-client-js"
+Need datasource:
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+Need maybe previewFeatures? Not needed.
+
+Potential issue: Model names and @@map: If model Account @@@? Actually attribute is @@map. Use `model Account { ... @@map("accounts") }`.
+
+Need columns mapping: For each field include @map. Plan explicitly says id @map("id") etc. We can include all.
+
+Need unique constraints: PayoutMessage payoutId @unique maps payout_id. Add @@unique([accountId, idempotencyKey], map: "uq_messages_account_idem"). Also maybe @@index? Not in plan. Don't add.
+
+Need relation fields:
+Option 1:
+model Account {
+ id String @id @default(cuid()) @map("id")
+ settledBalance BigInt @default(0) @map("settled_balance")
+ reservedAmount BigInt @default(0) @map("reserved_amount")
+ createdAt DateTime @default(now()) @map("created_at")
+ payouts Payout[]
+ messages PayoutMessage[]? If message has account relation. But plan doesn't say message relation to account. Ledger entries? Could have ledgerEntries LedgerEntry[] if relation.
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+model Payout {
+ id String @id @default(cuid()) @map("id")
+ account Account @relation(fields: [accountId], references: [id])
+ accountId String @map("account_id")
+ amount BigInt @map("amount")
+ destinationAddress String @map("destination_address")
+ status PayoutStatus @default(CREATED) @map("status")
+ txHash String? @map("tx_hash")
+ attempts Int @default(0) @map("attempts")
+ lastError String? @map("last_error")
+ createdAt DateTime @default(now()) @map("created_at")
+ processedAt DateTime? @map("processed_at")
+ completedAt DateTime? @map("completed_at")
+ message PayoutMessage? // one-to-one because payoutId unique
+ ledgerEntries LedgerEntry[]? if relation
 }
 
-Need ensure no enums because plan uses String statuses. Good.
+model PayoutMessage {
+ id String @id @default(cuid()) @map("id")
+ payout Payout @relation(fields: [payoutId], references: [id])
+ payoutId String @unique @map("payout_id")
+ accountId String @map("account_id")
+ idempotencyKey String @map("idempotency_key")
+ status MessageStatus @default(PENDING) @map("status")
+ attempts Int @default(0) @map("attempts")
+ createdAt DateTime @default(now()) @map("created_at")
+ claimedAt DateTime? @map("claimed_at")
+}
 
-Potential relation naming: Payout has message Message? and ledgerEntries LedgerEntry[]. LedgerEntry payout relation optional. Message payout relation required. Need unique on message payoutId. If Payout.message is optional one-to-one, Prisma requires relation on Message side with unique field. Good.
+model LedgerEntry {
+ id String @id @default(cuid()) @map("id")
+ account Account @relation(fields: [accountId], references: [id])? if add relation
+ accountId String @map("account_id")
+ payout Payout @relation(fields: [payoutId], references: [id])? if add relation
+ payoutId String @map("payout_id")
+ direction LedgerDirection @map("direction")
+ amount BigInt @map("amount")
+ createdAt DateTime @default(now()) @map("created_at")
+}
 
-Need account relation fields. For LedgerEntry, both payout and account. Payout has ledgerEntries. Account has payouts and ledgerEntries.
+But adding ledger entry relations not explicitly in plan? It says double-entry ledger, account's settled balance; fields accountId, payoutId. It doesn't say relation to accounts/payouts. But if we add account and payout relations, need back-relations. Is that "add feature"? Relations are not features; but plan only named relation for payout.accountId and message.payoutId. Could avoid relations except those specified to minimize. But if we specify `account Account @relation(...)` for Payout, need back relation in Account. That's okay. For LedgerEntry, we can leave plain accountId/payoutId no relation. For PayoutMessage, plan says relation to payouts, so include payout relation and back message in Payout. Does it also require account relation? It only says accountId String; no relation. But maybe because unique (accountId, idempotencyKey), no FK needed. We can leave accountId plain in message. However if Payout has account relation, message could have account relation optional but not necessary.
 
-Need consider plan says ledger_entries payout_id String? FK -> payouts.id, account_id FK. Good.
+Need check Prisma one-to-one relation: Payout.message PayoutMessage? and PayoutMessage.payout Payout @relation(fields: [payoutId], references: [id]). Since payoutId unique, Prisma infers one-to-one? If Payout side `message PayoutMessage?` optional. Good.
 
-Potential issue: Payout.message relation with optional on Payout side and Message required. In Prisma, one-to-one optional can be indicated by `message Message?` on Payout side. The required side is Message with payoutId @unique. Good.
+Need if Account has payouts Payout[] and Payout.account relation. If LedgerEntry no relation, no back.
 
-Need maybe `onUpdate`/`onDelete`? Not specified. Avoid extra. But FK constraints default. Could be okay.
+Could also include `@@map` for enums? Not needed.
 
-Need maybe `created_at` on ledger_entries only. Yes.
+Need consider field order: plan lists fields in order. Use same order. For relations, where place? Usually after scalar or before. For Payout: plan lists accountId relation to accounts. We can put `account Account @relation(fields: [accountId], references: [id])` after accountId or before. It doesn't matter. Need keep fields? Could include relation field not in plan? It is necessary for relation. But "Do not add an export, a feature or a file the plan does not name." Relation field maybe not named but relation is. Fine.
 
-Need maybe account `reserved_amount` default? Plan doesn't specify default but balance likely 0. Should we add @default(0)? Plan: reserved_amount BigInt — held by in-flight payouts. It doesn't explicitly say default. But for accounts, initial balance? It says settled_balance BigInt — confirmed spendable funds; reserved_amount BigInt. Could have default(0) for both? Data model didn't mention defaults except created_at. Should we add default 0? It is defensible and safe. But instruction: implement exactly plan. If plan didn't specify default, adding may be extra? Defaults are column attributes. Could be considered necessary for account creation. But tests may create account with balances. If no default, must provide values. Not harmful? The plan says all columns; defaults not specified except created_at. It explicitly says `attempts Int, default 0`. For balances no default. To be exact, omit defaults for settled_balance and reserved_amount? But a real schema often default 0. However if account creation in tests or app requires explicit. The plan doesn't name an account creation endpoint. It may be seeded. If no default, inserting account requires values, okay. Adding default 0 could deviate but likely acceptable. Need choose most defensible. Since plan says "settled_balance BigInt — confirmed, spendable funds" no default. I'd omit defaults to exactly plan. But if DB migration creates accounts, maybe need default 0. Yet no account creation in API. The plan's manifest only schema. I'd maybe add @default(0) because balances should start zero and safe. But "Do not add a feature or file plan does not name" not about defaults. Still, exactness: include only specified columns and constraints. Defaults are constraints. It specified default for attempts and created_at. So omit balance defaults.
+Need maybe use `String` for BigInt? No, plan says BigInt.
 
-Need maybe `id` default uuid? Plan says PK (uuid). That implies generated uuid. Include @default(uuid()). For message and ledger entries too. Good.
+Potential issue with Prisma and `@default(0)` for BigInt: In Prisma, default for BigInt must be integer literal? Yes `@default(0)` works.
 
-Need maybe `updatedAt` default? @updatedAt handles. Plan says updated_at DateTime for payouts and messages. Include.
+Potential issue: `cuid()` default in Prisma is okay. Could use `cuid(2)`? Plan says cuid(). Use exactly.
 
-Potential issue with Prisma reserved word? `type` is okay.
+Potential issue: Need map table names: `@@map("accounts")`, `@@map("payouts")`, `@@map("payout_messages")`, `@@map("ledger_entries")`.
 
-Need final only fenced block. Ensure no explanation. Could use ```prisma.
+Potential issue: Need map unique index name exactly "uq_messages_account_idem". Use `map: "uq_messages_account_idem"`.
 
-Double-check plan: "Table and column: snake_case (via Prisma @map/@@map)." We map all non-id? id column can be id. For fields with underscores map. Good.
+Potential issue: Need enum names maybe map? Not specified. Use as is.
 
-Potential issue: `@map` on `id`? Not needed, column id. If want snake_case no.
+Need maybe include `relation` attributes with map? No.
 
-Potential issue: Prisma model `Message` might conflict with global? okay.
+Need maybe add `@@index([status])` for pending messages? Not in plan. Do not add.
 
-Need maybe include comments? Not necessary. Could include minimal. But final content complete.
+Need maybe add `@@index([accountId, status])`? No.
 
-Let's think if plan requires "relations" explicitly: account_id FK, payout_id FK, ledger account. We include.
-
-Potential issue: In Prisma, for one-to-one optional Payout.message, if Message.payoutId unique, the optional side can be `message Message?`. Good.
-
-Potential issue: If Payout has `ledgerEntries LedgerEntry[]` and LedgerEntry has `payout Payout?`, relation name default. Good.
-
-Potential issue: If Account has both payouts and ledgerEntries, no relation names needed.
-
-Need maybe `@@index` for payout status? Not in plan. No.
-
-Need maybe `@@unique([accountId, idempotencyKey])`? Plan says idempotency key globally unique. So only @unique on idempotencyKey.
-
-Need maybe message payout_id unique yes.
-
-Need maybe ledger entry type values? String.
-
-Need maybe BigInt @db.BigInt. If include, migration uses BIGINT. Without, also BIGINT. Could include for explicitness. But if provider postgresql, BigInt maps to BIGINT by default. Adding @db.BigInt okay. But if plan says via Prisma, no need. I might omit to keep simple.
-
-Need ensure ESM? irrelevant.
-
-Potential hidden requirement: "Every schema change ships with a migration" but only schema file requested. No migration.
-
-Now final. But need maybe include `// ASSUMPTION` if unresolved? I don't think any. Could there be ambiguity about account balance defaults? We can choose no default. No need assumption? If we choose no default, plan didn't specify. But if truly absent, maybe mark? The instruction says if symbol genuinely absent from plan and references, do not guess: write most defensible and mark with ASSUMPTION. Here symbol not absent, just default unspecified. Not necessary.
+Need maybe include `onUpdate`/`onDelete`? Not specified. Avoid.
 
 Need maybe include `previewFeatures = ["postgresqlExtensions"]`? No.
 
-Let's draft:
+Need maybe include comments? Could include minimal comments? User asks complete file. Comments okay but not necessary. Plan says code and comments English. We can omit comments to avoid extra. But maybe include no comments.
+
+Need final only fenced block with schema. Ensure no explanation.
+
+Let's consider if model names should be lowercase as plan headings? Prisma model names can be lowercase but convention PascalCase. The codebase conventions: Class: PascalCase. Prisma models are not classes but often PascalCase. Use PascalCase.
+
+Need ensure no missing relation back if using Payout.account and PayoutMessage.payout. Account must have `payouts Payout[]`. Payout must have `message PayoutMessage?`.
+
+What about PayoutMessage.accountId plain but unique with idempotencyKey. No FK. That's okay. But if Account has `messages PayoutMessage[]` not needed. Avoid.
+
+What about LedgerEntry plain accountId/payoutId, no FK. That's okay. But maybe the plan says "payoutId" relation? It doesn't. It says account's settled balance changes only when provider confirms; ledger entries per side. Could leave plain.
+
+Need think if Prisma requires relation field names not conflict with scalar fields? If Payout has `account Account` and `accountId String`, fine. PayoutMessage has `payout Payout` and `payoutId String`, fine.
+
+Could there be a problem with one-to-one optional relation where PayoutMessage.payout is required and Payout.message optional. Since payoutId unique and non-null, every message has a payout. Good.
+
+Need maybe add `@relation` on Payout.message? In one-to-one, only one side needs fields. PayoutMessage has fields. Payout.message can be `PayoutMessage?` without @relation. Good.
+
+Need maybe add `@relation` on Account.payouts? No, Payout.account has fields.
+
+Need maybe add `@@unique` on PayoutMessage with map: In Prisma syntax:
+`@@unique([accountId, idempotencyKey], map: "uq_messages_account_idem")`
+Yes.
+
+Need maybe add `@@index([payoutId])`? payoutId @unique creates index.
+
+Need maybe include `status PayoutStatus @default(CREATED)` etc.
+
+Need maybe include `lastError String?` maps last_error.
+
+Need maybe include `txHash String?` maps tx_hash.
+
+Potential issue: Prisma enum values cannot contain hyphens; NEEDS_REVIEW okay.
+
+Need maybe include `provider = "prisma-client-js"` in generator. Since NestJS + Prisma, yes.
+
+Need maybe include `url = env("DATABASE_URL")`. Yes.
+
+Now final content:
+```prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -150,70 +174,151 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
-  id             String    @id
-  settledBalance BigInt    @map("settled_balance")
-  reservedAmount BigInt    @map("reserved_amount")
-  createdAt      DateTime  @default(now()) @map("created_at")
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
 
-  payouts        Payout[]
-  ledgerEntries  LedgerEntry[]
+enum MessageStatus {
+  PENDING
+  PROCESSING
+  DONE
+  DEAD
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+model Account {
+  id             String   @id @default(cuid()) @map("id")
+  settledBalance BigInt   @default(0) @map("settled_balance")
+  reservedAmount BigInt   @default(0) @map("reserved_amount")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  payouts Payout[]
 
   @@map("accounts")
 }
 
 model Payout {
-  id                String    @id @default(uuid())
-  accountId         String    @map("account_id")
-  amount            BigInt
-  destinationAddress String   @map("destination_address")
-  idempotencyKey    String    @unique @map("idempotency_key")
-  status            String
-  txHash            String?   @map("tx_hash")
-  attempts          Int       @default(0) @map("attempts")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id                 String       @id @default(cuid()) @map("id")
+  account            Account      @relation(fields: [accountId], references: [id])
+  accountId          String       @map("account_id")
+  amount             BigInt       @map("amount")
+  destinationAddress String       @map("destination_address")
+  status             PayoutStatus @default(CREATED) @map("status")
+  txHash             String?      @map("tx_hash")
+  attempts           Int          @default(0) @map("attempts")
+  lastError          String?      @map("last_error")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  processedAt        DateTime?    @map("processed_at")
+  completedAt        DateTime?    @map("completed_at")
 
-  account           Account   @relation(fields: [accountId], references: [id])
-  ledgerEntries     LedgerEntry[]
-  message           Message?
+  message PayoutMessage?
 
   @@map("payouts")
 }
 
-model LedgerEntry {
-  id         String    @id @default(uuid())
-  payoutId   String?   @map("payout_id")
-  accountId  String    @map("account_id")
-  type       String
-  amount     BigInt
-  createdAt  DateTime  @default(now()) @map("created_at")
+model PayoutMessage {
+  id               String        @id @default(cuid()) @map("id")
+  payout           Payout        @relation(fields: [payoutId], references: [id])
+  payoutId         String        @unique @map("payout_id")
+  accountId        String        @map("account_id")
+  idempotencyKey   String        @map("idempotency_key")
+  status           MessageStatus @default(PENDING) @map("status")
+  attempts         Int           @default(0) @map("attempts")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  claimedAt        DateTime?     @map("claimed_at")
 
-  payout     Payout?   @relation(fields: [payoutId], references: [id])
-  account    Account   @relation(fields: [accountId], references: [id])
+  @@unique([accountId, idempotencyKey], map: "uq_messages_account_idem")
+  @@map("payout_messages")
+}
+
+model LedgerEntry {
+  id        String          @id @default(cuid()) @map("id")
+  accountId String          @map("account_id")
+  payoutId  String          @map("payout_id")
+  direction LedgerDirection @map("direction")
+  amount    BigInt          @map("amount")
+  createdAt DateTime        @default(now()) @map("created_at")
 
   @@map("ledger_entries")
 }
+```
 
-model Message {
-  id         String    @id @default(uuid())
-  payoutId   String    @unique @map("payout_id")
-  status     String
-  attempts   Int       @default(0) @map("attempts")
-  lastError  String?   @map("last_error")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
+Need check alignment not important.
 
-  payout     Payout    @relation(fields: [payoutId], references: [id])
+Could there be a requirement for `id` @map("id")? Yes included.
 
-  @@map("messages")
-}
+Need consider if Prisma model field `account` relation and `accountId` scalar order: In Prisma, list of fields in @relation can be before or after. Good.
 
-Check formatting. Good.
+Need consider if `PayoutMessage.payout` required relation with `payoutId @unique`; if Payout.message optional, okay. But because PayoutMessage.payout is required, every message must have payout. Good.
 
-Could there be issue with `BigInt` and `@db.BigInt` not included? no.
+Need consider if `Payout.account` required relation; Payout.accountId non-null. Good.
 
-Need final fenced block only. Ensure no trailing explanation.
+Need consider if `Account.payouts` list optional? It's required type Payout[] (empty allowed). Good.
+
+Potential hidden issue: Prisma does not allow `@default(0)` for BigInt in some versions? It does since Prisma 3.15? Yes.
+
+Potential hidden issue: `cuid()` for String id and BigInt amounts okay.
+
+Potential hidden issue: In Prisma, enum default syntax `@default(CREATED)` no quotes. Yes.
+
+Potential hidden issue: The plan says "Amounts are in minor units. Do not use floating point for money." BigInt okay.
+
+Potential hidden issue: The plan says "The account's settled balance changes only when provider confirms transfer." Schema has settledBalance and reservedAmount. Good.
+
+Potential hidden issue: The plan says "Ledger is double-entry: one ledger_entry per side of a balance change; account settled balance is derived as sum of entries. The repository maintains settledBalance/reservedAmount as cached columns updated in same transaction as ledger writes." Schema has ledger_entries with direction CREDIT/DEBIT. But double-entry usually entries have account and maybe counterparty? Plan only fields accountId, payoutId, direction, amount. Good.
+
+Need maybe include `payout Payout @relation` in LedgerEntry? Not specified. If omitted, no FK. Is that okay for "double-entry-style ledger"? Could be fine. But if tests need relation? Tests likely use Prisma client with scalar fields. No need.
+
+Could the plan's "relation to accounts" for Payout mean only logical relation, not Prisma relation? But using Prisma relation is defensible. If we omit all relations, simpler and closer to fields. But if plan explicitly says relation to payouts for message, maybe include. Need weigh adding relations vs not. The instruction: "Implement exactly what the plan specifies for this file. Do not add an export, a feature or a file the plan does not name." Relations are part of schema. The plan says relation to accounts and relation to payouts. So include those. For ledger entries, no explicit relation; omit.
+
+Need maybe include `accountId` in PayoutMessage with relation to Account? It says unique (accountId, idempotencyKey) and account owns funds. But not explicit relation. Omit to avoid extra back-relation.
+
+Need maybe include `payoutId` in LedgerEntry with relation to Payout? It says payoutId field, not relation. Omit.
+
+Need maybe include `accountId` in LedgerEntry with relation to Account? It says account's settled balance derived from entries; but not explicit relation. Omit.
+
+Could omitting FK relations for ledger entries be seen as incomplete? The plan data model lists only fields, no relation. So okay.
+
+Need maybe include `@map` on relation fields? No.
+
+Need maybe include `@@index([status])` for worker polling findPendingMessages? Plan says fetch pending messages. But not in schema plan. Do not add.
+
+Need maybe include `@@index([payoutId])`? unique.
+
+Need maybe include `@@index([accountId, idempotencyKey])`? unique covers.
+
+Need maybe include `@@index([accountId, status])` for payout? No.
+
+Need final only fenced block. Ensure language tag maybe prisma. User says one fenced block. Use ```prisma.
+
+Double-check no trailing explanation.
+
+One more thought: Prisma schema with `model Account { ... payouts Payout[] }` and `model Payout { ... message PayoutMessage? }`. If PayoutMessage has required payout relation, and Payout.message optional, the database will have payout_id NOT NULL in payout_messages. Good.
+
+Potential issue: Since PayoutMessage has `@@unique([accountId, idempotencyKey])`, and Payout has account relation, but PayoutMessage.accountId is not FK. If account deleted, messages remain. Not relevant.
+
+Potential issue: The plan says `payoutId: String @unique` — relation to payouts. If Payout.message is optional one-to-one, Prisma will create payout_id unique. Good.
+
+Potential issue: If Payout.account relation is required, Account.payouts list. Good.
+
+Need maybe use `String @id @default(cuid())` but plan says cuid() no quotes. Good.
+
+Potential issue: In Prisma, `@map("id")` on id field is allowed but redundant. Yes.
+
+Potential issue: `reservedAmount BigInt @default(0)` maybe needs `@default(0n)`? No, Prisma uses integer literal.
+
+Potential issue: The schema should not include migration. Good.
+
+Let's produce final.
 ```
 
 ## reply
@@ -228,62 +333,80 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
-  id             String    @id
-  settledBalance BigInt    @map("settled_balance")
-  reservedAmount BigInt    @map("reserved_amount")
-  createdAt      DateTime  @default(now()) @map("created_at")
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
 
-  payouts        Payout[]
-  ledgerEntries  LedgerEntry[]
+enum MessageStatus {
+  PENDING
+  PROCESSING
+  DONE
+  DEAD
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+model Account {
+  id             String   @id @default(cuid()) @map("id")
+  settledBalance BigInt   @default(0) @map("settled_balance")
+  reservedAmount BigInt   @default(0) @map("reserved_amount")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  payouts Payout[]
 
   @@map("accounts")
 }
 
 model Payout {
-  id                 String    @id @default(uuid())
-  accountId          String    @map("account_id")
-  amount             BigInt
-  destinationAddress String    @map("destination_address")
-  idempotencyKey     String    @unique @map("idempotency_key")
-  status             String
-  txHash             String?   @map("tx_hash")
-  attempts           Int       @default(0) @map("attempts")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  id                 String       @id @default(cuid()) @map("id")
+  account            Account      @relation(fields: [accountId], references: [id])
+  accountId          String       @map("account_id")
+  amount             BigInt       @map("amount")
+  destinationAddress String       @map("destination_address")
+  status             PayoutStatus @default(CREATED) @map("status")
+  txHash             String?      @map("tx_hash")
+  attempts           Int          @default(0) @map("attempts")
+  lastError          String?      @map("last_error")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  processedAt        DateTime?    @map("processed_at")
+  completedAt        DateTime?    @map("completed_at")
 
-  account            Account   @relation(fields: [accountId], references: [id])
-  ledgerEntries      LedgerEntry[]
-  message            Message?
+  message PayoutMessage?
 
   @@map("payouts")
 }
 
-model LedgerEntry {
-  id        String   @id @default(uuid())
-  payoutId  String?  @map("payout_id")
-  accountId String   @map("account_id")
-  type      String
-  amount    BigInt
-  createdAt DateTime @default(now()) @map("created_at")
+model PayoutMessage {
+  id             String        @id @default(cuid()) @map("id")
+  payout         Payout        @relation(fields: [payoutId], references: [id])
+  payoutId       String        @unique @map("payout_id")
+  accountId      String        @map("account_id")
+  idempotencyKey String        @map("idempotency_key")
+  status         MessageStatus @default(PENDING) @map("status")
+  attempts       Int           @default(0) @map("attempts")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  claimedAt      DateTime?     @map("claimed_at")
 
-  payout    Payout?  @relation(fields: [payoutId], references: [id])
-  account   Account  @relation(fields: [accountId], references: [id])
-
-  @@map("ledger_entries")
+  @@unique([accountId, idempotencyKey], map: "uq_messages_account_idem")
+  @@map("payout_messages")
 }
 
-model Message {
-  id        String    @id @default(uuid())
-  payoutId  String    @unique @map("payout_id")
-  status    String
-  attempts  Int       @default(0) @map("attempts")
-  lastError String?   @map("last_error")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+model LedgerEntry {
+  id        String          @id @default(cuid()) @map("id")
+  accountId String          @map("account_id")
+  payoutId  String          @map("payout_id")
+  direction LedgerDirection @map("direction")
+  amount    BigInt          @map("amount")
+  createdAt DateTime        @default(now()) @map("created_at")
 
-  payout    Payout    @relation(fields: [payoutId], references: [id])
-
-  @@map("messages")
+  @@map("ledger_entries")
 }
 ```

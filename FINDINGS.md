@@ -27,6 +27,24 @@ clean, 0 of 13 samples under pressure. Attention cost, not memory.
 
 *Consequence for planning:* problem 01 variant A took **4.5 hours**, above the 2.7 h
 pessimistic estimate, because the estimate assumed a flat rate.
+
+**And the rate is not a property of the model.** The same problem's early phases were
+measured at 10.2 / 9.6 / 10.5 tok/s in one run and **4.4 / 3.8 / 4.3** in the next —
+2.5× apart, with memory clean, no swap activity, no thermal warning and on AC power.
+What differed was the machine around it: an editor compositing hard, its GPU helper
+process, and lint runs from another project appearing at 140–190% of a core.
+
+There is no clean before-and-after here — the editor was open both times — so the
+attribution is *contention*, not a specific culprit. What is established is narrower
+and still useful:
+
+- **memory figures report a healthy host while throughput halves**, so an instrument
+  that measures only memory is blind to most of the variance
+- **tokens per second is a property of the run, not of the model**, and belongs in
+  `meta.yaml` beside the contention that produced it rather than in a summary
+
+`ft-vitals` now samples load, GPU utilisation, what share the server is getting, and
+any process above 25% CPU; it flags one above 80%.
 **An earlier figure of 5.1 was wrong** — it was taken while the host was swapping, and
 it measured the swap file. Corrected here rather than deleted, because the mistake is
 the finding: throughput is not a property of the model alone.

@@ -7,20 +7,19 @@
   "max_tokens": 16384,
   "context_window": 32768,
   "thinking": true,
-  "prompt_tokens": 5623,
-  "completion_tokens": 5144,
-  "reasoning_chars": 18552,
-  "content_chars": 2211,
+  "prompt_tokens": 6285,
+  "completion_tokens": 10228,
+  "reasoning_chars": 39562,
+  "content_chars": 2400,
   "finish_reason": "stop",
   "output_ceiling_hit": false,
-  "wall_seconds": 491.2,
-  "server_seconds": 491.1,
+  "wall_seconds": 3275.6,
+  "server_seconds": 2357.0,
   "model_load_seconds": 0.0,
-  "output_tokens_per_second": 10.5,
+  "output_tokens_per_second": 4.3,
   "reads": [
     "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/variants/variant-a.md",
-    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
-    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma"
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
   ],
   "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
   "host_pressure_at_send": []
