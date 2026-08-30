@@ -117,7 +117,30 @@ def wait_for_host():
 
 def already_done(prob, vslug, slug):
     ws = prob / "runs" / slug / vslug / "workspace"
-    return ws.is_dir() and any(ws.rglob("*"))
+    return ws.is_dir() and any(f for f in ws.rglob("*") if f.is_file())
+
+
+def clear_dead_run(prob, vslug, slug):
+    """Move aside a run directory that exists but produced no code.
+
+    ft-go refuses to re-enter a run directory, correctly: a finished run is an
+    artifact and is never edited. But an ABORTED run leaves the directory behind
+    with an empty workspace, and the two checks then disagree — the campaign sees
+    no files and queues the run, ft-go sees the directory and refuses. Observed:
+    two problems were skipped in seconds, each committing a failure row, while the
+    campaign reported progress.
+
+    The dead run is kept rather than deleted. Its steps/ and meta.yaml are why it
+    died, and that is worth reading.
+    """
+    run = prob / "runs" / slug / vslug
+    if not run.is_dir():
+        return False
+    n = 1
+    while (aside := run.with_name(f"{vslug}.aborted-{n}")).exists():
+        n += 1
+    run.rename(aside)
+    return aside
 
 
 def append_log(row):
@@ -206,6 +229,9 @@ def main():
 
         say("")
         say(f"=== {prob.name} {vslug}  ({done + 1}/{len(todo)}) ===")
+        aside = clear_dead_run(prob, vslug, slug)
+        if aside:
+            say(f"an aborted run was in the way; kept as {aside.name}")
         state = wait_for_host()
         if state is False:
             say("cannot reach a server; stopping")
