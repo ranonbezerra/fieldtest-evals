@@ -274,6 +274,10 @@ def main():
     def ft_run(label, instruction, raw, reads=(), out_file=None, system=None,
                verbatim=False):
         cmd = [str(RUNNER), "--label", label, "--instruction", "-", "--raw", str(raw)]
+        if a.ignore_pressure and a.runner == "api":
+            # ft-go already gated once, at the top. Gating again per phase would
+            # abort a run midway on a transient spike, which loses the whole run.
+            cmd += ["--ignore-pressure"]
         if system:
             cmd += ["--system", str(system)]
         for r in reads:

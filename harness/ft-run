@@ -22,7 +22,7 @@ the diagnostic -- input almost never binds, output does, and thinking is paid ou
 of the output ceiling, so a phase that needed 1,900 tokens of code can spend
 15,000 and write nothing.
 """
-import argparse, json, os, re, sys, time, urllib.error, urllib.request
+import argparse, json, os, re, subprocess, sys, time, urllib.error, urllib.request
 from pathlib import Path
 
 BASE = os.environ.get("OMLX_BASE", "http://localhost:9050/v1").rstrip("/")
@@ -87,7 +87,28 @@ def main():
     ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS)
     ap.add_argument("--no-thinking", action="store_true",
                     help="disable reasoning; the model's default is on, so this is a deviation to record")
+    ap.add_argument("--ignore-pressure", action="store_true",
+                    help="send the request even though the host is paging. Recorded either way.")
     a = ap.parse_args()
+
+    # The gate lived only in ft-go, and ft-run is callable on its own -- which is how
+    # a controlled experiment got fired into a host doing 4,013 swapouts/s. A single
+    # request is exactly the case where nobody thinks to check.
+    pressure = []
+    if not a.ignore_pressure:
+        try:
+            v = subprocess.run([str(Path(__file__).with_name("ft-vitals")), "--json"],
+                               capture_output=True, text=True, timeout=30)
+            pressure = (json.loads(v.stdout or "{}").get("pressure") or [])
+        except Exception:
+            pressure = []
+        if pressure:
+            print(f"ft-run: [{a.label}] host under pressure, refusing:", file=sys.stderr)
+            for r in pressure:
+                print(f"  {r}", file=sys.stderr)
+            print("  --ignore-pressure sends it anyway and records that it did.",
+                  file=sys.stderr)
+            return 7
 
     instruction = sys.stdin.read() if a.instruction == "-" else read(a.instruction)
     missing = [p for p in a.read if not Path(p).is_file()]
@@ -182,6 +203,7 @@ def main():
         "model_load_seconds": round(load_time, 1),
         "output_tokens_per_second": tps,
         "reads": a.read, "system": a.system,
+        "host_pressure_at_send": pressure,
     }
     usage_path.write_text(json.dumps(record, indent=2))
 
