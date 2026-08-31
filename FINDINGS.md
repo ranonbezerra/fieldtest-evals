@@ -426,12 +426,19 @@ Written before the data, so they can be wrong rather than rationalised afterward
 
 ### 6.2 Test files overflow every time, and the two-pass phase should stop it
 
-Across three problems, 40 phases:
+Across four problems, 40 phases:
 
 | | hit the ceiling |
 |---|---|
-| **test files** | **4 of 4 — 100%** |
-| everything else | 4 of 26 — 15% |
+| **test files** | **5 of 9 — 56%** |
+| everything else | 6 of 31 — 19% |
+
+> **Corrected.** This entry first read *4 of 4 — 100%*, from three problems. Problem
+> 04 landed with three of its four test files finishing normally on 4,027–10,919
+> tokens with reasoning on, and the claim did not survive. The effect is real and
+> roughly threefold; it is not absolute, and the change was implemented while the
+> number was still 100%. That is the mistake this file has recorded five times in
+> other forms: acting on a pattern before it had a denominator.
 
 Every ceiling hit shows `reasoning_chars: 0`, which is the signature of thinking that
 never closed and was returned as content. And the retries — the same file, reasoning
@@ -459,7 +466,8 @@ the model *intended* to test, separately from what it wrote. Problem 01 produced
 test named `does not overdraw under concurrent creation` that could not detect an
 overdraw (1.6); the intent and the artifact diverged, and nothing recorded the intent.
 
-**Prediction:** from problem 04 onward, test phases stop hitting the ceiling, and the
+**Prediction (revised after the correction above):** from problem 05 onward — problem
+04 was already running under the old code — test phases stop hitting the ceiling, and the
 resulting suites are no thinner — problem 01's no-reasoning retry produced 17 tests in
 21,579 bytes, so terseness is not the failure mode to expect.
 

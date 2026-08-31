@@ -529,6 +529,13 @@ def main():
                                reads=reads, out_file=f, system=cheatsheet)
             else:
                 say("\n[gate] no tsconfig.json in the workspace; typecheck skipped")
+        # pnpm install leaves ~90 MB in the workspace. It is gitignored, so it never
+        # reaches the repository, but the workspace is the artifact a judge reads and
+        # 90 MB of someone else's dependencies is not part of what the model wrote.
+        nm = ws / "node_modules"
+        if nm.is_dir():
+            shutil.rmtree(nm, ignore_errors=True)
+            say("[gate] removed node_modules from the workspace")
         (rundir / "GATE.md").write_text(gate["log"] or "gate not run\n", encoding="utf-8")
 
         # ---- capture ----------------------------------------------------------
