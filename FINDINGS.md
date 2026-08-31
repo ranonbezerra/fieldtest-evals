@@ -18,122 +18,28 @@ temperature 1.0 / top_p 0.95 / top_k 20.
 
 ---
 
-## 0. A campaign was run at the wrong parameters and discarded
+## 0. Parameters, and why the first five runs are not here
 
-The first five runs used **temperature 0.6** and, on some phases, reasoning disabled
-outright. Both were wrong, and both came from the same root: the model was identified
-from its `config.json`, which declares `model_type: qwen3_5` — the name of the
-implementation class in transformers, not of the model. Reading that as "Qwen3.5", the
-harness applied Qwen3's published guidance for a different model.
+The model was identified from its `config.json`, which declares
+`model_type: qwen3_5` — the name of the implementation class in transformers, not of
+the model. Read as a model name, that led the harness to apply Qwen3's published
+guidance and run at **temperature 0.6**.
 
-The actual card recommends **temperature 1.0, top_p 0.95, top_k 20** for thinking mode,
-and the model exposes **`reasoning_effort`** (`xhigh`/`medium`/`low`) — a native dial
-for the exact problem the harness had spent hours working around with a binary
-on/off switch of its own invention.
+`Qwen/Qwen3.8-27B` recommends **1.0 / 0.95 / 20** for thinking mode, which is its
+default mode. It also exposes **`reasoning_effort`** (`xhigh`/`medium`/`low`) — a
+native dial for the budget problem the harness had been working around with a switch
+of its own.
 
-**Everything measured about the model was discarded.** Five runs, four verdicts, and
-the throughput and ceiling figures they produced. Keeping them would have meant
-comparing a model against itself under two different configurations and calling the
-difference a finding.
-
-**What survives, and why.** The entries below are separated by whether the parameters
-could have affected them:
-
-| Survives | Discarded |
-|---|---|
-| §2 the machine — memory ceilings, swap death, paged-out weights, contention | §1 anything about how the model reasons, plans or writes |
-| §3 the harness design, and §3.3 the cheatsheet leak | throughput in tokens/second |
-| §4 every instrument defect — they were defects regardless of what was being measured | the output-ceiling rates, which depend directly on how much the model deliberates |
-
-The instrument defects in §4 are the ones most worth keeping. They were found by
-running the tools against a real machine, and a wrong temperature does not make a
-false positive on swap occupancy any less false.
-
+Five runs were discarded rather than compared against the corrected ones. What they
+produced about the model is in [Appendix A](#appendix-a--superseded-by-the-parameter-correction);
+what they produced about the machine and the instruments is in §2 and §4 and stands,
+because a false positive on swap occupancy is no less false for having been found at
+the wrong temperature.
 ---
 
 ## 1. The model
 
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.1 Generation runs at ~10.6 tokens/second, and slows as the prompt grows
-
-Measured across a complete self-test run on a quiet host, stable across phases.
-On a real problem it degrades within a run as later phases carry more context:
-**10.5 tok/s at 1.4k input tokens, 6.1 at 5.5k, 3.8 at 7.4k** — with the host
-clean, 0 of 13 samples under pressure. Attention cost, not memory.
-
-*Consequence for planning:* problem 01 variant A took **4.5 hours**, above the 2.7 h
-pessimistic estimate, because the estimate assumed a flat rate.
-
-**And the rate is not a property of the model.** The same problem's early phases were
-measured at 10.2 / 9.6 / 10.5 tok/s in one run and **4.4 / 3.8 / 4.3** in the next —
-2.5× apart, with memory clean, no swap activity, no thermal warning and on AC power.
-What differed was the machine around it: an editor compositing hard, its GPU helper
-process, and lint runs from another project appearing at 140–190% of a core.
-
-There is no clean before-and-after here — the editor was open both times — so the
-attribution is *contention*, not a specific culprit. What is established is narrower
-and still useful:
-
-- **memory figures report a healthy host while throughput halves**, so an instrument
-  that measures only memory is blind to most of the variance
-- **tokens per second is a property of the run, not of the model**, and belongs in
-  `meta.yaml` beside the contention that produced it rather than in a summary
-
-`ft-vitals` now samples load, GPU utilisation, what share the server is getting, and
-any process above 25% CPU; it flags one above 80%.
-
-**Then it was tested by intervening, mid-run.** Four displays became two, and the
-remaining ultrawide went from 240 Hz to 60 — cutting compositing from 3,089 to 1,224
-Mpx/s, a 60% reduction on the same GPU the model runs on.
-
-| | before | after |
-|---|--:|--:|
-| **generation** | **4.0 tok/s** | **7.9 tok/s** |
-
-Roughly double, on the same problem, the same kind of phase, the same model. Still
-short of the 10.5 measured when the machine was otherwise idle, so contention remains.
-
-**The mechanism is NOT established, and an earlier version of this entry claimed it
-was.** It reported CPU shares — the server rising from 20% to 53%, the compositor
-falling — from `ps -o %cpu`, which on macOS is the average over a process's entire
-lifetime rather than a sample. A server up sixteen hours and mostly idle reports
-single digits while it is generating, and the figure drifts on its own. Checked
-against `top -l 2`: `ps` said the server was at 0.7%, and `top` did not list it in the
-top six at all. **Both are right.** The model is GPU-bound; MLX uses almost no CPU.
-
-So the outcome stands — it was measured in tokens per second, on the same phase of the
-same problem — and the explanation attached to it did not. Which is the mistake
-described two paragraphs below, committed in the paragraph above it.
-
-**A note on which number to watch.** The first indicator to move was WindowServer's
-CPU falling, and it was the wrong one: it dropped after two displays were removed
-while throughput had not yet changed at all. The share the *server* was getting was a
-better proxy, and still only a proxy. Only tokens per second settled it, and it took
-forty minutes to arrive. A criterion moving in the expected direction is not the
-result — which is the same trap this repository measures in models.
-
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.4c The ceiling retry, validated in production
-
-The first real ceiling hit of the campaign fired it. Same file, same phase:
-
-| | output | wall | result |
-|---|--:|--:|---|
-| reasoning on | 16,384 (ceiling) | 40 min | deliberation; the extractor would have written a fragment |
-| **retry, reasoning off** | **1,873** | **3.9 min** | complete file, imports and class intact |
-
-Nine times fewer tokens for a better artifact, and it is the same file whose first
-attempt in the discarded run produced code beginning at `async processMessages()` with
-no class around it.
-**An earlier figure of 5.1 was wrong** — it was taken while the host was swapping, and
-it measured the swap file. Corrected here rather than deleted, because the mistake is
-the finding: throughput is not a property of the model alone.
-
-*Changed:* campaign arithmetic. A phase that fills the output budget costs 26 minutes.
-
-### 1.2 The output ceiling is 16,384 tokens, and reasoning is paid out of it
+### 1.1 The output ceiling is 16,384 tokens, and reasoning is paid out of it
 
 Not a model limit — the model's own config imposes none, and its architecture supports
 262,144 positions. It is an oMLX per-model setting.
@@ -141,39 +47,7 @@ Not a model limit — the model's own config imposes none, and its architecture 
 *Changed:* the entire harness shape. The deliverables of a single problem do not fit in
 one reply, which is why work is decomposed into one file per request.
 
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.3 With reasoning, output is bound by the budget. Without it, by the task.
-
-**Confirmed.** Four measurements, one axis, two task sizes:
-
-| | self-test (2 files) | problem 01 (14 files) |
-|---|--:|--:|
-| reasoning **on** | 16,249 / 16,384 — **99.2%** | **16,384 / 16,384 — 100%**, `finish_reason: length` |
-| reasoning **off** | 1,020 | 4,327 |
-
-Two tasks of very different size both consumed essentially the whole budget when
-reasoning was on. With it off, output scaled with the task instead — 1,020 to 4,327,
-roughly four times, which is about the ratio between the two tasks.
-
-The plan the model actually needed for problem 01 was 4,327 tokens. With reasoning on
-it spent 16,384 and emitted no plan at all: 68,531 bytes of deliberation returned as
-content (see 1.4).
-
-*Changed:* **raising the server's output ceiling is off the table as a fix.** Doubling
-it buys a 32,000-token deliberation instead of a 16,000-token one, at twice the wall
-time, with the same empty result. Memory would allow it — even 131,072 tokens of
-output fits with 6 GiB to spare — so the constraint was never the one it looked like.
-
-This is the mechanism behind a rule the pilot had already written down from
-experience: *raising the window to fix a truncation is the obvious move and usually
-the wrong one.*
-
-> **Caveat on the timing only.** The host began paging in C's final minutes, so its
-> 1,607 s is contaminated. The token count is not: a hard ceiling hit at exactly
-> 16,384 is the same number whatever the machine was doing.
-
-### 1.4 A ceiling hit mid-reasoning returns the reasoning as the answer
+### 1.2 A ceiling hit mid-reasoning returns the reasoning as the answer
 
 When the ceiling cuts the model before its thinking closes, the server cannot separate
 the two and returns the deliberation in `content`, with `reasoning_content` empty. The
@@ -181,53 +55,6 @@ harness wrote 68 KB of it to `PLAN.md` and continued as though it were a specifi
 
 *Changed:* `ft-go` treats a ceiling hit in phase 0 as a failure and writes no artifact.
 A phase that was cut off did not answer.
-
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.4b Implementation phases fill the budget too, on the files that are hard
-
-The self-test suggested reasoning was only pathological in phase 0 — its two
-implementation phases used 14% and 43% of the budget. Problem 01, variant A,
-corrected that:
-
-| | phases | output | reasoning |
-|---|--:|---|---|
-| finished normally | 8 of 11 | 439 – 10,699 tokens | 1,725 – 44,882 chars |
-| **hit the ceiling** | **3 of 11** | 16,384 each | reply was deliberation |
-
-The three were the repository, the service and the spec — the three hardest files in
-the manifest. So it is not "phase 0 is special": **reasoning fills the budget whenever
-the model finds enough to deliberate about**, and on a real problem that is the files
-that matter most.
-
-Worse than an empty file: the extractor takes the largest fenced block from a reply
-full of code fragments, so one file was written beginning at `async processMessages()`
-with no class around it. **It looks like code.** An empty file announces itself; a
-plausible fragment does not.
-
-*Changed:* a file phase that hits the ceiling is retried once with reasoning off — the
-mode measured to produce an answer rather than fill the budget — and both attempts are
-kept. The default is still the model's own, and `meta.yaml` records
-`ceiling_retries_without_reasoning`.
-
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.5 The model plans well when given the budget to answer
-
-With reasoning off, problem 01 variant A produced a 14-file manifest in correct
-topological order — module registration and `DESIGN.md` included — in 4,327 tokens and
-7 minutes, and **decided all eight of that problem's must-haves correctly**: hold
-rather than debit, a row lock for the reservation, the outbox inside the creation
-transaction, funds never released on retry exhaustion, integer minor units throughout.
-
-*Changed:* reasoning off for phase 0, on for implementation phases — where it is
-productive, one having spent 7,500 characters of it on 2,300 tokens of clean code. A
-per-phase axis, recorded in `meta.yaml`, not a switch.
-
-> **Caveat:** judged by the operator against the rubric, not blind. It is a design
-> signal, not a verdict.
-
----
 
 ## 2. The machine
 
@@ -349,30 +176,6 @@ or the phase instructions. It costs minutes and has already saved hours twice.
 
 ---
 
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.6 It writes a thorough-looking suite whose critical test is decorative
-
-Problem 01 variant A produced seventeen tests covering every case the statement
-demands, including a correct distinction between ambiguous and definitive provider
-failure. Then the one test that had to catch the actual defect could not, for two
-reasons at once: it runs against an **in-memory fake of the repository**, so it never
-reaches the real code where the missing lock lives, and `Promise.allSettled` over a
-synchronous Map **is not concurrency** — single-threaded, the first payout completes
-before the second begins.
-
-`does not overdraw under concurrent creation` is green against an implementation that
-overdraws.
-
-*Why it matters beyond one run:* this is the failure the repository's own rubrics call
-hollow coverage, produced spontaneously and at a level that reads as diligence. An
-absent test is a gap someone can see. A green test named after the property it does
-not check is a claim.
-
-*Changed:* nothing in the harness — the rubric already gates on it. But it is the
-clearest argument yet for the rule that the operator runs the deliverable's tests and
-reads what they actually assert, rather than trusting a green suite.
-
 ### 1.6b The agent watching the campaign was loading the machine it was measuring
 
 A controlled test, because five earlier attributions in this file were made from proxy
@@ -404,32 +207,6 @@ already wrote the rule down — *a chat agent cannot supervise a run* — about 
 This is the same rule with a different mechanism, and it was violated for most of a
 session.
 
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.4d A ceiling hit produces plausible garbage in a third distinct way
-
-Three manifestations now, all from the same cause and each looking different:
-
-| | what was written |
-|---|---|
-| phase 0 | 68 KB of deliberation, saved as `PLAN.md` |
-| an implementation phase | a fragment beginning at `async processMessages()`, no class around it |
-| **another implementation phase** | **a file whose first line is ` ```ts `** and whose last line stops mid-statement |
-
-The third came from a reply carrying **43 fence markers** — the model deliberating in
-code blocks — so the largest-span heuristic captured a region that itself contained
-fences.
-
-*Changed:* stray fence lines are stripped from any extracted artifact, leading and
-trailing. Cheap, and never wrong: a line that is nothing but a fence is not part of
-the file. The retry remains the real fix; this is what stops a truncated reply from
-producing something that *looks* like a file when the retry does not get to run.
-
-*Which it did not, here.* The process was terminated between the ceiling hit and its
-retry, so the polluted file was the artifact on disk. Had it been judged, `payout.service.ts`
-would have read as the model failing to produce valid TypeScript — a defect that is
-entirely the harness's.
-
 ### 4.2 Killing the watcher killed the run, twice, and it looked like a clean exit
 
 `ft-campaign` captures `ft-go` through a pipe. Kill the orchestrator and the read end
@@ -445,18 +222,6 @@ going, was wrong. It survives exactly until it next has something to say.
 watching it** — the whole point of the campaign design is that it survives being left
 alone. `ft-campaign` also tees each run's output to `ft-go.log` inside the run
 directory, so a killed orchestrator does not take the log with it.
-
-### ⚠️ DISCARDED — measured at temperature 0.6
-
-#### 1.4e The repair loop overflows too, and had no retry
-
-Problem 05 ran seven repair phases; **three of the last four hit the ceiling**, 27–28
-minutes each, producing nothing. The retry after a ceiling hit had been added to file
-phases and not to repairs — which is where a run now spends its longest hours, since
-the gate only started firing at problem 04.
-
-*Changed:* a repair that hits the ceiling is retried once with reasoning off, same as
-a file phase, and recorded as `repair:<path>` in `ceiling_retries_without_reasoning`.
 
 ### 1.7 An unexplained gap between what the client waits and what the server counts
 
@@ -612,3 +377,219 @@ budget writing config rather than solving the problem.
 diverging on whether config is in scope would mean the instruction leaves it genuinely
 open, and the fix is to settle it in the instruction rather than to paper over it in
 the gate.
+
+---
+
+## Appendix A — superseded by the parameter correction
+
+*Entries keep the numbers they had when written; §1 was renumbered after they moved.*
+
+These were measured at temperature 0.6, before `reasoning_effort` was known to the
+harness. They are kept because how a model spends its output budget is exactly the
+kind of thing a temperature change moves, and the next campaign gives a clean
+comparison against them. **None of them should be quoted as a property of the model.**
+
+#### 1.1 Generation runs at ~10.6 tokens/second, and slows as the prompt grows
+
+Measured across a complete self-test run on a quiet host, stable across phases.
+On a real problem it degrades within a run as later phases carry more context:
+**10.5 tok/s at 1.4k input tokens, 6.1 at 5.5k, 3.8 at 7.4k** — with the host
+clean, 0 of 13 samples under pressure. Attention cost, not memory.
+
+*Consequence for planning:* problem 01 variant A took **4.5 hours**, above the 2.7 h
+pessimistic estimate, because the estimate assumed a flat rate.
+
+**And the rate is not a property of the model.** The same problem's early phases were
+measured at 10.2 / 9.6 / 10.5 tok/s in one run and **4.4 / 3.8 / 4.3** in the next —
+2.5× apart, with memory clean, no swap activity, no thermal warning and on AC power.
+What differed was the machine around it: an editor compositing hard, its GPU helper
+process, and lint runs from another project appearing at 140–190% of a core.
+
+There is no clean before-and-after here — the editor was open both times — so the
+attribution is *contention*, not a specific culprit. What is established is narrower
+and still useful:
+
+- **memory figures report a healthy host while throughput halves**, so an instrument
+  that measures only memory is blind to most of the variance
+- **tokens per second is a property of the run, not of the model**, and belongs in
+  `meta.yaml` beside the contention that produced it rather than in a summary
+
+`ft-vitals` now samples load, GPU utilisation, what share the server is getting, and
+any process above 25% CPU; it flags one above 80%.
+
+**Then it was tested by intervening, mid-run.** Four displays became two, and the
+remaining ultrawide went from 240 Hz to 60 — cutting compositing from 3,089 to 1,224
+Mpx/s, a 60% reduction on the same GPU the model runs on.
+
+| | before | after |
+|---|--:|--:|
+| **generation** | **4.0 tok/s** | **7.9 tok/s** |
+
+Roughly double, on the same problem, the same kind of phase, the same model. Still
+short of the 10.5 measured when the machine was otherwise idle, so contention remains.
+
+**The mechanism is NOT established, and an earlier version of this entry claimed it
+was.** It reported CPU shares — the server rising from 20% to 53%, the compositor
+falling — from `ps -o %cpu`, which on macOS is the average over a process's entire
+lifetime rather than a sample. A server up sixteen hours and mostly idle reports
+single digits while it is generating, and the figure drifts on its own. Checked
+against `top -l 2`: `ps` said the server was at 0.7%, and `top` did not list it in the
+top six at all. **Both are right.** The model is GPU-bound; MLX uses almost no CPU.
+
+So the outcome stands — it was measured in tokens per second, on the same phase of the
+same problem — and the explanation attached to it did not. Which is the mistake
+described two paragraphs below, committed in the paragraph above it.
+
+**A note on which number to watch.** The first indicator to move was WindowServer's
+CPU falling, and it was the wrong one: it dropped after two displays were removed
+while throughput had not yet changed at all. The share the *server* was getting was a
+better proxy, and still only a proxy. Only tokens per second settled it, and it took
+forty minutes to arrive. A criterion moving in the expected direction is not the
+result — which is the same trap this repository measures in models.
+
+#### 1.4c The ceiling retry, validated in production
+
+The first real ceiling hit of the campaign fired it. Same file, same phase:
+
+| | output | wall | result |
+|---|--:|--:|---|
+| reasoning on | 16,384 (ceiling) | 40 min | deliberation; the extractor would have written a fragment |
+| **retry, reasoning off** | **1,873** | **3.9 min** | complete file, imports and class intact |
+
+Nine times fewer tokens for a better artifact, and it is the same file whose first
+attempt in the discarded run produced code beginning at `async processMessages()` with
+no class around it.
+**An earlier figure of 5.1 was wrong** — it was taken while the host was swapping, and
+it measured the swap file. Corrected here rather than deleted, because the mistake is
+the finding: throughput is not a property of the model alone.
+
+*Changed:* campaign arithmetic. A phase that fills the output budget costs 26 minutes.
+
+#### 1.3 With reasoning, output is bound by the budget. Without it, by the task.
+
+**Confirmed.** Four measurements, one axis, two task sizes:
+
+| | self-test (2 files) | problem 01 (14 files) |
+|---|--:|--:|
+| reasoning **on** | 16,249 / 16,384 — **99.2%** | **16,384 / 16,384 — 100%**, `finish_reason: length` |
+| reasoning **off** | 1,020 | 4,327 |
+
+Two tasks of very different size both consumed essentially the whole budget when
+reasoning was on. With it off, output scaled with the task instead — 1,020 to 4,327,
+roughly four times, which is about the ratio between the two tasks.
+
+The plan the model actually needed for problem 01 was 4,327 tokens. With reasoning on
+it spent 16,384 and emitted no plan at all: 68,531 bytes of deliberation returned as
+content (see 1.4).
+
+*Changed:* **raising the server's output ceiling is off the table as a fix.** Doubling
+it buys a 32,000-token deliberation instead of a 16,000-token one, at twice the wall
+time, with the same empty result. Memory would allow it — even 131,072 tokens of
+output fits with 6 GiB to spare — so the constraint was never the one it looked like.
+
+This is the mechanism behind a rule the pilot had already written down from
+experience: *raising the window to fix a truncation is the obvious move and usually
+the wrong one.*
+
+> **Caveat on the timing only.** The host began paging in C's final minutes, so its
+> 1,607 s is contaminated. The token count is not: a hard ceiling hit at exactly
+> 16,384 is the same number whatever the machine was doing.
+
+#### 1.4b Implementation phases fill the budget too, on the files that are hard
+
+The self-test suggested reasoning was only pathological in phase 0 — its two
+implementation phases used 14% and 43% of the budget. Problem 01, variant A,
+corrected that:
+
+| | phases | output | reasoning |
+|---|--:|---|---|
+| finished normally | 8 of 11 | 439 – 10,699 tokens | 1,725 – 44,882 chars |
+| **hit the ceiling** | **3 of 11** | 16,384 each | reply was deliberation |
+
+The three were the repository, the service and the spec — the three hardest files in
+the manifest. So it is not "phase 0 is special": **reasoning fills the budget whenever
+the model finds enough to deliberate about**, and on a real problem that is the files
+that matter most.
+
+Worse than an empty file: the extractor takes the largest fenced block from a reply
+full of code fragments, so one file was written beginning at `async processMessages()`
+with no class around it. **It looks like code.** An empty file announces itself; a
+plausible fragment does not.
+
+*Changed:* a file phase that hits the ceiling is retried once with reasoning off — the
+mode measured to produce an answer rather than fill the budget — and both attempts are
+kept. The default is still the model's own, and `meta.yaml` records
+`ceiling_retries_without_reasoning`.
+
+#### 1.5 The model plans well when given the budget to answer
+
+With reasoning off, problem 01 variant A produced a 14-file manifest in correct
+topological order — module registration and `DESIGN.md` included — in 4,327 tokens and
+7 minutes, and **decided all eight of that problem's must-haves correctly**: hold
+rather than debit, a row lock for the reservation, the outbox inside the creation
+transaction, funds never released on retry exhaustion, integer minor units throughout.
+
+*Changed:* reasoning off for phase 0, on for implementation phases — where it is
+productive, one having spent 7,500 characters of it on 2,300 tokens of clean code. A
+per-phase axis, recorded in `meta.yaml`, not a switch.
+
+> **Caveat:** judged by the operator against the rubric, not blind. It is a design
+> signal, not a verdict.
+
+---
+
+#### 1.6 It writes a thorough-looking suite whose critical test is decorative
+
+Problem 01 variant A produced seventeen tests covering every case the statement
+demands, including a correct distinction between ambiguous and definitive provider
+failure. Then the one test that had to catch the actual defect could not, for two
+reasons at once: it runs against an **in-memory fake of the repository**, so it never
+reaches the real code where the missing lock lives, and `Promise.allSettled` over a
+synchronous Map **is not concurrency** — single-threaded, the first payout completes
+before the second begins.
+
+`does not overdraw under concurrent creation` is green against an implementation that
+overdraws.
+
+*Why it matters beyond one run:* this is the failure the repository's own rubrics call
+hollow coverage, produced spontaneously and at a level that reads as diligence. An
+absent test is a gap someone can see. A green test named after the property it does
+not check is a claim.
+
+*Changed:* nothing in the harness — the rubric already gates on it. But it is the
+clearest argument yet for the rule that the operator runs the deliverable's tests and
+reads what they actually assert, rather than trusting a green suite.
+
+#### 1.4d A ceiling hit produces plausible garbage in a third distinct way
+
+Three manifestations now, all from the same cause and each looking different:
+
+| | what was written |
+|---|---|
+| phase 0 | 68 KB of deliberation, saved as `PLAN.md` |
+| an implementation phase | a fragment beginning at `async processMessages()`, no class around it |
+| **another implementation phase** | **a file whose first line is ` ```ts `** and whose last line stops mid-statement |
+
+The third came from a reply carrying **43 fence markers** — the model deliberating in
+code blocks — so the largest-span heuristic captured a region that itself contained
+fences.
+
+*Changed:* stray fence lines are stripped from any extracted artifact, leading and
+trailing. Cheap, and never wrong: a line that is nothing but a fence is not part of
+the file. The retry remains the real fix; this is what stops a truncated reply from
+producing something that *looks* like a file when the retry does not get to run.
+
+*Which it did not, here.* The process was terminated between the ceiling hit and its
+retry, so the polluted file was the artifact on disk. Had it been judged, `payout.service.ts`
+would have read as the model failing to produce valid TypeScript — a defect that is
+entirely the harness's.
+
+#### 1.4e The repair loop overflows too, and had no retry
+
+Problem 05 ran seven repair phases; **three of the last four hit the ceiling**, 27–28
+minutes each, producing nothing. The retry after a ceiling hit had been added to file
+phases and not to repairs — which is where a run now spends its longest hours, since
+the gate only started firing at problem 04.
+
+*Changed:* a repair that hits the ceiling is retried once with reasoning off, same as
+a file phase, and recorded as `repair:<path>` in `ceiling_retries_without_reasoning`.
