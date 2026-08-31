@@ -82,8 +82,8 @@ model and expect back.**
 |---|---|:-:|:-:|:-:|:-:|---|
 | 01 | payout outbox | ✗<br><sub>M2, M4, M5</sub> | – | – | – | Builds the whole shape correctly, then invents a Prisma locking API that does not exist — the one requirement that had to be atomic |
 | 02 | reconciliation resend | ~ | – | – | – | Gets every safety requirement right, including the subtle one — then ships TypeScript that does not compile |
-| 03 | read model projection | – | – | – | – |  |
-| 04 | grounded llm product | – | – | – | – |  |
+| 03 | read model projection | ✗<br><sub>M1, M5</sub> | – | – | – | Everything around the projection is right — the rebuild, the drift repair, the index — and the write itself is not transactional |
+| 04 | grounded llm product | ~ | – | – | – | First run whose code compiles, and it holds all six must-haves — then builds a judge that scores a correct refusal zero |
 | 05 | onchain anchoring | – | – | – | – |  |
 | 06 | multi tenant isolation | – | – | – | – |  |
 | 07 | ingredient classification | – | – | – | – |  |
