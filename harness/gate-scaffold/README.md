@@ -16,6 +16,19 @@ asked for. **A gate that cannot fire is decorative** — the failure problem 16 
 to measure, in the harness itself. Problem 01's most serious defect, an invented
 Prisma `lock` option, is one a typecheck rejects immediately, and it went unnoticed.
 
+
+> **The evidence is in git history, not in the tree.** The workspace this was
+> validated against belonged to the discarded campaign and was removed with it. It is
+> recoverable:
+>
+> ```
+> git show fd9647f:problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts
+> ```
+>
+> Lines 40 and 89 hold the invented option. The gate's behaviour is a property of the
+> gate and does not depend on the parameters that produced the code — but a claim
+> whose evidence has been deleted should say where it went.
+
 ## What it does not change
 
 The model is never told about these files and never sees them; they arrive after its

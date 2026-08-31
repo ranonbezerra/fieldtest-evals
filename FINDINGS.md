@@ -102,6 +102,34 @@ Docker is needed to *verify* a run, not to make one.
 
 ---
 
+### 2.5 An unexplained gap between what the client waits and what the server counts
+
+Recorded as an open measurement, not a diagnosis. **The figures are from the
+discarded campaign** — they are kept because the gap is about the server's accounting,
+which a temperature does not touch, and because a 54-minute discrepancy is worth
+re-checking rather than forgetting.
+
+| | wall | server `total_time` | gap |
+|---|--:|--:|--:|
+| problem 02, plan phase | 8.9 min | 8.9 min | **0** |
+| problem 02, schema phase | 67.1 min | 12.9 min | **54.2 min** |
+| problem 01, whole run | 303 min | 266 min | 37 min |
+
+The server reports thirteen minutes of work on a request the client waited
+sixty-seven for, while the phase immediately before it had no gap at all. A one-token
+probe fired while the campaign was generating took **12.63 s**, which suggests oMLX
+serialises and that `total_time` starts when generation starts rather than when the
+request arrives. That does not account for fifty-four minutes.
+
+*Consequence, which is certain even though the cause is not:* **tokens per second as
+recorded is optimistic**, because it is computed from the server's figure. Campaign
+planning must use wall time. Problem 01 took 5h04 by the clock against the 4h26 its
+throughput implied.
+
+*Not yet done:* instrument the gap directly — timestamp the request leaving and the
+first byte arriving — rather than inferring it from two numbers that measure different
+spans.
+
 ## 3. The harness
 
 ### 3.1 An agentic loop cannot be used, and neither can a single request
@@ -149,7 +177,9 @@ in any prompt, and `meta.yaml` records `gate_scaffold_added` so a judge knows wh
 files are not the model's work. A `prisma generate` runs first, because the invented
 option is only visible against the client generated from the model's own schema.
 
-*Validated* against a workspace the gate had never seen: it named lines 40 and 89,
+*Validated* against a workspace the gate had never seen — one belonging to the
+discarded campaign, and so no longer in the tree. Recoverable with
+`git show fd9647f:problems/01-payout-outbox/.../payout.repository.ts`. It named lines 40 and 89,
 exactly the two `lock` calls, and found three defects the operator's own review had
 missed — a duplicate block-scoped `const`, several unknown-typed catch bindings, and
 twelve imports without the `.js` extension ESM requires. A human had read that code
@@ -158,10 +188,16 @@ closely enough to write a verdict.
 **Independent of the parameter correction:** what a statement asks for does not change
 with temperature.
 
-## 4. The instruments were wrong twice, in the direction that gets them ignored
+## 4. The instruments were wrong six times, mostly in the direction that gets them ignored
 
 Recorded because the repository's whole subject is checks that pass for the wrong
-reason, and it would be dishonest to exempt its own.
+reason, and it would be dishonest to exempt its own. Six defects, and the pattern in
+them is worth more than any one: **five refused work on a machine that was fine, and
+each was written immediately after a failure it had just watched.** A check built only
+from the bad case has never seen the good one.
+
+None of these depended on the generation parameters. A false positive on swap
+occupancy is no less false for having been found at temperature 0.6.
 
 | Defect | Effect | Fix |
 |---|---|---|
@@ -175,7 +211,7 @@ and calibrated to catch that failure rather than to distinguish it from the heal
 state that resembles it. A check built only from the bad case has never seen the good
 one.
 
-### 4.0b A gate in the wrong place empties a run instead of stopping it
+### 4.1 A gate in the wrong place empties a run instead of stopping it
 
 Worse than any false positive above, and a design error rather than a measurement one.
 `ft-go` gates on host pressure once, at the top — the decision point. Each phase then
@@ -188,7 +224,7 @@ must discount is strictly more useful than no run at all.
 
 Both were found by running them against the real machine, not by reading them.
 
-### 4.1 The self-test earns its place
+### 4.2 The self-test earns its place
 
 Four defects, all mine, found on its first run before a campaign spent hours: a crash
 at capture from a renamed flag; a manifest parser matching the placeholder in its own
@@ -202,7 +238,7 @@ or the phase instructions. It costs minutes and has already saved hours twice.
 
 ---
 
-### 1.6b The agent watching the campaign was loading the machine it was measuring
+### 4.3 The agent watching the campaign was loading the machine it was measuring
 
 A controlled test, because five earlier attributions in this file were made from proxy
 indicators and were wrong. Fifteen samples of WindowServer's CPU with the session
@@ -233,7 +269,7 @@ already wrote the rule down — *a chat agent cannot supervise a run* — about 
 This is the same rule with a different mechanism, and it was violated for most of a
 session.
 
-### 4.2 Killing the watcher killed the run, twice, and it looked like a clean exit
+### 4.4 Killing the watcher killed the run, twice, and it looked like a clean exit
 
 `ft-campaign` captures `ft-go` through a pipe. Kill the orchestrator and the read end
 closes; the child then dies on its **next print** with `BrokenPipeError`, passing
@@ -249,44 +285,27 @@ watching it** — the whole point of the campaign design is that it survives bei
 alone. `ft-campaign` also tees each run's output to `ft-go.log` inside the run
 directory, so a killed orchestrator does not take the log with it.
 
-### 1.7 An unexplained gap between what the client waits and what the server counts
-
-Recorded as an open measurement, not a diagnosis.
-
-| | wall | server `total_time` | gap |
-|---|--:|--:|--:|
-| problem 02, plan phase | 8.9 min | 8.9 min | **0** |
-| problem 02, schema phase | 67.1 min | 12.9 min | **54.2 min** |
-| problem 01, whole run | 303 min | 266 min | 37 min |
-
-The server reports thirteen minutes of work on a request the client waited
-sixty-seven for, while the phase immediately before it had no gap at all. A one-token
-probe fired while the campaign was generating took **12.63 s**, which suggests oMLX
-serialises and that `total_time` starts when generation starts rather than when the
-request arrives. That does not account for fifty-four minutes.
-
-*Consequence, which is certain even though the cause is not:* **tokens per second as
-recorded is optimistic**, because it is computed from the server's figure. Campaign
-planning must use wall time. Problem 01 took 5h04 by the clock against the 4h26 its
-throughput implied.
-
-*Not yet done:* instrument the gap directly — timestamp the request leaving and the
-first byte arriving — rather than inferring it from two numbers that measure different
-spans.
-
 ## 5. What is not established
 
-- **One model, one machine.** Nothing here separates the model from this hardware.
-- **One sample per cell** in the reasoning experiment, and the fourth cell is still in
-  flight (1.3).
-- **No problem has been run end to end and judged.** The self-test proves the
-  plumbing; it is not a problem.
-- **No blind judging has happened.** Every assessment so far is the operator's.
-- **The `aider` and `chat` conditions have not been run.** Their costs are documented
-  from the pilot's record and from this harness's design, not from measurements taken
-  here.
+- **Nothing about the model.** The first campaign ran at the wrong temperature and was
+  discarded; the corrected one has not started. Every entry in §1 is about the server's
+  behaviour, not the model's.
+- **One model, one machine.** Nothing here separates the model from this hardware, and
+  §2 exists because the hardware turned out to matter more than expected.
+- **No problem has been run end to end and judged** at the correct parameters. The
+  self-test proves the plumbing; a self-test is not a problem.
+- **No judging has been blind.** Every assessment so far was the operator's, and the
+  four verdicts that existed were discarded with their runs.
+- **The `aider` and `chat` conditions have not been run.** Their costs in
+  [`harness/conditions.md`](harness/conditions.md) come from the pilot's record and from
+  this harness's design, not from measurements taken here.
+- **The ladder has not been run.** `--spec ladder` is implemented and untested, and it
+  is the axis that separates *cannot design this* from *cannot implement this* — the
+  most useful cell in the results table and still empty.
+- **The reading phase does not exist.** Designed in
+  [`docs/reading-phase.md`](docs/reading-phase.md), not built, so what the model chooses
+  to read from an existing codebase is unmeasured.
 
----
 
 ## 6. Open predictions
 
@@ -315,7 +334,6 @@ keeps the artifact intact when they do.
 **What would falsify it:** test files overflowing at the same rate as everything else,
 which would mean the two-pass phase is machinery for a problem that no longer exists
 and should come out.
-
 
 ## Appendix A — superseded by the parameter correction
 
