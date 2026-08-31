@@ -5,6 +5,16 @@ per run, written by `harness/ft-campaign` as each lands.
 
 Written before the first run, so the order is a decision rather than a habit.
 
+## Status
+
+**Reset.** A first campaign of five runs was discarded: it used temperature 0.6 and,
+on some phases, reasoning switched off — both wrong, both from misreading the model's
+`config.json` class name as its model name. See `FINDINGS.md` §0.
+
+Nothing about the model survives from it. The figures below are from those runs and
+are kept only as an order of magnitude for planning; they will be replaced by the
+first runs at the correct parameters.
+
 ## The arithmetic, from measurements not estimates
 
 | | measured |

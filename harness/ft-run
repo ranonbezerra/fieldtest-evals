@@ -102,8 +102,13 @@ def main():
                          "required when the artifact itself contains fences, such as the plan")
     ap.add_argument("--label", default="step", help="name for this request in the log")
     ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS)
+    ap.add_argument("--reasoning-effort", choices=["xhigh", "medium", "low"],
+                    help="the model's own dial for how much it deliberates. Omitted "
+                         "means the model's default. Lowering it is a deviation and is "
+                         "recorded per request.")
     ap.add_argument("--no-thinking", action="store_true",
-                    help="disable reasoning; the model's default is on, so this is a deviation to record")
+                    help="disable reasoning entirely. Blunter than --reasoning-effort low "
+                         "and kept only for the aider/chat conditions, which cannot pass it.")
     ap.add_argument("--ignore-pressure", action="store_true",
                     help="send the request even though the host is paging. Recorded either way.")
     a = ap.parse_args()
@@ -153,6 +158,9 @@ def main():
         "temperature": TEMPERATURE, "top_p": TOP_P, "top_k": TOP_K,
         "max_tokens": a.max_tokens, "stream": False,
     }
+    effort = a.reasoning_effort or os.environ.get("FT_REASONING_EFFORT") or None
+    if effort:
+        payload["reasoning_effort"] = effort
     if a.no_thinking:
         payload["chat_template_kwargs"] = {"enable_thinking": False}
 
@@ -211,6 +219,7 @@ def main():
         "temperature": TEMPERATURE, "top_p": TOP_P, "top_k": TOP_K,
         "max_tokens": a.max_tokens, "context_window": WINDOW,
         "thinking": not a.no_thinking,
+        "reasoning_effort": effort or "model default",
         "prompt_tokens": u.get("prompt_tokens"), "completion_tokens": out_tokens,
         "reasoning_chars": len(reasoning), "content_chars": len(content),
         "finish_reason": finish,

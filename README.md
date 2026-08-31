@@ -78,18 +78,24 @@ model and expect back.**
 
 | | |
 |---|---|
-| **Model** | `Qwen3.8-27B-MLX-6bit` — Qwen3.5 hybrid, 64 layers with full attention every fourth |
-| **Quantization** | 6-bit MLX, group size 64 · **22.27 GiB resident** |
-| **Reasoning** | **on by default**, and paid out of the same budget as the answer |
+| **Model** | [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B), released 14 August 2026 — 27B dense, **natively multimodal** (only the text path is exercised here) |
+| **Architecture** | 64 layers, hidden 5,120, hybrid: `16 × (3 × Gated DeltaNet → 1 × Gated Attention)`. Linear attention in 48 layers, full attention in 16 |
+| **Quantization** | 6-bit MLX (LM Studio community build), group size 64 · **22.27 GiB resident** |
+| **Reasoning** | **thinking mode by default**, paid out of the same budget as the answer. The model exposes `reasoning_effort` (`xhigh`/`medium`/`low`) |
+| **Generation** | **temperature 1.0, top_p 0.95, top_k 20** — the model card's own recommendation for thinking mode, not this harness's choice |
 | **Machine** | MacBook Pro, **Apple M4 Pro**, 14 cores (10P/4E), **48 GB unified memory**, macOS 26.6 |
 | **Server** | oMLX, OpenAI-compatible endpoint |
-| **Context window** | **32,768** — measured, not chosen: prefill is flat to 36k tokens and 20× slower by 72k |
+| **Context window** | **32,768** of a native 262,144 — measured, not chosen: prefill is flat to 36k tokens and 20× slower by 72k |
 | **Output ceiling** | **16,384 tokens**, a server setting rather than a model limit |
-| **Throughput** | **~10.6 tokens/second** on a quiet host. The same model measured 5.1 while the machine was swapping — that figure was the machine |
-| **Cost of one run** | 1.7 – 5 hours wall, 64k – 110k output tokens |
 
-Every number above was measured on this machine and is reproducible from
-[`harness/README.md`](harness/README.md); none is quoted from a model card.
+The model's own published scores include SWE-bench Pro **61.7** and GPQA Diamond
+**89.2**. This repository is not trying to reproduce those; it asks a different
+question — whether the model can take a messy real problem end to end and produce
+something you would ship.
+
+Every number here was measured on this machine and is reproducible from
+[`harness/README.md`](harness/README.md), except the published benchmark scores,
+which are the model's own and are labelled as such.
 
 **The hardware is not a footnote.** A 48 GB machine running a 22 GiB model has less
 headroom than the arithmetic suggests, and the server's own memory ceiling **moves
@@ -100,29 +106,30 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 
 <!-- results:start -->
 
-### qwen3.8-27b-mlx-6bit
+No runs have been judged yet. The table below is the shape it will take;
+every cell is filled by `harness/ft-results --write` from the `verdict.md`
+files, never by hand.
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | ✗<br><sub>M2, M4, M5</sub> | – | – | – | Builds the whole shape correctly, then invents a Prisma locking API that does not exist — the one requirement that had to be atomic |
-| 02 | reconciliation resend | ~ | – | – | – | Gets every safety requirement right, including the subtle one — then ships TypeScript that does not compile |
-| 03 | read model projection | ✗<br><sub>M1, M5</sub> | – | – | – | Everything around the projection is right — the rebuild, the drift repair, the index — and the write itself is not transactional |
-| 04 | grounded llm product | ~ | – | – | – | First run whose code compiles, and it holds all six must-haves — then builds a judge that scores a correct refusal zero |
-| 05 | onchain anchoring | – | – | – | – |  |
-| 06 | multi tenant isolation | – | – | – | – |  |
-| 07 | ingredient classification | – | – | – | – |  |
-| 08 | infra debug | – | – | – | – |  |
-| 09 | feature in conventions | – | – | – | – |  |
-| 10 | adapt existing screen | – | – | – | – |  |
-| 11 | behavior preserving refactor | – | – | – | – |  |
-| 12 | orm migration | – | – | – | – |  |
-| 13 | legacy characterization tests | – | – | – | – |  |
-| 14 | code review planted bugs | – | – | – | – |  |
-| 15 | wiring boot failure | – | – | – | – |  |
-| 16 | migration that lied | – | – | – | – |  |
-| 17 | token rotation reuse | – | – | – | – |  |
-| 18 | timing equal enumeration | – | – | – | – |  |
-
+| 01 | payout outbox | – | – | – | – | *not yet run* |
+| 02 | reconciliation resend | – | – | – | – | *not yet run* |
+| 03 | read model projection | – | – | – | – | *not yet run* |
+| 04 | grounded llm product | – | – | – | – | *not yet run* |
+| 05 | onchain anchoring | – | – | – | – | *not yet run* |
+| 06 | multi tenant isolation | – | – | – | – | *not yet run* |
+| 07 | ingredient classification | – | – | – | – | *not yet run* |
+| 08 | infra debug | – | – | – | – | *not yet run* |
+| 09 | feature in conventions | – | – | – | – | *not yet run* |
+| 10 | adapt existing screen | – | – | – | – | *not yet run* |
+| 11 | behavior preserving refactor | – | – | – | – | *not yet run* |
+| 12 | orm migration | – | – | – | – | *not yet run* |
+| 13 | legacy characterization tests | – | – | – | – | *not yet run* |
+| 14 | code review planted bugs | – | – | – | – | *not yet run* |
+| 15 | wiring boot failure | – | – | – | – | *not yet run* |
+| 16 | migration that lied | – | – | – | – | *not yet run* |
+| 17 | token rotation reuse | – | – | – | – | *not yet run* |
+| 18 | timing equal enumeration | – | – | – | – | *not yet run* |
 
 <!-- results:end -->
 

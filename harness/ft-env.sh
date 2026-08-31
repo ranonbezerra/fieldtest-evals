@@ -30,15 +30,24 @@ OMLX_MODEL=${OMLX_MODEL#openai/}
 export OMLX_BASE OMLX_MODEL OMLX_KEY
 
 # --- fixed generation parameters ---------------------------------------------
+# The model card's own recommendation for thinking mode, which is this model's
+# default mode. An earlier campaign ran at 0.6 — carried over from Qwen3 guidance
+# for a different model — and every run taken that way was discarded rather than
+# compared against these.
+#
 # Changing any of these invalidates comparison with every run already recorded.
-# They are documented, with the measurements behind them, in harness/README.md.
-: "${FT_TEMPERATURE:=0.6}"
+: "${FT_TEMPERATURE:=1.0}"
 : "${FT_TOP_P:=0.95}"
 : "${FT_TOP_K:=20}"
+# xhigh | medium | low. The model's own dial for how much it deliberates before
+# answering. Left unset here so requests carry the model's default; the harness
+# lowers it only as a documented fallback after a phase overflows its budget.
+: "${FT_REASONING_EFFORT:=}"
 : "${FT_MAX_TOKENS:=16384}"      # the server's output ceiling; thinking is paid out of it
 : "${FT_CONTEXT_WINDOW:=32768}"  # client-side budget; keep equal to the server's setting
 : "${FT_REQUEST_TIMEOUT:=3600}"  # seconds; a request that hangs must not hang the campaign
 export FT_TEMPERATURE FT_TOP_P FT_TOP_K FT_MAX_TOKENS FT_CONTEXT_WINDOW FT_REQUEST_TIMEOUT
+export FT_REASONING_EFFORT
 
 # --- run lock -----------------------------------------------------------------
 # ft-flush refuses to unload the model while this exists. Unloading mid-generation

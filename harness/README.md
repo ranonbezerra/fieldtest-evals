@@ -28,8 +28,9 @@ harness/
 
 | | |
 |---|---|
-| id | `Qwen3.8-27B-MLX-6bit` |
-| architecture | Qwen3.5 hybrid — 64 layers, full attention every 4th (16 full, 48 linear) |
+| id | [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B), 14 August 2026 |
+| architecture | 64 layers, hidden 5,120 · `16 × (3 × Gated DeltaNet → 1 × Gated Attention)` — linear attention in 48 layers, full in 16 |
+| modality | natively multimodal; only the text path is exercised here |
 | quantization | 6-bit MLX, group size 64, affine |
 | weights resident | 22.27 GiB |
 | server | oMLX, OpenAI-compatible |
@@ -41,9 +42,10 @@ harness/
 
 | Parameter | Value | Why this value |
 |---|--:|---|
-| temperature | 0.6 | The model's own generation config ships `temperature 1.0, top_p 0.95, top_k 20`, and Qwen's guidance for reasoning mode is 0.6/0.95/20. **The obvious choice — 0.2, for determinism — is wrong here:** near-greedy decoding sends a reasoning model into repetition, and the repetition is paid out of the same 16,384 tokens as the answer. Determinism is bought with variants and repeat runs, not with a temperature that changes the failure mode. |
-| top_p | 0.95 | as above |
-| top_k | 20 | as above |
+| temperature | 1.0 | **The model card's own recommendation for thinking mode**, which is this model's default mode. An earlier campaign ran at 0.6, carried over from Qwen3 guidance for a different model after misreading `model_type: qwen3_5` in the config as the model's name. Those runs were discarded rather than compared against these. The obvious choice — 0.2, for determinism — is wrong twice over: it is not what the card says, and near-greedy decoding sends a reasoning model into repetition paid out of the same budget as the answer. Determinism is bought with variants and repeat runs. |
+| top_p | 0.95 | card's recommendation |
+| top_k | 20 | card's recommendation |
+| `reasoning_effort` | unset | The model's own dial (`xhigh`/`medium`/`low`). Left at the model's default so a run measures the model rather than a setting. The harness lowers it to `low` **only** as a recorded fallback after a phase overflows its budget, and on the writing pass of the two-pass test phase. |
 | max_tokens | 16384 | the server's ceiling; not a choice |
 | context window | 32768 | measured — see below |
 | system prompt | the problem's cheatsheet, nothing else | |

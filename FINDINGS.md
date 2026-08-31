@@ -10,15 +10,52 @@ measurement contradicts an earlier one, the earlier entry is corrected in place 
 says so, because a findings file that only accumulates becomes a place to argue from
 rather than a place to check.
 
-**Under test:** `Qwen3.8-27B-MLX-6bit` — Qwen3.5 hybrid, 64 layers with full attention
-every fourth, 6-bit MLX, 22.27 GiB resident, served by oMLX on a 48 GiB Apple Silicon
-Mac. Reasoning on by default.
+**Under test:** [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B) at 6-bit
+MLX — 27B dense, natively multimodal, 64 layers, hybrid
+`16 × (3 × Gated DeltaNet → 1 × Gated Attention)`, 22.27 GiB resident. Served by oMLX
+on a MacBook Pro (M4 Pro, 48 GB). Thinking mode by default, at the card's own
+temperature 1.0 / top_p 0.95 / top_k 20.
+
+---
+
+## 0. A campaign was run at the wrong parameters and discarded
+
+The first five runs used **temperature 0.6** and, on some phases, reasoning disabled
+outright. Both were wrong, and both came from the same root: the model was identified
+from its `config.json`, which declares `model_type: qwen3_5` — the name of the
+implementation class in transformers, not of the model. Reading that as "Qwen3.5", the
+harness applied Qwen3's published guidance for a different model.
+
+The actual card recommends **temperature 1.0, top_p 0.95, top_k 20** for thinking mode,
+and the model exposes **`reasoning_effort`** (`xhigh`/`medium`/`low`) — a native dial
+for the exact problem the harness had spent hours working around with a binary
+on/off switch of its own invention.
+
+**Everything measured about the model was discarded.** Five runs, four verdicts, and
+the throughput and ceiling figures they produced. Keeping them would have meant
+comparing a model against itself under two different configurations and calling the
+difference a finding.
+
+**What survives, and why.** The entries below are separated by whether the parameters
+could have affected them:
+
+| Survives | Discarded |
+|---|---|
+| §2 the machine — memory ceilings, swap death, paged-out weights, contention | §1 anything about how the model reasons, plans or writes |
+| §3 the harness design, and §3.3 the cheatsheet leak | throughput in tokens/second |
+| §4 every instrument defect — they were defects regardless of what was being measured | the output-ceiling rates, which depend directly on how much the model deliberates |
+
+The instrument defects in §4 are the ones most worth keeping. They were found by
+running the tools against a real machine, and a wrong temperature does not make a
+false positive on swap occupancy any less false.
 
 ---
 
 ## 1. The model
 
-### 1.1 Generation runs at ~10.6 tokens/second, and slows as the prompt grows
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.1 Generation runs at ~10.6 tokens/second, and slows as the prompt grows
 
 Measured across a complete self-test run on a quiet host, stable across phases.
 On a real problem it degrades within a run as later phases carry more context:
@@ -76,7 +113,9 @@ better proxy, and still only a proxy. Only tokens per second settled it, and it 
 forty minutes to arrive. A criterion moving in the expected direction is not the
 result — which is the same trap this repository measures in models.
 
-### 1.4c The ceiling retry, validated in production
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.4c The ceiling retry, validated in production
 
 The first real ceiling hit of the campaign fired it. Same file, same phase:
 
@@ -102,7 +141,9 @@ Not a model limit — the model's own config imposes none, and its architecture 
 *Changed:* the entire harness shape. The deliverables of a single problem do not fit in
 one reply, which is why work is decomposed into one file per request.
 
-### 1.3 With reasoning, output is bound by the budget. Without it, by the task.
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.3 With reasoning, output is bound by the budget. Without it, by the task.
 
 **Confirmed.** Four measurements, one axis, two task sizes:
 
@@ -141,7 +182,9 @@ harness wrote 68 KB of it to `PLAN.md` and continued as though it were a specifi
 *Changed:* `ft-go` treats a ceiling hit in phase 0 as a failure and writes no artifact.
 A phase that was cut off did not answer.
 
-### 1.4b Implementation phases fill the budget too, on the files that are hard
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.4b Implementation phases fill the budget too, on the files that are hard
 
 The self-test suggested reasoning was only pathological in phase 0 — its two
 implementation phases used 14% and 43% of the budget. Problem 01, variant A,
@@ -167,7 +210,9 @@ mode measured to produce an answer rather than fill the budget — and both atte
 kept. The default is still the model's own, and `meta.yaml` records
 `ceiling_retries_without_reasoning`.
 
-### 1.5 The model plans well when given the budget to answer
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.5 The model plans well when given the budget to answer
 
 With reasoning off, problem 01 variant A produced a 14-file manifest in correct
 topological order — module registration and `DESIGN.md` included — in 4,327 tokens and
@@ -304,7 +349,9 @@ or the phase instructions. It costs minutes and has already saved hours twice.
 
 ---
 
-### 1.6 It writes a thorough-looking suite whose critical test is decorative
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.6 It writes a thorough-looking suite whose critical test is decorative
 
 Problem 01 variant A produced seventeen tests covering every case the statement
 demands, including a correct distinction between ambiguous and definitive provider
@@ -357,7 +404,9 @@ already wrote the rule down — *a chat agent cannot supervise a run* — about 
 This is the same rule with a different mechanism, and it was violated for most of a
 session.
 
-### 1.4d A ceiling hit produces plausible garbage in a third distinct way
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.4d A ceiling hit produces plausible garbage in a third distinct way
 
 Three manifestations now, all from the same cause and each looking different:
 
@@ -397,7 +446,9 @@ watching it** — the whole point of the campaign design is that it survives bei
 alone. `ft-campaign` also tees each run's output to `ft-go.log` inside the run
 directory, so a killed orchestrator does not take the log with it.
 
-### 1.4e The repair loop overflows too, and had no retry
+### ⚠️ DISCARDED — measured at temperature 0.6
+
+#### 1.4e The repair loop overflows too, and had no retry
 
 Problem 05 ran seven repair phases; **three of the last four hit the ceiling**, 27–28
 minutes each, producing nothing. The retry after a ceiling hit had been added to file

@@ -181,8 +181,6 @@ def main():
     ap.add_argument("--no-gate", action="store_true")
     ap.add_argument("--no-install", action="store_true")
     ap.add_argument("--max-files", type=int, default=20)
-    ap.add_argument("--think-plan", action="store_true",
-                    help="leave reasoning on for phase 0. Off by default — see below.")
     ap.add_argument("--ignore-pressure", action="store_true",
                     help="run even though the host is too loaded for a comparable "
                          "measurement. Recorded in meta.yaml either way.")
@@ -289,10 +287,12 @@ def main():
         host_samples.append(vitals())
 
     def ft_run(label, instruction, raw, reads=(), out_file=None, system=None,
-               verbatim=False, no_thinking=False):
+               verbatim=False, no_thinking=False, effort=None):
         cmd = [str(RUNNER), "--label", label, "--instruction", "-", "--raw", str(raw)]
         if no_thinking:
             cmd += ["--no-thinking"]
+        if effort:
+            cmd += ["--reasoning-effort", effort]
         if a.runner == "api":
             # ft-go gates once, at the top, and that is the decision point. Gating
             # again per phase abandons a run midway and leaves every remaining file
@@ -352,23 +352,25 @@ def main():
                                "runner": "none"})
             else:
                 instruction = (HARNESS / "instructions" / "phase0-plan.md").read_text()
-                # Reasoning is ON for the model by default and stays on for every
-                # implementation phase, where it is productive: one file phase spent
-                # 7.5k characters of it on 2.3k tokens of clean code.
+                # Every phase runs at the model's own default first. An earlier
+                # version of this harness disabled reasoning for phase 0 outright,
+                # from measurements taken at the wrong temperature and before
+                # `reasoning_effort` was known to exist. Turning the model's
+                # defining behaviour off by default is not measuring the model.
                 #
-                # Phase 0 is the exception, and it is not a preference. Measured on
-                # one task twice: with reasoning the plan filled 16,249 of 16,384
-                # tokens and took 25 minutes, on a problem answered in two small
-                # files; without it, 1,020 tokens in 102 seconds, and the plan came
-                # back longer. On a real problem (01, variant A) reasoning off
-                # produced a 14-file plan in 4,327 tokens that decided all eight of
-                # that problem's must-haves correctly.
-                #
-                # A phase that overflows its budget measures the ceiling, not the
-                # model. --think-plan restores the default and records that it did.
+                # A phase that overflows is retried at `reasoning_effort: low` —
+                # the model's own dial rather than a switch the harness invented —
+                # and the fallback is recorded per file.
                 rc = ft_run("plan", instruction, steps / "00-plan.md",
                             reads=[variant], out_file=plan_md, system=cheatsheet,
-                            verbatim=True, no_thinking=not a.think_plan)
+                            verbatim=True)
+                pu = Path(str(steps / "00-plan.md") + ".usage.json")
+                if pu.is_file() and json.loads(pu.read_text()).get("output_ceiling_hit"):
+                    say("phase 0 hit the ceiling — retrying at reasoning_effort=low")
+                    rc = ft_run("plan-retry", instruction, steps / "00-plan-retry.md",
+                                reads=[variant], out_file=plan_md, system=cheatsheet,
+                                verbatim=True, effort="low")
+                    ceiling_retries.append("plan")
                 # A phase cut off at the ceiling did not answer; it was still
                 # thinking. Writing what came back as though it were the artifact is
                 # how a run continues against 68 KB of deliberation -- observed, and
@@ -446,8 +448,7 @@ def main():
                         "decided on. Write every one of them. It is a list of "
                         "decisions, not a suggestion.")
                 ft_run(label, instruction, steps / f"{label}.md",
-                       reads=reads, out_file=target, system=cheatsheet,
-                       no_thinking=True)
+                       reads=reads, out_file=target, system=cheatsheet, effort="low")
                 two_pass_tests.append(item["path"])
             else:
                 ft_run(label, instruction, steps / f"{label}.md",
@@ -463,9 +464,10 @@ def main():
             # Both attempts are kept. The first is what the model does by default.
             u = Path(str(steps / f"{label}.md") + ".usage.json")
             if u.is_file() and json.loads(u.read_text()).get("output_ceiling_hit"):
-                say(f"         ceiling hit — retrying {item['path']} with reasoning off")
+                say(f"         ceiling hit — retrying {item['path']} at "
+                    f"reasoning_effort=low")
                 ft_run(f"{label}-retry", instruction, steps / f"{label}-retry.md",
-                       reads=reads, out_file=target, system=cheatsheet, no_thinking=True)
+                       reads=reads, out_file=target, system=cheatsheet, effort="low")
                 ceiling_retries.append(item["path"])
             written.append(target)
 
@@ -549,7 +551,7 @@ def main():
                                 f"with reasoning off")
                             ft_run(f"{rlabel}-retry", rmsg, steps / f"{rlabel}-retry.md",
                                    reads=reads, out_file=f, system=cheatsheet,
-                                   no_thinking=True)
+                                   effort="low")
                             ceiling_retries.append(f"repair:{rel}")
             else:
                 say("\n[gate] no tsconfig.json in the workspace; typecheck skipped")
@@ -607,7 +609,9 @@ def main():
                 "top_k": int(os.environ.get("FT_TOP_K", 20)),
                 "max_tokens": int(os.environ.get("FT_MAX_TOKENS", 16384)),
                 "context_window": int(os.environ.get("FT_CONTEXT_WINDOW", 32768)),
-                "thinking": {"plan": bool(a.think_plan), "implementation": True},
+                "reasoning": {"default": "model's own",
+                              "lowered_to_low_after_ceiling": ceiling_retries,
+                              "test_write_pass": "low"},
             },
             "runner": a.runner, "spec_source": a.spec,
             "requests": len(phases),
