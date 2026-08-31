@@ -1,0 +1,1204 @@
+{
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "quantization": "6-bit (MLX, group_size 64, affine)",
+  "architecture": "Qwen3.5 hybrid \u2014 64 layers, full attention every 4th",
+  "server": "oMLX",
+  "runner": "api",
+  "problem": "04-grounded-llm-product",
+  "variant": "variant-a",
+  "date": "2026-08-31T13:34:47+00:00",
+  "wall_seconds": 10558,
+  "wall_minutes": 176.0,
+  "parameters": {
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": 16384,
+    "context_window": 32768,
+    "thinking": {
+      "plan": false,
+      "implementation": true
+    }
+  },
+  "spec_source": "model",
+  "requests": 14,
+  "tokens": {
+    "prompt_total": 60201,
+    "completion_total": 107264,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 9.3,
+    "output_tokens_per_second_overall": 10.2,
+    "generation_seconds": 10497,
+    "model_load_seconds": 0,
+    "overhead_seconds": 60
+  },
+  "revisions": {
+    "self_repairs": 0,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 12,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": 37.44,
+    "ceiling_gib_max": 37.44,
+    "swap_used_gib_max": 5.55,
+    "free_percent_min": 19,
+    "trace": [
+      {
+        "at": "2026-08-31T07:38:45",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.56,
+          "available_gib": 10.86,
+          "anonymous_gib": 32.46,
+          "wired_gib": 3.63,
+          "compressed_gib": 2.64,
+          "swap_used_gib": 4.17,
+          "swap_total_gib": 5.0,
+          "free_percent": 86
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 3.77,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.56,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.55,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.49,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.44,
+            "command": "corespotlightd"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T07:38:50",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.67,
+          "available_gib": 11.77,
+          "anonymous_gib": 32.58,
+          "wired_gib": 3.41,
+          "compressed_gib": 2.64,
+          "swap_used_gib": 4.17,
+          "swap_total_gib": 5.0,
+          "free_percent": 87
+        },
+        "swap_rate": {
+          "swapins_per_sec": 12.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 3.79,
+          "cores": 14,
+          "gpu_percent": 6,
+          "server_cpu": 2.6,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.56,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.55,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.49,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.44,
+            "command": "corespotlightd"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T07:42:39",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.72,
+          "available_gib": 9.52,
+          "anonymous_gib": 8.18,
+          "wired_gib": 28.48,
+          "compressed_gib": 2.63,
+          "swap_used_gib": 4.17,
+          "swap_total_gib": 5.0,
+          "free_percent": 34
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.03,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 1.9,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.58,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.56,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.48,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.45,
+            "command": "corespotlightd"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T07:43:32",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.41,
+          "available_gib": 9.58,
+          "anonymous_gib": 8.43,
+          "wired_gib": 28.17,
+          "compressed_gib": 2.62,
+          "swap_used_gib": 4.17,
+          "swap_total_gib": 5.0,
+          "free_percent": 34
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.85,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.59,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.56,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.48,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.45,
+            "command": "corespotlightd"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T08:09:26",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.14,
+          "available_gib": 7.58,
+          "anonymous_gib": 8.07,
+          "wired_gib": 30.54,
+          "compressed_gib": 2.92,
+          "swap_used_gib": 4.16,
+          "swap_total_gib": 5.0,
+          "free_percent": 29
+        },
+        "swap_rate": {
+          "swapins_per_sec": 9.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.76,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.4,
+          "competitors": [
+            {
+              "cpu": 75.3,
+              "command": "spotlightknowled"
+            },
+            {
+              "cpu": 30.2,
+              "command": "WindowServer"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 8.59,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.56,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.47,
+            "command": "corespotlightd"
+          },
+          {
+            "gib": 0.46,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T08:22:15",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 0.23,
+          "available_gib": 7.34,
+          "anonymous_gib": 8.83,
+          "wired_gib": 30.3,
+          "compressed_gib": 2.71,
+          "swap_used_gib": 4.16,
+          "swap_total_gib": 5.0,
+          "free_percent": 29
+        },
+        "swap_rate": {
+          "swapins_per_sec": 2.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 3.34,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": [
+            {
+              "cpu": 72.7,
+              "command": "spotlightknowled"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 8.59,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.56,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.47,
+            "command": "corespotlightd"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T08:49:51",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.18,
+          "available_gib": 9.16,
+          "anonymous_gib": 7.9,
+          "wired_gib": 28.94,
+          "compressed_gib": 2.81,
+          "swap_used_gib": 4.16,
+          "swap_total_gib": 5.0,
+          "free_percent": 32
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.22,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.0,
+          "competitors": [
+            {
+              "cpu": 77.1,
+              "command": "spotlightknowled"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 8.59,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.56,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T09:18:19",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.06,
+          "available_gib": 7.82,
+          "anonymous_gib": 7.19,
+          "wired_gib": 29.47,
+          "compressed_gib": 4.92,
+          "swap_used_gib": 5.55,
+          "swap_total_gib": 6.0,
+          "free_percent": 27
+        },
+        "swap_rate": {
+          "swapins_per_sec": 8.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.64,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.56,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 1.83,
+            "command": "idea"
+          },
+          {
+            "gib": 0.59,
+            "command": "Linear Helper (Renderer)"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          },
+          {
+            "gib": 0.34,
+            "command": "Arc"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T09:24:25",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 0.64,
+          "available_gib": 7.76,
+          "anonymous_gib": 9.75,
+          "wired_gib": 28.9,
+          "compressed_gib": 3.72,
+          "swap_used_gib": 5.49,
+          "swap_total_gib": 6.0,
+          "free_percent": 31
+        },
+        "swap_rate": {
+          "swapins_per_sec": 14.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 3.02,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.1,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.56,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 2.38,
+            "command": "idea"
+          },
+          {
+            "gib": 0.66,
+            "command": "Python"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          },
+          {
+            "gib": 0.4,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T09:53:39",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.14,
+          "available_gib": 6.59,
+          "anonymous_gib": 6.51,
+          "wired_gib": 28.93,
+          "compressed_gib": 6.62,
+          "swap_used_gib": 5.25,
+          "swap_total_gib": 6.0,
+          "free_percent": 24
+        },
+        "swap_rate": {
+          "swapins_per_sec": 5.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.31,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 1.9,
+          "competitors": [
+            {
+              "cpu": 48.6,
+              "command": "WindowServer"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 8.66,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 1.41,
+            "command": "idea"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          },
+          {
+            "gib": 0.31,
+            "command": "Code Helper (Renderer)"
+          },
+          {
+            "gib": 0.29,
+            "command": "Code Helper (Renderer)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T10:10:59",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 0.06,
+          "available_gib": 4.66,
+          "anonymous_gib": 5.87,
+          "wired_gib": 30.79,
+          "compressed_gib": 7.33,
+          "swap_used_gib": 5.23,
+          "swap_total_gib": 6.0,
+          "free_percent": 19
+        },
+        "swap_rate": {
+          "swapins_per_sec": 18.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 4.44,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.0,
+          "competitors": [
+            {
+              "cpu": 46.9,
+              "command": "WindowServer"
+            },
+            {
+              "cpu": 46.0,
+              "command": "XProtectRemediat"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 8.48,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.74,
+            "command": "idea"
+          },
+          {
+            "gib": 0.6,
+            "command": "XProtectRemediatorPirrit"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          },
+          {
+            "gib": 0.35,
+            "command": "Claude Helper (Renderer)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T10:17:41",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 0.17,
+          "available_gib": 5.9,
+          "anonymous_gib": 7.19,
+          "wired_gib": 29.66,
+          "compressed_gib": 6.3,
+          "swap_used_gib": 5.23,
+          "swap_total_gib": 6.0,
+          "free_percent": 23
+        },
+        "swap_rate": {
+          "swapins_per_sec": 57.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.93,
+          "cores": 14,
+          "gpu_percent": 2,
+          "server_cpu": 2.3,
+          "competitors": [
+            {
+              "cpu": 43.8,
+              "command": "WindowServer"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 8.65,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 1.15,
+            "command": "idea"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          },
+          {
+            "gib": 0.35,
+            "command": "Claude Helper (Renderer)"
+          },
+          {
+            "gib": 0.31,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      }
+    ]
+  },
+  "output_ceiling_hits": [
+    "04-answer.ts",
+    "05-eval.ts",
+    "07-answer.test.ts"
+  ],
+  "ceiling_retries_without_reasoning": [
+    "src/answer.ts",
+    "src/eval.ts",
+    "test/answer.test.ts"
+  ],
+  "files_declared": 10,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": true,
+    "repairs": 0,
+    "gate_scaffold_added": [
+      "package.json",
+      "tsconfig.json"
+    ]
+  },
+  "failures": [],
+  "phases": [
+    {
+      "label": "plan",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 1441,
+      "completion_tokens": 2335,
+      "reasoning_chars": 0,
+      "content_chars": 8765,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 224.9,
+      "server_seconds": 224.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "01-llm-client.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 3631,
+      "completion_tokens": 208,
+      "reasoning_chars": 732,
+      "content_chars": 104,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 47.4,
+      "server_seconds": 47.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 4.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "02-grounding.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 3780,
+      "completion_tokens": 16194,
+      "reasoning_chars": 64636,
+      "content_chars": 2262,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1549.2,
+      "server_seconds": 1549.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "03-hint.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 4445,
+      "completion_tokens": 7990,
+      "reasoning_chars": 32206,
+      "content_chars": 1214,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 764.6,
+      "server_seconds": 764.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/grounding.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "04-answer.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 5044,
+      "completion_tokens": 16384,
+      "reasoning_chars": 0,
+      "content_chars": 67734,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 1583.0,
+      "server_seconds": 1582.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/grounding.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/hint.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "04-answer.ts-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 5008,
+      "completion_tokens": 319,
+      "reasoning_chars": 0,
+      "content_chars": 1128,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 67.3,
+      "server_seconds": 67.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 4.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/grounding.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/hint.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "05-eval.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 4206,
+      "completion_tokens": 16384,
+      "reasoning_chars": 0,
+      "content_chars": 71221,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 1620.0,
+      "server_seconds": 1620.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/answer.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "05-eval.ts-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 4170,
+      "completion_tokens": 705,
+      "reasoning_chars": 0,
+      "content_chars": 2433,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 82.8,
+      "server_seconds": 82.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 8.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/answer.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "06-fake-llm.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 3776,
+      "completion_tokens": 3733,
+      "reasoning_chars": 15758,
+      "content_chars": 515,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 361.6,
+      "server_seconds": 361.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "07-answer.test.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 5132,
+      "completion_tokens": 16384,
+      "reasoning_chars": 0,
+      "content_chars": 63354,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 1611.9,
+      "server_seconds": 1611.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.2,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/answer.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/fake-llm.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "07-answer.test.ts-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 5096,
+      "completion_tokens": 1206,
+      "reasoning_chars": 0,
+      "content_chars": 4303,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 136.3,
+      "server_seconds": 136.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 8.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/answer.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/fake-llm.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "08-grounding.test.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 4448,
+      "completion_tokens": 10919,
+      "reasoning_chars": 39558,
+      "content_chars": 3576,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1035.1,
+      "server_seconds": 1034.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.6,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/grounding.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "09-hint.test.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 4896,
+      "completion_tokens": 4027,
+      "reasoning_chars": 14631,
+      "content_chars": 1472,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 397.4,
+      "server_seconds": 397.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/hint.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/grounding.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "10-eval.test.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 5128,
+      "completion_tokens": 10476,
+      "reasoning_chars": 42750,
+      "content_chars": 1711,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1016.4,
+      "server_seconds": 1016.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/fake-llm.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/answer.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}
