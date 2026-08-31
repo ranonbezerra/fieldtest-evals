@@ -1,0 +1,1166 @@
+{
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "quantization": "6-bit (MLX, group_size 64, affine)",
+  "architecture": "Qwen3.5 hybrid \u2014 64 layers, full attention every 4th",
+  "server": "oMLX",
+  "runner": "api",
+  "problem": "03-read-model-projection",
+  "variant": "variant-a",
+  "date": "2026-08-31T10:38:38+00:00",
+  "wall_seconds": 25425,
+  "wall_minutes": 423.7,
+  "parameters": {
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": 16384,
+    "context_window": 32768,
+    "thinking": {
+      "plan": false,
+      "implementation": true
+    }
+  },
+  "spec_source": "model",
+  "requests": 14,
+  "tokens": {
+    "prompt_total": 79609,
+    "completion_total": 108167,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 9.3,
+    "output_tokens_per_second_overall": 8.8,
+    "generation_seconds": 12227,
+    "model_load_seconds": 0,
+    "overhead_seconds": 13198
+  },
+  "revisions": {
+    "self_repairs": 0,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 12,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": 37.44,
+    "ceiling_gib_max": 37.44,
+    "swap_used_gib_max": 4.25,
+    "free_percent_min": 29,
+    "trace": [
+      {
+        "at": "2026-08-31T00:34:48",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 4.02,
+          "available_gib": 13.56,
+          "anonymous_gib": 32.98,
+          "wired_gib": 3.25,
+          "compressed_gib": 2.38,
+          "swap_used_gib": 4.25,
+          "swap_total_gib": 5.0,
+          "free_percent": 88
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.71,
+          "cores": 14,
+          "gpu_percent": 2,
+          "server_cpu": 0.0,
+          "competitors": [
+            {
+              "cpu": 47.8,
+              "command": "syspolicyd"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 8.74,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.71,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.54,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.48,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T00:34:53",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 3.24,
+          "available_gib": 15.86,
+          "anonymous_gib": 33.12,
+          "wired_gib": 3.56,
+          "compressed_gib": 2.37,
+          "swap_used_gib": 4.25,
+          "swap_total_gib": 5.0,
+          "free_percent": 87
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.65,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.5,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.74,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.71,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.54,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.48,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T00:40:05",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.27,
+          "available_gib": 8.83,
+          "anonymous_gib": 9.38,
+          "wired_gib": 29.11,
+          "compressed_gib": 2.28,
+          "swap_used_gib": 4.25,
+          "swap_total_gib": 5.0,
+          "free_percent": 33
+        },
+        "swap_rate": {
+          "swapins_per_sec": 5.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.17,
+          "cores": 14,
+          "gpu_percent": 100,
+          "server_cpu": 2.3,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.75,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.71,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.6,
+            "command": "Python"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T00:47:01",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.11,
+          "available_gib": 8.56,
+          "anonymous_gib": 9.41,
+          "wired_gib": 29.31,
+          "compressed_gib": 2.25,
+          "swap_used_gib": 4.25,
+          "swap_total_gib": 5.0,
+          "free_percent": 33
+        },
+        "swap_rate": {
+          "swapins_per_sec": 5.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.79,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.75,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.71,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.52,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T00:52:27",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.5,
+          "available_gib": 9.13,
+          "anonymous_gib": 9.83,
+          "wired_gib": 28.5,
+          "compressed_gib": 2.24,
+          "swap_used_gib": 4.25,
+          "swap_total_gib": 5.0,
+          "free_percent": 34
+        },
+        "swap_rate": {
+          "swapins_per_sec": 26.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 3.58,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.4,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.75,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.71,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.52,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T01:00:46",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 0.06,
+          "available_gib": 7.78,
+          "anonymous_gib": 9.57,
+          "wired_gib": 29.94,
+          "compressed_gib": 2.23,
+          "swap_used_gib": 4.25,
+          "swap_total_gib": 5.0,
+          "free_percent": 31
+        },
+        "swap_rate": {
+          "swapins_per_sec": 17.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.19,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.4,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.75,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.71,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.53,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.47,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.46,
+            "command": "Python"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T01:29:28",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.6,
+          "available_gib": 9.61,
+          "anonymous_gib": 8.86,
+          "wired_gib": 28.46,
+          "compressed_gib": 2.48,
+          "swap_used_gib": 4.24,
+          "swap_total_gib": 5.0,
+          "free_percent": 34
+        },
+        "swap_rate": {
+          "swapins_per_sec": 5.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.28,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.59,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.61,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.51,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.48,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.42,
+            "command": "corespotlightd"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T01:49:15",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.67,
+          "available_gib": 8.54,
+          "anonymous_gib": 8.94,
+          "wired_gib": 29.59,
+          "compressed_gib": 2.47,
+          "swap_used_gib": 4.23,
+          "swap_total_gib": 5.0,
+          "free_percent": 32
+        },
+        "swap_rate": {
+          "swapins_per_sec": 6.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.19,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.2,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.61,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.48,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.44,
+            "command": "corespotlightd"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T02:00:34",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.32,
+          "available_gib": 8.36,
+          "anonymous_gib": 8.98,
+          "wired_gib": 29.63,
+          "compressed_gib": 2.47,
+          "swap_used_gib": 4.23,
+          "swap_total_gib": 5.0,
+          "free_percent": 32
+        },
+        "swap_rate": {
+          "swapins_per_sec": 5.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.8,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.61,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.48,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.43,
+            "command": "corespotlightd"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T02:14:14",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.98,
+          "available_gib": 9.05,
+          "anonymous_gib": 9.04,
+          "wired_gib": 28.99,
+          "compressed_gib": 2.47,
+          "swap_used_gib": 4.23,
+          "swap_total_gib": 5.0,
+          "free_percent": 33
+        },
+        "swap_rate": {
+          "swapins_per_sec": 6.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.79,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.2,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.61,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.48,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.43,
+            "command": "corespotlightd"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T02:30:13",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 0.26,
+          "available_gib": 7.34,
+          "anonymous_gib": 8.84,
+          "wired_gib": 30.71,
+          "compressed_gib": 2.48,
+          "swap_used_gib": 4.23,
+          "swap_total_gib": 5.0,
+          "free_percent": 29
+        },
+        "swap_rate": {
+          "swapins_per_sec": 2.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.69,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.6,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.61,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.52,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.48,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.44,
+            "command": "corespotlightd"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-08-31T06:27:14",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.04,
+          "available_gib": 9.55,
+          "anonymous_gib": 8.45,
+          "wired_gib": 28.16,
+          "compressed_gib": 3.04,
+          "swap_used_gib": 4.22,
+          "swap_total_gib": 5.0,
+          "free_percent": 34
+        },
+        "swap_rate": {
+          "swapins_per_sec": 2.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.56,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.8,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 8.59,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.62,
+            "command": "Arc"
+          },
+          {
+            "gib": 0.54,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.43,
+            "command": "corespotlightd"
+          },
+          {
+            "gib": 0.41,
+            "command": "java"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      }
+    ]
+  },
+  "output_ceiling_hits": [
+    "04-operation-read-model.repository.ts",
+    "09-operation-read-model.spec.ts",
+    "10-drift-repair.spec.ts"
+  ],
+  "ceiling_retries_without_reasoning": [
+    "src/operations/operation-read-model.repository.ts",
+    "test/operation-read-model.spec.ts",
+    "test/drift-repair.spec.ts"
+  ],
+  "files_declared": 10,
+  "files_empty": [],
+  "gate": {
+    "ran": false,
+    "passed": null,
+    "repairs": 0
+  },
+  "failures": [],
+  "phases": [
+    {
+      "label": "plan",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 1384,
+      "completion_tokens": 3229,
+      "reasoning_chars": 0,
+      "content_chars": 13382,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 307.2,
+      "server_seconds": 307.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "01-DESIGN.md",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 4463,
+      "completion_tokens": 4075,
+      "reasoning_chars": 12739,
+      "content_chars": 7409,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 410.8,
+      "server_seconds": 410.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "02-schema.prisma",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 4467,
+      "completion_tokens": 3436,
+      "reasoning_chars": 12187,
+      "content_chars": 1296,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 321.4,
+      "server_seconds": 321.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "03-operation-read-model.types.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 4471,
+      "completion_tokens": 5295,
+      "reasoning_chars": 20680,
+      "content_chars": 1877,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 494.1,
+      "server_seconds": 494.1,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "04-operation-read-model.repository.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 5095,
+      "completion_tokens": 16384,
+      "reasoning_chars": 0,
+      "content_chars": 66611,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 1564.2,
+      "server_seconds": 1564.1,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "04-operation-read-model.repository.ts-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 5059,
+      "completion_tokens": 1241,
+      "reasoning_chars": 0,
+      "content_chars": 4659,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 153.1,
+      "server_seconds": 153.0,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 8.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "05-operation-read-model.service.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 6450,
+      "completion_tokens": 12261,
+      "reasoning_chars": 49452,
+      "content_chars": 3268,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1182.3,
+      "server_seconds": 1182.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.repository.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "06-drift-repair.processor.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 6008,
+      "completion_tokens": 7005,
+      "reasoning_chars": 26015,
+      "content_chars": 1682,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 673.7,
+      "server_seconds": 673.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "07-operations.controller.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 6007,
+      "completion_tokens": 8489,
+      "reasoning_chars": 32723,
+      "content_chars": 3613,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 815.3,
+      "server_seconds": 815.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "08-operations.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 8339,
+      "completion_tokens": 9684,
+      "reasoning_chars": 45206,
+      "content_chars": 592,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 954.0,
+      "server_seconds": 954.0,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.2,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/drift-repair.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.controller.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "09-operation-read-model.spec.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 7371,
+      "completion_tokens": 16384,
+      "reasoning_chars": 0,
+      "content_chars": 67166,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 12372.8,
+      "server_seconds": 2780.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 5.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "09-operation-read-model.spec.ts-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 7335,
+      "completion_tokens": 2129,
+      "reasoning_chars": 0,
+      "content_chars": 7577,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1843.2,
+      "server_seconds": 461.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 4.6,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "10-drift-repair.spec.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "prompt_tokens": 6598,
+      "completion_tokens": 16384,
+      "reasoning_chars": 0,
+      "content_chars": 66007,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 4056.7,
+      "server_seconds": 1887.0,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 8.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/drift-repair.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "10-drift-repair.spec.ts-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": false,
+      "prompt_tokens": 6562,
+      "completion_tokens": 2171,
+      "reasoning_chars": 0,
+      "content_chars": 7623,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 221.7,
+      "server_seconds": 221.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.8,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/drift-repair.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}
