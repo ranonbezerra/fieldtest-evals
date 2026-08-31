@@ -449,6 +449,31 @@ is precisely what problem 16 exists to measure, committed here in the harness it
 **Prediction:** problem 02 variant A will also omit build configuration, and its gate
 will also report `ran: false`.
 
+> **CONFIRMED.** Problem 02's manifest declared ten files and zero configuration;
+> `gate: ran=false`. Two runs, independently, read the deliverables list correctly.
+> The fix was then implemented — `harness/gate-scaffold/`, copied in after the
+> model's last phase and recorded per run as `gate_scaffold_added`.
+>
+> **And validated against problem 01, which the gate had never seen.** Running it
+> over that workspace:
+>
+> ```
+> payout.repository.ts(40,9): error TS2322: Type '{ mode: string; }' is not
+>                             assignable to type 'never'
+> payout.repository.ts(89,9): error TS2322: ... (same)
+> ```
+>
+> Lines 40 and 89 are exactly the two `lock: { mode: 'FOR UPDATE' }` calls. The gate
+> rejects the invented API in seconds.
+>
+> It also found three defects the operator's manual review had missed: `Cannot
+> redeclare block-scoped variable 'payout'` twice in the service — a plain compile
+> error — several `'err' is of type 'unknown'` under `strict`, and twelve imports
+> written without the `.js` extension that ESM requires and the cheatsheet declares.
+>
+> **A human reading 300 lines of plausible TypeScript missed a duplicate `const`.**
+> That is the argument for the gate in one line.
+
 **If it repeats:** the harness supplies a minimal `package.json` and `tsconfig.json`
 before the gate, with the dependencies the cheatsheet declares. The model keeps
 delivering what the statement asks for; the gate becomes able to fire. Changing the

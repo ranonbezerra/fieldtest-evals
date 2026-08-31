@@ -434,8 +434,31 @@ def main():
             say(f"  EMPTY  {p.relative_to(ws)}")
 
         # ---- gate: typecheck, then repair with the compiler's exact words ------
-        gate = {"ran": False, "passed": None, "repairs": 0, "log": ""}
+        gate = {"ran": False, "passed": None, "repairs": 0, "log": "", "scaffold": []}
         if not a.no_gate:
+            # The statements ask for a schema, a module, tests and a design note —
+            # never for build configuration — and the phase-0 instruction tells the
+            # model not to deliberate about whether config is in scope. Two runs
+            # independently declared no config, correctly, and the gate could not
+            # fire either time. A gate that cannot fire is decorative.
+            #
+            # These arrive AFTER the model's last phase. It never sees them, and
+            # meta.yaml records which files are not its work.
+            for src in sorted((HARNESS / "gate-scaffold").glob("*")):
+                if src.name == "README.md":
+                    continue
+                if not (ws / src.name).exists():
+                    shutil.copyfile(src, ws / src.name)
+                    gate["scaffold"].append(src.name)
+            if gate["scaffold"]:
+                say(f"[gate] supplied by the harness, not the model: "
+                    f"{', '.join(gate['scaffold'])}")
+            # A Prisma client has to be generated from the model's own schema before
+            # anything importing it can be typechecked — and it is exactly those
+            # imports that expose an invented option.
+            if (ws / "prisma" / "schema.prisma").exists():
+                rc, out = run(["npx", "--no-install", "prisma", "generate"], cwd=ws, timeout=600)
+                gate["log"] += f"$ prisma generate -> {rc}\n{out[-1500:]}\n"
             if (ws / "package.json").exists() and not (ws / "node_modules").exists() \
                and not a.no_install:
                 say("\n[gate] installing dependencies")
@@ -563,7 +586,9 @@ def main():
             "ceiling_retries_without_reasoning": ceiling_retries,
             "files_declared": len(manifest),
             "files_empty": [str(p.relative_to(ws)) for p in empty],
-            "gate": {"ran": gate["ran"], "passed": gate["passed"], "repairs": gate["repairs"]},
+            "gate": {"ran": gate["ran"], "passed": gate["passed"],
+                     "repairs": gate["repairs"],
+                     "gate_scaffold_added": gate["scaffold"]},
             "failures": failures,
             "phases": phases,
         }

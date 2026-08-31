@@ -53,9 +53,23 @@ notes: |
   request throws DuplicatePayoutError where the statement asks for the existing
   payout to be returned.
 
-  Nothing caught the invented API because the workspace has no tsconfig.json — the
-  model's manifest declared ten files and no build configuration, so the gate
-  could not run. A typecheck would have failed on `lock` immediately.
+  Nothing caught the invented API at run time because the workspace had no
+  tsconfig.json — the manifest declared ten files and no build configuration, which
+  was the correct reading of the deliverables list. The harness now supplies the
+  config after the model's last phase (`harness/gate-scaffold/`), and run against
+  this very workspace it says:
+
+      payout.repository.ts(40,9): error TS2322:
+        Type '{ mode: string; }' is not assignable to type 'never'
+      payout.repository.ts(89,9): error TS2322: ... (same)
+
+  Lines 40 and 89 are the two `lock` calls. Seconds, not a careful read.
+
+  The same typecheck found three things this verdict's first pass missed:
+  `Cannot redeclare block-scoped variable 'payout'` twice in payout.service.ts — a
+  plain compile error — several `'err' is of type 'unknown'` under strict, and
+  twelve imports written without the `.js` extension ESM requires. The code does
+  not compile, and it took a machine to notice.
 
   On the tests — scored 2, revised up from 1 on re-reading. The breadth is real:
   seventeen tests covering all three cases the statement demands, plus a genuine
