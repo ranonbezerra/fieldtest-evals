@@ -81,7 +81,7 @@ model and expect back.**
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
 | 01 | payout outbox | ✗<br><sub>M2, M4, M5</sub> | – | – | – | Builds the whole shape correctly, then invents a Prisma locking API that does not exist — the one requirement that had to be atomic |
-| 02 | reconciliation resend | – | – | – | – |  |
+| 02 | reconciliation resend | ~ | – | – | – | Gets every safety requirement right, including the subtle one — then ships TypeScript that does not compile |
 | 03 | read model projection | – | – | – | – |  |
 | 04 | grounded llm product | – | – | – | – |  |
 | 05 | onchain anchoring | – | – | – | – |  |

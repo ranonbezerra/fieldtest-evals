@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Denormalized read model for the operations dashboard: one row per payment
+// order (order + event + worker joined), maintained synchronously by the write
+// path and re-derived over date windows by the drift-repair job.
+model OperationReadModel {
+  id          BigInt   @id @default(autoincrement()) @map("id")
+  orderId     BigInt   @unique @map("order_id")
+  companyId   BigInt   @map("company_id")
+  workerId    BigInt?  @map("worker_id")
+  eventId     BigInt?  @map("event_id")
+  status      String   @map("status")
+  amountCents BigInt   @map("amount_cents")
+  currency    String   @map("currency")
+  occurredAt  DateTime @map("occurred_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Dashboard filter + sort: company, status, recency with a stable tie-break on id.
+  @@index([companyId, status, occurredAt(sort: Desc), id(sort: Desc)], map: "operation_read_models_company_status_recency_idx")
+  // Date-window re-derivation and drift repair scan by occurred_at.
+  @@index([occurredAt], map: "operation_read_models_occurred_at_idx")
+
+  @@map("operation_read_models")
+}

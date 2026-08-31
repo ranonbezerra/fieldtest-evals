@@ -1,0 +1,27 @@
+{
+  "label": "04-operation-read-model.repository.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "prompt_tokens": 5095,
+  "completion_tokens": 16384,
+  "reasoning_chars": 0,
+  "content_chars": 66611,
+  "finish_reason": "length",
+  "output_ceiling_hit": true,
+  "wall_seconds": 1564.2,
+  "server_seconds": 1564.1,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 10.5,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operation-read-model.types.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}
