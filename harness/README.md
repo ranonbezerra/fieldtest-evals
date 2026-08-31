@@ -32,7 +32,8 @@ harness/
 | architecture | Qwen3.5 hybrid — 64 layers, full attention every 4th (16 full, 48 linear) |
 | quantization | 6-bit MLX, group size 64, affine |
 | weights resident | 22.27 GiB |
-| server | oMLX, OpenAI-compatible, on a 48 GB Apple Silicon Mac |
+| server | oMLX, OpenAI-compatible |
+| machine | MacBook Pro, Apple M4 Pro, 14 cores (10P/4E), 48 GB unified memory, macOS 26.6 |
 | reasoning | **on by default** (`thinking_default: true`), and paid out of the output budget |
 | generation | **~10.6 tok/s on a quiet host**, stable across phases. Under swap pressure the same model measured 5.1 — that figure was the machine, not the model |
 

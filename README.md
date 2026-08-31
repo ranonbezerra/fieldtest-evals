@@ -74,6 +74,30 @@ rubrics systematically mis-evaluate.
 This is the card the repository exists to hand you. Not a score: **what you can give a
 model and expect back.**
 
+### What is being measured, and on what
+
+| | |
+|---|---|
+| **Model** | `Qwen3.8-27B-MLX-6bit` — Qwen3.5 hybrid, 64 layers with full attention every fourth |
+| **Quantization** | 6-bit MLX, group size 64 · **22.27 GiB resident** |
+| **Reasoning** | **on by default**, and paid out of the same budget as the answer |
+| **Machine** | MacBook Pro, **Apple M4 Pro**, 14 cores (10P/4E), **48 GB unified memory**, macOS 26.6 |
+| **Server** | oMLX, OpenAI-compatible endpoint |
+| **Context window** | **32,768** — measured, not chosen: prefill is flat to 36k tokens and 20× slower by 72k |
+| **Output ceiling** | **16,384 tokens**, a server setting rather than a model limit |
+| **Throughput** | **~10.6 tokens/second** on a quiet host. The same model measured 5.1 while the machine was swapping — that figure was the machine |
+| **Cost of one run** | 1.7 – 5 hours wall, 64k – 110k output tokens |
+
+Every number above was measured on this machine and is reproducible from
+[`harness/README.md`](harness/README.md); none is quoted from a model card.
+
+**The hardware is not a footnote.** A 48 GB machine running a 22 GiB model has less
+headroom than the arithmetic suggests, and the server's own memory ceiling **moves
+with what else is open** — 37.44 GiB down to 32.36 GiB inside one session. Under swap
+pressure it does not slow down, it stops answering: one phase ran 46 minutes and
+produced zero bytes. Runs taken under pressure are marked `comparable: no` rather than
+averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurements.
+
 <!-- results:start -->
 
 ### qwen3.8-27b-mlx-6bit
@@ -315,16 +339,12 @@ The shape of a verdict is [`harness/verdict-template.md`](harness/verdict-templa
 
 ## Models under test
 
-Running on a Mac (Apple Silicon, 48 GB) via oMLX.
+The full specification sits beside the results table above, where the numbers it
+explains actually are.
 
-**Current: `Qwen3.8-27B-MLX-6bit`** — Qwen3.5 hybrid architecture, 64 layers with full
-attention every fourth, 6-bit MLX quantization, 22.27 GiB resident, reasoning on by
-default. Measured here: **~5 tokens/second of output**, a flat prefill curve to ~36k
-tokens and a 20x cliff beyond it, and a hard 16,384-token output ceiling that its
-reasoning is paid out of. Those three numbers shape the whole harness; the arithmetic
-is in [`harness/README.md`](harness/README.md).
-
-Planned: a second model family, for recipe variety rather than a bigger number.
+**Current: `Qwen3.8-27B-MLX-6bit`.** Planned: a second model family, for recipe
+variety rather than a bigger number — and the ladder (`--spec ladder`) on whatever
+this one failed, which separates *cannot design this* from *cannot implement this*.
 
 Verdicts live inside each problem's `runs/` tree — deliberately, there is no
 cross-problem scoreboard to collapse them into.
