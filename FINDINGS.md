@@ -52,6 +52,8 @@ one reply, which is why work is decomposed into one file per request.
 When the ceiling cuts the model before its thinking closes, the server cannot separate
 the two and returns the deliberation in `content`, with `reasoning_content` empty. The
 harness wrote 68 KB of it to `PLAN.md` and continued as though it were a specification.
+(The 68 KB is from a discarded run; the behaviour is the server's and does not depend
+on the parameters that produced the reply.)
 
 *Changed:* `ft-go` treats a ceiling hit in phase 0 as a failure and writes no artifact.
 A phase that was cut off did not answer.

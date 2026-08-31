@@ -91,7 +91,8 @@ Two consequences worth stating plainly:
 ## The ceiling that actually decides runs
 
 Input is almost never the problem. **Output is, and thinking is paid out of it.** Neither counter shows the reasoning, so
-a phase that needed 1,900 tokens of code can spend 15,000 and write nothing. Every
+a phase that needed 1,900 tokens of code can spend 15,000 and write nothing — that
+pair is from the pilot's record, not from this campaign. Every
 request records `output_ceiling_hit`, and when it fires the run is not a wrong answer
 — it is no answer.
 

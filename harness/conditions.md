@@ -30,16 +30,16 @@ do that, and for work that is not a specified task it is the only sensible path.
 **What it costs, measured.**
 
 - **The loop grows its own context.** Every file read, every file written and every
-  re-sent workspace listing goes back in. A task whose real content was 3,000 tokens
-  was observed reaching 90,000 — and the workspace file listing alone was 2,700
-  tokens, resent on every message.
+  re-sent workspace listing goes back in. **Measured in the pilot, not here:** a task
+  whose real content was 3,000 tokens was observed reaching 90,000, and the workspace
+  file listing alone was 2,700 tokens, resent on every message.
 - **Then it is trimmed, and the trim is silent.** The KV cache outgrowing what the GPU
   may wire aborts the request loudly. What happens *before* that is worse: the
   conversation is trimmed to fit, the oldest turn goes first, and the oldest turn is
   the task. The run then completes, plausibly, against instructions no longer in the
   window. Nothing in the output says so.
 - **Streaming into a parser truncates paths.** oMLX emits one SSE frame per token, so
-  a path arrives split — `">wishtrip"`, `"-shared/contracts"`, `"/src/auth/sign"`,
+  a path arrives split — `">packages"`, `"/contracts/src"`, `"/auth/sign"`,
   `"-in.ts"`. A client that acts on the stream as it arrives, as Cline does to show a
   live diff, can close a tag on a chunk boundary. Three files landed at a repository
   root that way, each byte-perfect under a truncated name. The line proxy in
@@ -88,7 +88,7 @@ because there is no loop, none of the chat condition's context growth can happen
   task touching the same file. Against an output ceiling, that is budget spent copying
   code that is already on disk.
 - **Exit 0 does not mean written.** aider has exited 0 having created the files empty
-  and never filled them, three times in one epic. `ft-aider` reports the byte count
+  and never filled them, three times in one epic of the pilot. `ft-aider` reports the byte count
   and fails on zero regardless of the exit code.
 - **The counters are estimates.** aider's own, not the server's `usage` block, so
   tok/s here is wall-clock and not comparable line-for-line with the `api` condition.

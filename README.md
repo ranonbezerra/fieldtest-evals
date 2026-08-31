@@ -362,6 +362,22 @@ this one failed, which separates *cannot design this* from *cannot implement thi
 Verdicts live inside each problem's `runs/` tree — deliberately, there is no
 cross-problem scoreboard to collapse them into.
 
+## Where this came from
+
+The harness did not start here. Its rules — one request per phase, references that
+must resolve, the flush between runs, the refusal to let a model explore — come from a
+pilot run on a **private production monorepo**, where a local model was given real task
+cards and the failures were paid for once each.
+
+That pilot answered *how to get work out of a small local model*. It could not answer
+*what a local model is actually able to do*, because every task there was shaped to
+succeed. **This repository exists for the second question**, which is why the problems
+are whole and messy rather than decomposed, and why nothing here is tuned to make a
+model pass.
+
+Figures inherited from that pilot are labelled as such wherever they appear. Everything
+else was measured here.
+
 ## The harness
 
 | | |

@@ -12,7 +12,7 @@ harness/chat/omlx-lineproxy.py            # listens on :9001, forwards to oMLX
 ```
 
 Not optional. oMLX emits one SSE frame per token, so a path arrives split —
-`">wishtrip"`, `"-shared/contracts"`, `"/src/auth/sign"`, `"-in.ts"` — and a client
+`">packages"`, `"/contracts/src"`, `"/auth/sign"`, `"-in.ts"` — and a client
 that writes the file live to show a diff can close a tag on a chunk boundary. Three
 files landed at a repository root that way, byte-perfect under truncated names. The
 proxy holds content until a newline; every tag a client parses opens and closes within
