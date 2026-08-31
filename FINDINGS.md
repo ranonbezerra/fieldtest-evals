@@ -132,6 +132,32 @@ planting a known leak and confirming it surfaces.
 
 ---
 
+### 3.4 A gate that cannot fire is decorative
+
+`ft-go`'s typecheck only ran when the model happened to write build configuration it
+was never asked for. Two runs, independently, declared manifests with no
+`tsconfig.json` — and both were right to: the variants ask for a schema, a module,
+tests and a design note, and the phase-0 instruction names *"whether a config file is
+in scope"* as a convention to settle in one line and move past.
+
+So the gate never fired, and the most serious defect of the first run — an invented
+Prisma `lock` option — went unnoticed. A typecheck rejects it in seconds.
+
+*Changed:* [`harness/gate-scaffold/`](harness/gate-scaffold/) supplies a minimal
+`package.json` and `tsconfig.json` **after the model's last phase**. It never appears
+in any prompt, and `meta.yaml` records `gate_scaffold_added` so a judge knows which
+files are not the model's work. A `prisma generate` runs first, because the invented
+option is only visible against the client generated from the model's own schema.
+
+*Validated* against a workspace the gate had never seen: it named lines 40 and 89,
+exactly the two `lock` calls, and found three defects the operator's own review had
+missed — a duplicate block-scoped `const`, several unknown-typed catch bindings, and
+twelve imports without the `.js` extension ESM requires. A human had read that code
+closely enough to write a verdict.
+
+**Independent of the parameter correction:** what a statement asks for does not change
+with temperature.
+
 ## 4. The instruments were wrong twice, in the direction that gets them ignored
 
 Recorded because the repository's whole subject is checks that pass for the wrong
@@ -266,119 +292,30 @@ spans.
 
 Written before the data, so they can be wrong rather than rationalised afterwards.
 
-### 6.2 Test files overflow every time, and the two-pass phase should stop it
+### 6.1 Test files may overflow, and the two-pass phase is already in place
 
-Across four problems, 40 phases:
+Under the discarded parameters, test files hit the output ceiling **5 of 9** times
+against 6 of 31 for everything else — roughly threefold. The two-pass test phase was
+built on that: enumerate the cases at the model's default effort, where naming what
+would have to break is the thinking worth having, then write them at
+`reasoning_effort: low`, from a list that already holds the decisions.
 
-| | hit the ceiling |
-|---|---|
-| **test files** | **5 of 9 — 56%** |
-| everything else | 6 of 31 — 19% |
+Capping tests per file was rejected — coverage is a scored criterion, and buying
+throughput with it is the wrong trade. Lowering `max_tokens` was rejected as cutting
+the waste without touching the cause. Making the plan split its test files was
+rejected as the harness designing on the model's behalf.
 
-> **Corrected.** This entry first read *4 of 4 — 100%*, from three problems. Problem
-> 04 landed with three of its four test files finishing normally on 4,027–10,919
-> tokens with reasoning on, and the claim did not survive. The effect is real and
-> roughly threefold; it is not absolute, and the change was implemented while the
-> number was still 100%. That is the mistake this file has recorded five times in
-> other forms: acting on a pattern before it had a denominator.
+**Open, because the numbers behind it are gone.** Temperature moves exactly this: how
+much a model deliberates before answering. The rate may be lower at 1.0, or higher, or
+unchanged.
 
-Every ceiling hit shows `reasoning_chars: 0`, which is the signature of thinking that
-never closed and was returned as content. And the retries — the same file, reasoning
-off — came back in **1,061 to 5,955 tokens, median 3,080 for the test files**. The
-work was never large. The deliberation was.
+**Prediction:** test files still overflow more than other files, and the two-pass phase
+keeps the artifact intact when they do.
 
-Cost so far: **131,072 tokens burned on eight phases that produced nothing**, about
-3.6 hours of GPU across three problems. Extrapolated across eighteen, roughly 22
-hours.
+**What would falsify it:** test files overflowing at the same rate as everything else,
+which would mean the two-pass phase is machinery for a problem that no longer exists
+and should come out.
 
-**What was rejected, and why.** Capping the number of tests per file would optimise
-the harness against the thing it grades — coverage is a scored criterion, and buying
-throughput with it is the wrong trade. Lowering `max_tokens` for test phases would cut
-the waste without touching the cause. Requiring the plan to split its test files would
-mean the harness designing on the model's behalf, which is what phase 0 exists to
-avoid.
-
-**What was implemented:** the test phase runs in two passes. First the cases are
-enumerated **with** reasoning — cheap, and exactly the thinking worth having, since
-naming what would have to break is the hard part of a test. Then the file is written
-**without** reasoning, from a list that already contains the decisions.
-
-The case list is kept as an artifact, which is a second benefit: it makes visible what
-the model *intended* to test, separately from what it wrote. Problem 01 produced a
-test named `does not overdraw under concurrent creation` that could not detect an
-overdraw (1.6); the intent and the artifact diverged, and nothing recorded the intent.
-
-**Prediction (revised after the correction above):** from problem 05 onward — problem
-04 was already running under the old code — test phases stop hitting the ceiling, and the
-resulting suites are no thinner — problem 01's no-reasoning retry produced 17 tests in
-21,579 bytes, so terseness is not the failure mode to expect.
-
-**If they still overflow:** the cause is not the reasoning and this is a patch on a
-symptom. The next thing to examine would be the context the phase carries, since a
-test phase reads the plan plus every implementation file it covers.
-
-### 6.1 The gate is disarmed by construction, and it should repeat on problem 02
-
-Problem 01's manifest declared ten files and no `tsconfig.json`, so `ft-go`'s typecheck
-could not run at all — and the run's most serious defect, an invented Prisma `lock`
-option, is one a typecheck catches in seconds.
-
-**This is not the model's failure.** Three pieces of evidence:
-
-- the variant's Deliverables list asks for schema, migration, module, tests and
-  `DESIGN.md`. It never mentions build configuration
-- the phase-0 instruction explicitly tells the model not to deliberate about it:
-  *"where the task leaves a convention open — which file something lives in, **whether
-  a config file is in scope**, how a helper is named — choose, write it in section 1
-  in one line, and move on"*
-- the plan recorded eleven substantive assumptions, including one about configuration
-  (intervals via environment variables, *"no hardcoded config"*). It read the
-  deliverables list correctly and did not consider `tsconfig` part of the scope
-
-So the chain is: a statement that does not ask for build config, feeding a gate that
-only runs when build config exists. **A gate that cannot fire is decorative** — which
-is precisely what problem 16 exists to measure, committed here in the harness itself.
-
-**Prediction:** problem 02 variant A will also omit build configuration, and its gate
-will also report `ran: false`.
-
-> **CONFIRMED.** Problem 02's manifest declared ten files and zero configuration;
-> `gate: ran=false`. Two runs, independently, read the deliverables list correctly.
-> The fix was then implemented — `harness/gate-scaffold/`, copied in after the
-> model's last phase and recorded per run as `gate_scaffold_added`.
->
-> **And validated against problem 01, which the gate had never seen.** Running it
-> over that workspace:
->
-> ```
-> payout.repository.ts(40,9): error TS2322: Type '{ mode: string; }' is not
->                             assignable to type 'never'
-> payout.repository.ts(89,9): error TS2322: ... (same)
-> ```
->
-> Lines 40 and 89 are exactly the two `lock: { mode: 'FOR UPDATE' }` calls. The gate
-> rejects the invented API in seconds.
->
-> It also found three defects the operator's manual review had missed: `Cannot
-> redeclare block-scoped variable 'payout'` twice in the service — a plain compile
-> error — several `'err' is of type 'unknown'` under `strict`, and twelve imports
-> written without the `.js` extension that ESM requires and the cheatsheet declares.
->
-> **A human reading 300 lines of plausible TypeScript missed a duplicate `const`.**
-> That is the argument for the gate in one line.
-
-**If it repeats:** the harness supplies a minimal `package.json` and `tsconfig.json`
-before the gate, with the dependencies the cheatsheet declares. The model keeps
-delivering what the statement asks for; the gate becomes able to fire. Changing the
-statements instead would change what eighteen problems measure, and spend the model's
-budget writing config rather than solving the problem.
-
-**If it does not repeat:** the more interesting outcome. Two runs of the same harness
-diverging on whether config is in scope would mean the instruction leaves it genuinely
-open, and the fix is to settle it in the instruction rather than to paper over it in
-the gate.
-
----
 
 ## Appendix A — superseded by the parameter correction
 

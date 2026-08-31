@@ -36,7 +36,7 @@ harness/
 | server | oMLX, OpenAI-compatible |
 | machine | MacBook Pro, Apple M4 Pro, 14 cores (10P/4E), 48 GB unified memory, macOS 26.6 |
 | reasoning | **on by default** (`thinking_default: true`), and paid out of the output budget |
-| generation | **~10.6 tok/s on a quiet host**, stable across phases. Under swap pressure the same model measured 5.1 — that figure was the machine, not the model |
+| generation | not yet measured at the correct parameters. The discarded campaign saw ~10.6 tok/s on a quiet host and 5.1 while swapping — the second figure was the machine, not the model |
 
 ## Fixed parameters
 
@@ -90,67 +90,26 @@ Two consequences worth stating plainly:
 
 ## The ceiling that actually decides runs
 
-Input is almost never the problem. **Output is, and thinking is paid out of it** — and on this model that is not a
-caveat, it is the dominant cost. It is also **specific to the planning phase**.
-Measured across one self-test run on a task small enough to answer in two files:
+Input is almost never the problem. **Output is, and thinking is paid out of it.** Neither counter shows the reasoning, so
+a phase that needed 1,900 tokens of code can spend 15,000 and write nothing. Every
+request records `output_ceiling_hit`, and when it fires the run is not a wrong answer
+— it is no answer.
 
-| phase | output tokens | reasoning | wall |
-|---|--:|--:|--:|
-| plan | 16,249 / 16,384 | 63,171 chars | 25 min |
-| `src/money.ts` | 2,361 | 7,517 chars | 4 min |
-| `test/money.test.ts` | 7,068 | 26,492 chars | 11 min |
+How much of the budget this model spends deliberating, and on which phases, was
+measured under the wrong parameters and is being re-measured. `FINDINGS.md` Appendix A
+holds the old figures for comparison; none should be quoted.
 
-The implementation phases are comfortable. **Phase 0 succeeded by 135 tokens on a
-trivial task**, which means it will not fit for a real one — and the failure mode is
-not a bad plan, it is no plan: the reply is cut off mid-reasoning, and because the
-thinking never closes, the server cannot separate it and returns 68 KB of
-deliberation as the answer. `ft-go` now detects a ceiling hit in phase 0 and records
-it as a failure rather than writing the reasoning to `PLAN.md`.
 
-### Reasoning is on everywhere except phase 0
+### Reasoning runs at the model's own default
 
-Measured, one axis at a time, on a settled host:
+`reasoning_effort` is left unset, so every phase carries the model's default. The
+harness lowers it to `low` in exactly two places, both recorded per run: as a fallback
+after a phase overflows its budget, and on the writing pass of the two-pass test phase.
 
-| | task | reasoning | output tokens | wall | plan |
-|---|---|---|--:|--:|--:|
-| control | self-test | **on** | 16,249 / 16,384 | 25 min | 2,771 B |
-| A | self-test | off | **1,020** | **1m42** | 3,978 B |
-| B | problem 01, variant A | off | **4,327** | **7 min** | 16,257 B, 14 files |
+An earlier version disabled reasoning outright for phase 0, from measurements taken at
+the wrong temperature and before `reasoning_effort` was known to exist. Turning off a
+model's defining behaviour by default is not measuring the model.
 
-Sixteen times fewer tokens, fifteen times faster, and the plan came back *longer*.
-On the real problem it produced a 14-file manifest in correct topological order and
-**decided all eight of that problem's must-haves correctly** — hold rather than debit,
-a row lock for the reservation, the outbox inside the creation transaction, funds
-never released on retry exhaustion, integer minor units throughout.
-
-So: **reasoning off for phase 0, on for every implementation phase.** Not a
-preference. A phase that overflows its budget measures the ceiling rather than the
-model, and phase 0 with reasoning overflowed on a task answered in two small files.
-The implementation phases are the opposite case — one spent 7,500 characters of
-reasoning on 2,300 tokens of clean code — so nothing is switched off there.
-
-`--think-plan` restores the model's default and records that it did. `meta.yaml`
-carries `thinking: {plan, implementation}` per run, so no run is ambiguous about it.
-
-**What this does not establish.** One sample per cell. The control for problem 01 with
-reasoning on was started and killed when the host began paging, so *"the plan would
-overflow on a real problem"* remains an inference — a strong one, since a task a
-quarter the size overflowed, but not a measurement. And the plan above was judged by
-the operator against the rubric, not blind.
-Neither counter shows the reasoning, so a phase that needed 1,900 tokens of code can
-spend 15,000 and write nothing. Every request records `output_ceiling_hit`, and when
-it fires the run is not a wrong answer — it is no answer.
-
-Two causes, identical from outside, wanting opposite fixes. The reasoning in the
-transcript says which:
-
-| The model is asking | Cause | Fix |
-|---|---|---|
-| *"Is X a class or an interface? Which of these is expected?"* — the question restarts | an unresolved reference: it is reasoning about something it cannot read | close the reference. Splitting does not help; both halves inherit it |
-| *"Step 4 before step 5, because an expired token reused is still a leak."* — the question is decided | too many decisions in one phase | split |
-
-This distinction is a graded dimension in [`judge-prompt.md`](judge-prompt.md), because
-for a local model it is more decision-relevant than the score.
 
 ## The machine is part of the measurement
 

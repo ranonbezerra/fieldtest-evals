@@ -178,27 +178,33 @@ then mapped back to model ids.
 
 ## What has been measured so far
 
-Full record with numbers and consequences in [`FINDINGS.md`](FINDINGS.md). The six
-that changed how this repository works:
+Full record with numbers and consequences in [`FINDINGS.md`](FINDINGS.md).
+
+**About the model: nothing yet.** A first campaign of five runs was discarded when the
+generation parameters turned out to be wrong — the model was identified from its
+`config.json` class name and run at temperature 0.6 instead of the 1.0 its card
+recommends. Those runs are in `FINDINGS.md` Appendix A, labelled as not quotable. The
+campaign at the correct parameters has not started.
+
+**About the machine and the instruments, which the parameters could not affect:**
 
 | | Finding | What it changed |
 |---|---|---|
-| 1 | Generation runs at **~10.6 tok/s**, and the output ceiling is **16,384 tokens with reasoning paid out of it** | The deliverables of one problem cannot fit in one reply. Hence the phase design |
-| 2 | **With reasoning, output is bound by the budget; without it, by the task.** Two tasks of very different size both filled ~100% of the 16,384-token ceiling with reasoning on. With it off: 1,020 and 4,327 — scaling with the work | Reasoning off for phase 0, on for implementation. Raising the server's ceiling is off the table: it would buy a bigger deliberation, not an answer |
-| 3 | With reasoning off, problem 01 produced a 14-file plan in **4,327 tokens** that decided **all eight of its must-haves correctly** | The phase design works on a real problem, not only on a toy |
-| 4 | The server's memory ceiling **moves with host load** — 37.44 to 32.36 GiB in one session — and under swap pressure the server **dies rather than slowing**. One phase ran 46 minutes and produced zero bytes | Both runners refuse to start on a paging host; every run records the ceiling's range |
-| 5 | The model can be **"loaded" and paged out at once**: the server reporting 22.27 GiB resident while the host held 3.6 GiB wired and 24.2 GiB compressed | `ft-vitals` flags it. Unloading returned 23 GiB for a fourteen-second reload |
-| 6 | The cheatsheet was **leaking two rubric answers** in sentences that read as good advice | `ft-lint-cheatsheet`, validated against a planted leak |
+| 1 | The output ceiling is **16,384 tokens with reasoning paid out of it** — a server setting, not a model limit | The deliverables of one problem cannot fit in one reply. Hence the phase design |
+| 2 | A ceiling hit **mid-reasoning returns the deliberation as the answer**, with `reasoning_content` empty | A cut-off phase writes no artifact. 68 KB of thinking had been saved as a plan |
+| 3 | The server's memory ceiling **moves with host load** — 37.44 to 32.36 GiB in one session — and under swap pressure it **dies rather than slowing**. One phase ran 46 minutes and produced zero bytes | Both runners refuse to start on a paging host; every run records the ceiling's range |
+| 4 | The model can be **"loaded" and paged out at once**: the server reporting 22.27 GiB resident while the host held 3.6 GiB wired and 24.2 GiB compressed | `ft-vitals` flags it. Unloading returned 23 GiB for a fourteen-second reload |
+| 5 | The cheatsheet was **leaking two rubric answers** in sentences that read as good advice | `ft-lint-cheatsheet`, validated against a planted leak |
+| 6 | **The agent watching the campaign was loading the machine it measured** — 27% to 47% compositor CPU, controlled test | Check a run rarely and in few calls |
 
-Two of the instruments above were themselves wrong first, both in the direction that
-gets a check switched off — one sized the model against the wrong memory figure, the
-other gated on swap occupancy instead of swap rate. Recorded in `FINDINGS.md` §4,
-because a repository about checks that pass for the wrong reason does not get to
-exempt its own.
+Six of the harness's own instruments were wrong before they were right — five refusing
+work on a healthy machine, one reporting a number that meant nothing. `FINDINGS.md` §4
+has them, because a repository about criteria that pass for the wrong reason does not
+get to exempt its own.
 
-**Not yet established:** no problem has been run end to end and judged; no judging has
-been blind; the `aider` and `chat` conditions have not been run. `FINDINGS.md` §5 is
-the list.
+**Not yet established:** no problem has been run end to end at the correct parameters;
+no judging has been blind; the `aider` and `chat` conditions have not been run.
+`FINDINGS.md` §5 is the list.
 
 ## How to use this repo
 

@@ -74,7 +74,7 @@ design is suppressing.
 ## Cost, from measured rates
 
 The tree of a 40-file fixture is roughly 600 tokens in. The reply is a list — a few
-hundred out, well under a minute at ~10.6 tok/s. It is the cheapest phase in the run,
+hundred out — the cheapest phase in the run at any throughput,
 and the only one that would have to be added rather than reshaped.
 
 ## Open questions, honestly

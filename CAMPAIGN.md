@@ -15,9 +15,13 @@ Nothing about the model survives from it. The figures below are from those runs 
 are kept only as an order of magnitude for planning; they will be replaced by the
 first runs at the correct parameters.
 
-## The arithmetic, from measurements not estimates
+## The arithmetic
 
-| | measured |
+**From the discarded campaign.** These are the only figures available and they were
+taken at the wrong temperature, so they are an order of magnitude for planning and
+nothing more. They will be replaced by the first runs at the correct parameters.
+
+| | measured, at parameters since corrected |
 |---|--:|
 | plan phase, reasoning off, problem 01 | 4,327 tokens · **7 min** |
 | a file phase | 2,361–7,068 tokens · **4–11 min** |

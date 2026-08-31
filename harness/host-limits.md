@@ -51,8 +51,8 @@ error, not an output-ceiling hit — the three failure modes the harness knows h
 classify. Just a request that never came back, because the weights answering it were
 on disk.
 
-Generation on this machine, unloaded, measures **~5 tokens/second**. There is no
-figure for generation under swap, because it did not finish.
+There is no figure for generation under swap, because it did not finish. The
+unloaded-machine rate is being re-measured at the corrected parameters.
 
 ### "Loaded" is the server's word, and the host disagrees
 

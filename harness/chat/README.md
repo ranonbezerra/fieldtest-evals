@@ -29,7 +29,8 @@ A LaunchAgent keeps it up on this machine, so there is usually nothing to start.
 client that thinks it has more will send more, and the server's refusal is a hard
 error where the client's own trimming would have been graceful.
 
-**4. Set temperature 0.6, top_p 0.95, top_k 20.** The same as every other condition.
+**4. Set temperature 1.0, top_p 0.95, top_k 20** — the model card's recommendation
+for thinking mode, and the same as every other condition.
 
 **5. Copy [`clinerules/`](clinerules/) into the run workspace as `.clinerules/`.**
 
