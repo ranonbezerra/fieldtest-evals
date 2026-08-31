@@ -499,17 +499,24 @@ def main():
             if gate["scaffold"]:
                 say(f"[gate] supplied by the harness, not the model: "
                     f"{', '.join(gate['scaffold'])}")
-            # A Prisma client has to be generated from the model's own schema before
-            # anything importing it can be typechecked — and it is exactly those
-            # imports that expose an invented option.
-            if (ws / "prisma" / "schema.prisma").exists():
-                rc, out = run(["npx", "--no-install", "prisma", "generate"], cwd=ws, timeout=600)
-                gate["log"] += f"$ prisma generate -> {rc}\n{out[-1500:]}\n"
             if (ws / "package.json").exists() and not (ws / "node_modules").exists() \
                and not a.no_install:
                 say("\n[gate] installing dependencies")
                 rc, out = run(["pnpm", "install", "--ignore-scripts"], cwd=ws, timeout=1800)
                 gate["log"] += f"$ pnpm install -> {rc}\n{out[-2000:]}\n"
+            # Only after the dependencies exist. `npx --no-install prisma` finds
+            # nothing before pnpm install has run, fails quietly, and the client is
+            # never generated — leaving the typecheck unable to see the very thing
+            # the gate exists to catch, since an invented Prisma option is only
+            # visible against the client generated from the model's own schema.
+            if (ws / "prisma" / "schema.prisma").exists() and (ws / "node_modules").is_dir():
+                rc, out = run(["npx", "--no-install", "prisma", "generate"],
+                              cwd=ws, timeout=600)
+                gate["log"] += f"$ prisma generate -> {rc}\n{out[-1500:]}\n"
+                if rc != 0:
+                    say(f"[gate] prisma generate failed ({rc}); the typecheck will "
+                        f"not see the generated client")
+
             if (ws / "tsconfig.json").exists():
                 gate["ran"] = True
                 for attempt in range(MAX_REPAIRS + 1):

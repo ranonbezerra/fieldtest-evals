@@ -53,7 +53,14 @@ def main():
     ap.add_argument("--file", help="the one file aider may write")
     ap.add_argument("--label", default="step")
     ap.add_argument("--max-tokens", type=int, default=int(os.environ.get("FT_MAX_TOKENS", 16384)))
-    ap.add_argument("--no-thinking", action="store_true")
+    # Accepted so ft-go can call every runner with the same arguments, and ignored:
+    # aider has no way to send `reasoning_effort` or to disable thinking, so this
+    # condition always runs at whatever the model and server default to. Recording
+    # a requested state it cannot apply would be a usage file that lies.
+    ap.add_argument("--no-thinking", action="store_true",
+                    help="accepted and ignored; aider cannot control reasoning")
+    ap.add_argument("--reasoning-effort", choices=["xhigh", "medium", "low"],
+                    help="accepted and ignored; aider has no flag for it")
     ap.add_argument("--verbatim", action="store_true", help="accepted and ignored; aider writes files itself")
     ap.add_argument("--workdir", help="aider's working directory (default: the target file's parent)")
     a = ap.parse_args()
@@ -114,7 +121,14 @@ def main():
     rec = {
         "label": a.label, "runner": "aider", "model": MODEL,
         "temperature": float(TEMPERATURE), "max_tokens": a.max_tokens,
-        "thinking": not a.no_thinking,
+        # Not `not a.no_thinking`: this runner cannot control it either way.
+        "thinking": "model default — this runner cannot set it",
+        "reasoning_effort": "model default — aider cannot send it",
+        "reasoning_control_requested": {
+            "no_thinking": bool(a.no_thinking),
+            "effort": a.reasoning_effort,
+            "applied": False,
+        },
         "prompt_tokens": nums[0] if nums else None,
         "completion_tokens": nums[1] if len(nums) > 1 else None,
         "token_counts_are_estimates": True,
