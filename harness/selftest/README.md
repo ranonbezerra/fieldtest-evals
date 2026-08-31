@@ -11,5 +11,8 @@ harness/ft-go harness/selftest a
 It exercises phase 0, the manifest parse, several file phases, the fingerprint check
 and the capture. Expect a handful of minutes at the rates in `../README.md`.
 
-Run it after any change to `ft-run`, `ft-aider`, `ft-go` or the phase instructions.
+Run it after any change to `ft-run`, `ft-aider`, `ft-go`, the phase instructions **or
+the generation parameters**. A self-test that passed under different parameters is not
+evidence about the current ones, and its `runs/` directory is deleted when they change
+rather than left to look like a green check.
 Its `runs/` output is disposable — delete it and run again.

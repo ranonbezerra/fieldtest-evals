@@ -117,6 +117,10 @@ file. The model has no tools, no shell, and nothing to read but what the phase n
   depend on compliance is not the same kind of object as one that does.
 - **The reasoning is captured separately** (`reasoning_content`), which is what makes
   the "unresolved reference versus too many decisions" diagnosis possible at all.
+- **`reasoning_effort` is reachable.** The model's own dial — `xhigh`/`medium`/`low` —
+  is a request field, so this condition can leave it at the model's default and lower
+  it as a recorded fallback when a phase overflows. Neither other condition can send
+  it: aider has no flag for it, and a chat client sends whatever its own settings say.
 - **No streaming parser, so the truncated-path class cannot occur.** Nothing is handed
   to a parser as it arrives.
 
@@ -147,6 +151,7 @@ steering it, which is how it will usually be used.
 | unmeasured prompt from the tool | large | moderate | none |
 | token counters | client's | aider's estimate | **server's** |
 | reasoning captured separately | no | no | **yes** |
+| `reasoning_effort` controllable | no | no | **yes** |
 | streaming-parser path truncation | possible | no | no |
 | writes several files per reply | yes | yes | no |
 | setup cost | line proxy + rules | one script | the harness |
@@ -187,6 +192,13 @@ as an error — it shows up as throughput that belongs to the machine.
 ## Holding them comparable
 
 Whatever differs between conditions, these do not: the model, the quantization, the
-generation parameters, the cheatsheet, the variant text, the context window, and the
-rule that nobody steers a run once it starts. Everything else about a condition is
+cheatsheet, the variant text, the context window, and the rule that nobody steers a
+run once it starts. Temperature, top_p and top_k are the model card's own
+recommendation for thinking mode and are set identically in all three.
+
+**One asymmetry is unavoidable and must be recorded rather than hidden:** only the
+`api` condition can send `reasoning_effort`, so only it can lower the effort as a
+fallback after a phase overflows. A run in the `aider` or `chat` condition that
+overflows simply overflows. When comparing conditions, a ceiling hit in `api` that was
+recovered by a retry is not the same event as one in `aider` that was not. Everything else about a condition is
 what the condition is *for*.

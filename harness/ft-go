@@ -609,9 +609,11 @@ def main():
                 "top_k": int(os.environ.get("FT_TOP_K", 20)),
                 "max_tokens": int(os.environ.get("FT_MAX_TOKENS", 16384)),
                 "context_window": int(os.environ.get("FT_CONTEXT_WINDOW", 32768)),
-                "reasoning": {"default": "model's own",
-                              "lowered_to_low_after_ceiling": ceiling_retries,
-                              "test_write_pass": "low"},
+                "reasoning": {
+                    "effort": "the model's own default",
+                    "lowered_to_low_after_ceiling": ceiling_retries,
+                    "test_write_pass_effort": "low",
+                },
             },
             "runner": a.runner, "spec_source": a.spec,
             "requests": len(phases),
@@ -653,7 +655,6 @@ def main():
                 "trace": host_samples,
             },
             "output_ceiling_hits": ceilings,
-            "ceiling_retries_without_reasoning": ceiling_retries,
             "two_pass_test_files": two_pass_tests,
             "files_declared": len(manifest),
             "files_empty": [str(p.relative_to(ws)) for p in empty],
@@ -674,7 +675,8 @@ def main():
         if ceilings:
             say(f"OUTPUT CEILING HIT on: {', '.join(ceilings)}  <-- read the reasoning first")
         if ceiling_retries:
-            say(f"retried without reasoning after a ceiling hit: {', '.join(ceiling_retries)}")
+            say(f"retried at reasoning_effort=low after a ceiling hit: "
+                f"{', '.join(ceiling_retries)}")
         if gate["repairs"]:
             say(f"REVISED x{gate['repairs']} by the model itself — not a pass; read this run first")
         if pressured:
