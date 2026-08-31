@@ -159,13 +159,21 @@ GATE.md          typecheck output for every attempt, including the repairs
 meta.yaml        below
 ```
 
-`meta.yaml` records, per run: model and quantization, runner and spec source, date,
-**wall time split into generation / model loads / gate+io**, request count, prompt and
-completion tokens, **output tokens per second** (per request and overall), **revisions
-the model made to its own work** and the ceiling on them, every phase that hit the
-output ceiling, files declared versus files that came back empty, the gate verdict,
-and an explicit **failures** list naming each failure in the terms that decide what to
-do about it.
+`meta.yaml` records, per run:
+
+| group | fields |
+|---|---|
+| identity | `model`, `model_repo`, `quantization`, `architecture`, `modality`, `server`, `harness`, `runner`, `spec_source`, `problem`, `variant`, `date` |
+| parameters | `temperature`, `top_p`, `top_k`, `max_tokens`, `context_window` |
+| reasoning | `effort` (the model's default), `lowered_to_low_after_ceiling`, `test_write_pass_effort` |
+| cost | `wall_seconds` / `wall_minutes`, `requests`, `tokens`, `throughput` split into generation / model loads / gate+io |
+| outcome | `output_ceiling_hits`, `two_pass_test_files`, `files_declared`, `files_empty`, `revisions`, `gate` including `gate_scaffold_added`, and an explicit **`failures`** list naming each in the terms that decide what to do about it |
+| host | `pressure_samples` of `samples`, the ceiling's range, peak swap, minimum free memory, and the full `trace` |
+
+The identity block exists so a run can be read years later without this README. It is
+also where a misconfiguration would be caught: an earlier version recorded the
+architecture from the config's implementation-class name, and every run written under
+it carried a model description that was wrong.
 
 `<tag>` is the model slug, plus `--aider` and `--ladder` when those axes are not at
 their defaults, so the four combinations never overwrite each other.

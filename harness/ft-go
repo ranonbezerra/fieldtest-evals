@@ -597,9 +597,14 @@ def main():
                           f"samples: {pressured[0]['pressure'][0][:120]}. Throughput here "
                           f"is the machine's, not the model's."})
         meta = {
-            "model": MODEL, "quantization": "6-bit (MLX, group_size 64, affine)",
-            "architecture": "Qwen3.5 hybrid — 64 layers, full attention every 4th",
-            "server": "oMLX", "runner": "fieldtest harness ft-go",
+            "model": MODEL,
+            "model_repo": "Qwen/Qwen3.8-27B",
+            "quantization": "6-bit MLX, group_size 64, affine",
+            "architecture": "64 layers, hidden 5120 — "
+                            "16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+            "modality": "natively multimodal; text path only",
+            "server": "oMLX",
+            "harness": "fieldtest ft-go",
             "problem": prob.name, "variant": vslug,
             "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "wall_seconds": round(wall), "wall_minutes": round(wall / 60, 1),
