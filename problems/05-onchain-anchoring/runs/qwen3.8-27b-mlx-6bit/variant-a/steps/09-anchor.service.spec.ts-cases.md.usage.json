@@ -1,0 +1,28 @@
+{
+  "label": "09-anchor.service.spec.ts-cases",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "prompt_tokens": 6537,
+  "completion_tokens": 4887,
+  "reasoning_chars": 15405,
+  "content_chars": 7756,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 474.7,
+  "server_seconds": 474.6,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 10.3,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchor/anchor.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchor/chain.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

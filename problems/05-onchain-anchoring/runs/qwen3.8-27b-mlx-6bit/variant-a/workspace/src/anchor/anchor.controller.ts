@@ -1,52 +1,91 @@
-import { BadRequestException, Body, Controller, Param, Post } from '@nestjs/common';
-import type { AnchorProof, VerifyResult } from './anchor.service';
-import { AnchorService } from './anchor.service';
+import {
+  BadRequestException,
+  Body,
+  ConflictException,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Post,
+} from '@nestjs/common';
+import {
+  AnchorProof,
+  AnchorService,
+  DuplicateAnchorError,
+  ResourceNotFoundError,
+  VerifyResult,
+} from './anchor.service.js';
+
+// Single error envelope: { error: { code, message, details } } — `code` is the contract.
+function errorEnvelope(code: string, message: string, details: Record<string, unknown>): object {
+  return { error: { code, message, details } };
+}
 
 @Controller('anchors')
 export class AnchorController {
   constructor(private readonly anchorService: AnchorService) {}
 
   @Post(':documentId/:version/anchor')
+  @HttpCode(HttpStatus.CREATED)
   async anchor(
-    @Param() params: { documentId: string; version: string },
-    @Body() body: { content: unknown },
+    @Param('documentId') documentId: string,
+    @Param('version') version: string,
+    @Body() body: { content?: unknown },
   ): Promise<AnchorProof> {
-    const documentId = this.requireDocumentId(params.documentId);
-    const version = this.requireVersion(params.version);
-    const content = this.requireContent(body);
-    return this.anchorService.anchorDocument(documentId, version, content);
+    const parsedVersion = this.validateInput(documentId, version, body);
+    try {
+      return await this.anchorService.anchorDocument(documentId, parsedVersion, body.content);
+    } catch (error) {
+      throw this.toHttpException(error);
+    }
   }
 
   @Post(':documentId/:version/verify')
+  @HttpCode(HttpStatus.OK)
   async verify(
-    @Param() params: { documentId: string; version: string },
-    @Body() body: { content: unknown },
+    @Param('documentId') documentId: string,
+    @Param('version') version: string,
+    @Body() body: { content?: unknown },
   ): Promise<VerifyResult> {
-    const documentId = this.requireDocumentId(params.documentId);
-    const version = this.requireVersion(params.version);
-    const content = this.requireContent(body);
-    return this.anchorService.verify(documentId, version, content);
+    const parsedVersion = this.validateInput(documentId, version, body);
+    try {
+      return await this.anchorService.verify(documentId, parsedVersion, body.content);
+    } catch (error) {
+      throw this.toHttpException(error);
+    }
   }
 
-  private requireDocumentId(documentId: string): string {
-    if (typeof documentId !== 'string' || documentId.length === 0) {
-      throw new BadRequestException('documentId must be a non-empty string');
+  // Input-shape validation only; all anchoring logic lives in the service.
+  private validateInput(documentId: string, version: string, body: { content?: unknown }): number {
+    if (documentId.length === 0) {
+      throw new BadRequestException(
+        errorEnvelope('invalid_input', 'documentId must be a non-empty string', { field: 'documentId' }),
+      );
     }
-    return documentId;
+    // ASSUMPTION: the plan fixes `version` as an Int but not the HTTP-level rule; it is accepted here as a base-10 unsigned integer string.
+    if (!/^\d+$/.test(version)) {
+      throw new BadRequestException(
+        errorEnvelope('invalid_input', 'version must be a non-negative integer', { field: 'version' }),
+      );
+    }
+    if (body === null || body === undefined || body.content === null || body.content === undefined) {
+      throw new BadRequestException(
+        errorEnvelope('invalid_input', 'body.content is required and must not be null', { field: 'content' }),
+      );
+    }
+    return Number.parseInt(version, 10);
   }
 
-  private requireVersion(raw: string): number {
-    const version = Number(raw);
-    if (!Number.isInteger(version)) {
-      throw new BadRequestException(`version must be an integer, received "${raw}"`);
+  // ASSUMPTION: the plan fixes only the error mappings 404 resource_not_found and 409 duplicate_anchor for service failures; a verify mismatch is returned as a successful VerifyResult body per the plan's signature, and CanonicalizationError cannot arise from a JSON-transported body, so neither is mapped here.
+  // ASSUMPTION: success status codes (201 for anchor, 200 for verify) and the `invalid_input` validation code are not fixed by the plan; they follow the repo conventions.
+  private toHttpException(error: unknown): never {
+    if (error instanceof DuplicateAnchorError) {
+      throw new ConflictException(errorEnvelope('duplicate_anchor', error.message, {}));
     }
-    return version;
-  }
-
-  private requireContent(body: unknown): unknown {
-    if (typeof body !== 'object' || body === null || !('content' in body)) {
-      throw new BadRequestException('request body must be an object with a "content" field');
+    if (error instanceof ResourceNotFoundError) {
+      throw new NotFoundException(errorEnvelope('resource_not_found', error.message, {}));
     }
-    return (body as { content: unknown }).content;
+    throw error;
   }
 }

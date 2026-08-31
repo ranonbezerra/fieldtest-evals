@@ -242,7 +242,11 @@ def main():
         cmd = [str(HARNESS / "ft-go"), prob.name, vslug[-1]]
         if state == "ignore":
             cmd.append("--ignore-pressure")
+        # Tee to a file as well: if this orchestrator is killed mid-run, the child
+        # keeps going and its output has somewhere to land.
         rc, out = sh(cmd, timeout=6 * 3600)
+        (prob / "runs" / slug / vslug / "ft-go.log").write_text(out, errors="replace") \
+            if (prob / "runs" / slug / vslug).is_dir() else None
         for line in out.splitlines():
             if line.strip():
                 print("   " + line, flush=True)

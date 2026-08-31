@@ -381,6 +381,32 @@ retry, so the polluted file was the artifact on disk. Had it been judged, `payou
 would have read as the model failing to produce valid TypeScript — a defect that is
 entirely the harness's.
 
+### 4.2 Killing the watcher killed the run, twice, and it looked like a clean exit
+
+`ft-campaign` captures `ft-go` through a pipe. Kill the orchestrator and the read end
+closes; the child then dies on its **next print** with `BrokenPipeError`, passing
+through its `finally`, releasing the lock and leaving no `meta.yaml`.
+
+It ended problems 02 and 05 that way — 6 of 10 files and 4h49 of work respectively —
+and both times the evidence said *clean exit*: lock released, server up, no traceback.
+The claim made at the time, that killing only the orchestrator would leave the run
+going, was wrong. It survives exactly until it next has something to say.
+
+*Changed:* `say()` swallows `BrokenPipeError`. **A run must outlive whoever was
+watching it** — the whole point of the campaign design is that it survives being left
+alone. `ft-campaign` also tees each run's output to `ft-go.log` inside the run
+directory, so a killed orchestrator does not take the log with it.
+
+### 1.4e The repair loop overflows too, and had no retry
+
+Problem 05 ran seven repair phases; **three of the last four hit the ceiling**, 27–28
+minutes each, producing nothing. The retry after a ceiling hit had been added to file
+phases and not to repairs — which is where a run now spends its longest hours, since
+the gate only started firing at problem 04.
+
+*Changed:* a repair that hits the ceiling is retried once with reasoning off, same as
+a file phase, and recorded as `repair:<path>` in `ceiling_retries_without_reasoning`.
+
 ### 1.7 An unexplained gap between what the client waits and what the server counts
 
 Recorded as an open measurement, not a diagnosis.

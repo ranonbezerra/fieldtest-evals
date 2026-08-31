@@ -64,7 +64,19 @@ QUOTED = re.compile(r"['\"]([A-Z][A-Za-z0-9_]{2,})['\"]")
 
 
 def say(msg=""):
-    print(msg, flush=True)
+    """Print, and survive the reader going away.
+
+    ft-campaign captures this through a pipe. Kill the orchestrator and the read
+    end closes, so the next print raises BrokenPipeError and the run dies — after
+    hours of work, through the `finally`, leaving no meta.yaml. It killed problems
+    02 and 05 that way, and looked like a clean exit both times.
+
+    A run must outlive whoever was watching it.
+    """
+    try:
+        print(msg, flush=True)
+    except (BrokenPipeError, OSError):
+        pass
 
 
 def run(cmd, cwd=None, timeout=1800, env=None):
@@ -522,11 +534,23 @@ def main():
                         rel = f.relative_to(ws)
                         gate["repairs"] += 1
                         reads = [variant, plan_md] + [e for e in extra if e != f]
-                        ft_run(f"repair{attempt+1}-{f.name}",
-                               (rtmpl.replace("{{PATH}}", str(rel))
-                                     .replace("{{ERRORS}}", out[-4000:])),
-                               steps / f"repair{attempt+1}-{f.name}.md",
+                        rlabel = f"repair{attempt+1}-{f.name}"
+                        rmsg = (rtmpl.replace("{{PATH}}", str(rel))
+                                     .replace("{{ERRORS}}", out[-4000:]))
+                        ft_run(rlabel, rmsg, steps / f"{rlabel}.md",
                                reads=reads, out_file=f, system=cheatsheet)
+                        # Repairs overflow too — three of four did on problem 05,
+                        # burning 28 minutes each to produce nothing. The retry was
+                        # added to file phases and not here, which is where a run
+                        # spends its longest hours once the gate starts firing.
+                        ru = Path(str(steps / f"{rlabel}.md") + ".usage.json")
+                        if ru.is_file() and json.loads(ru.read_text()).get("output_ceiling_hit"):
+                            say(f"         ceiling hit on repair — retrying {rel} "
+                                f"with reasoning off")
+                            ft_run(f"{rlabel}-retry", rmsg, steps / f"{rlabel}-retry.md",
+                                   reads=reads, out_file=f, system=cheatsheet,
+                                   no_thinking=True)
+                            ceiling_retries.append(f"repair:{rel}")
             else:
                 say("\n[gate] no tsconfig.json in the workspace; typecheck skipped")
         # pnpm install leaves ~90 MB in the workspace. It is gitignored, so it never
