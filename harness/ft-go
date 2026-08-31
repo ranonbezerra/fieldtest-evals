@@ -54,6 +54,9 @@ MAX_REPAIRS = 2
 MAX_AUTO_READS = 4
 
 MANIFEST = re.compile(r"<!--\s*manifest\s*(.*?)-->", re.S | re.I)
+# Test files are the phase that overflows. Measured across three problems: 4 of 4
+# test files hit the output ceiling, against 4 of 26 for everything else.
+IS_TEST = re.compile(r"(^|/)tests?/|\.spec\.|\.test\.", re.I)
 ROW = re.compile(r"^\s*(?:\d+[.)]\s*)?(?P<path>[\w./@-]+\.[A-Za-z0-9]+)\s*\|(?P<rest>.*)$")
 READS = re.compile(r"reads:\s*(?P<r>[^|]*)", re.I)
 TS_ERR = re.compile(r"^(?P<file>[^\s(][^(]*?)\((?P<line>\d+),\d+\):\s*error\s+TS\d+:", re.M)
@@ -264,7 +267,7 @@ def main():
             say()
     LOCK.write_text(f"{prob.name} {vslug} pid {os.getpid()}\n")
     t_start = time.time()
-    phases, failures, ceiling_retries = [], [], []
+    phases, failures, ceiling_retries, two_pass_tests = [], [], [], []
     host_samples = [baseline] if baseline else []
 
     def flush():
@@ -406,8 +409,37 @@ def main():
             instruction = (tmpl.replace("{{PATH}}", item["path"])
                                .replace("{{NOTE}}", item["note"] or "as the plan specifies"))
             label = f"{i:02d}-{Path(item['path']).name}"
-            ft_run(label, instruction, steps / f"{label}.md",
-                   reads=reads, out_file=target, system=cheatsheet)
+
+            # A test file goes in two passes. Reasoning is not the problem in
+            # itself — it is productive on every other kind of file — but on tests
+            # it consumed the whole 16,384-token budget every time, four for four,
+            # while the retry without it produced the same file in a median of
+            # 3,080 tokens. So: enumerate the cases WITH reasoning, where it is
+            # cheap and is exactly the thinking worth having, then write them out
+            # WITHOUT it, from a list that already contains the decisions.
+            #
+            # Capping the number of tests instead would optimise the harness against
+            # the thing it grades: coverage is a scored criterion.
+            if IS_TEST.search(item["path"]):
+                cases = steps / f"{label}-cases.md"
+                ctmpl = (HARNESS / "instructions" / "phase-test-cases.md").read_text()
+                ft_run(f"{label}-cases", ctmpl.replace("{{PATH}}", item["path"]),
+                       cases, reads=reads, out_file=cases.with_suffix(".txt"),
+                       system=cheatsheet, verbatim=True)
+                case_list = cases.with_suffix(".txt")
+                if case_list.is_file() and case_list.stat().st_size > 0:
+                    reads = list(reads) + [case_list]
+                    instruction += (
+                        "\n\nThe read-only file above lists the cases you already "
+                        "decided on. Write every one of them. It is a list of "
+                        "decisions, not a suggestion.")
+                ft_run(label, instruction, steps / f"{label}.md",
+                       reads=reads, out_file=target, system=cheatsheet,
+                       no_thinking=True)
+                two_pass_tests.append(item["path"])
+            else:
+                ft_run(label, instruction, steps / f"{label}.md",
+                       reads=reads, out_file=target, system=cheatsheet)
 
             # A file phase that hit the ceiling did not finish answering. The reply is
             # deliberation with code fragments in it, and the extractor then writes a
@@ -584,6 +616,7 @@ def main():
             },
             "output_ceiling_hits": ceilings,
             "ceiling_retries_without_reasoning": ceiling_retries,
+            "two_pass_test_files": two_pass_tests,
             "files_declared": len(manifest),
             "files_empty": [str(p.relative_to(ws)) for p in empty],
             "gate": {"ran": gate["ran"], "passed": gate["passed"],

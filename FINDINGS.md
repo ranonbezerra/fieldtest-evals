@@ -424,6 +424,49 @@ spans.
 
 Written before the data, so they can be wrong rather than rationalised afterwards.
 
+### 6.2 Test files overflow every time, and the two-pass phase should stop it
+
+Across three problems, 40 phases:
+
+| | hit the ceiling |
+|---|---|
+| **test files** | **4 of 4 — 100%** |
+| everything else | 4 of 26 — 15% |
+
+Every ceiling hit shows `reasoning_chars: 0`, which is the signature of thinking that
+never closed and was returned as content. And the retries — the same file, reasoning
+off — came back in **1,061 to 5,955 tokens, median 3,080 for the test files**. The
+work was never large. The deliberation was.
+
+Cost so far: **131,072 tokens burned on eight phases that produced nothing**, about
+3.6 hours of GPU across three problems. Extrapolated across eighteen, roughly 22
+hours.
+
+**What was rejected, and why.** Capping the number of tests per file would optimise
+the harness against the thing it grades — coverage is a scored criterion, and buying
+throughput with it is the wrong trade. Lowering `max_tokens` for test phases would cut
+the waste without touching the cause. Requiring the plan to split its test files would
+mean the harness designing on the model's behalf, which is what phase 0 exists to
+avoid.
+
+**What was implemented:** the test phase runs in two passes. First the cases are
+enumerated **with** reasoning — cheap, and exactly the thinking worth having, since
+naming what would have to break is the hard part of a test. Then the file is written
+**without** reasoning, from a list that already contains the decisions.
+
+The case list is kept as an artifact, which is a second benefit: it makes visible what
+the model *intended* to test, separately from what it wrote. Problem 01 produced a
+test named `does not overdraw under concurrent creation` that could not detect an
+overdraw (1.6); the intent and the artifact diverged, and nothing recorded the intent.
+
+**Prediction:** from problem 04 onward, test phases stop hitting the ceiling, and the
+resulting suites are no thinner — problem 01's no-reasoning retry produced 17 tests in
+21,579 bytes, so terseness is not the failure mode to expect.
+
+**If they still overflow:** the cause is not the reasoning and this is a patch on a
+symptom. The next thing to examine would be the context the phase carries, since a
+test phase reads the plan plus every implementation file it covers.
+
 ### 6.1 The gate is disarmed by construction, and it should repeat on problem 02
 
 Problem 01's manifest declared ten files and no `tsconfig.json`, so `ft-go`'s typecheck
