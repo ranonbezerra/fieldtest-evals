@@ -1,0 +1,28 @@
+{
+  "label": "04-payout-worker.service.ts-retry",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 6680,
+  "completion_tokens": 4035,
+  "reasoning_chars": 12675,
+  "content_chars": 3216,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 420.5,
+  "server_seconds": 420.5,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 9.6,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

@@ -1,0 +1,26 @@
+{
+  "label": "plan",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "model default",
+  "prompt_tokens": 1627,
+  "completion_tokens": 16384,
+  "reasoning_chars": 0,
+  "content_chars": 68307,
+  "finish_reason": "length",
+  "output_ceiling_hit": true,
+  "wall_seconds": 1637.2,
+  "server_seconds": 1637.2,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 10.0,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/variants/variant-a.md"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

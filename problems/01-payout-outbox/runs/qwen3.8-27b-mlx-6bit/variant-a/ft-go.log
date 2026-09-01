@@ -1,0 +1,75 @@
+problem   01-payout-outbox
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1627/32768  out 16384/16384  think 0c  1637s  10.0 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (68961 bytes)
+phase 0 hit the ceiling — retrying at reasoning_effort=low
+[plan-retry] in 1615/32768  out 7140/16384  think 17621c  693s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (11058 bytes)
+
+manifest: 10 files
+  prisma/schema.prisma
+  src/payout/payout.repository.ts   <- prisma/schema.prisma
+  src/payout/payout.service.ts   <- src/payout/payout.repository.ts
+  src/payout/payout-worker.service.ts   <- src/payout/payout.repository.ts
+  src/payout/payout.controller.ts   <- src/payout/payout.service.ts
+  src/payout/payout.module.ts   <- src/payout/payout.controller.ts, src/payout/payout.service.ts, src/payout/payout-worker.service.ts, src/payout/payout.repository.ts
+  src/app.module.ts   <- src/payout/payout.module.ts
+  src/main.ts   <- src/app.module.ts
+  test/payout.spec.ts   <- src/payout/payout.service.ts, src/payout/payout-worker.service.ts, src/payout/payout.repository.ts
+  DESIGN.md
+
+[01-schema.prisma] in 4406/32768  out 15070/16384  think 57216c  1542s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (3041 bytes)
+[02-payout.repository.ts] in 5370/32768  out 16384/16384  think 0c  1667s  9.8 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts (17470 bytes)
+         ceiling hit — retrying src/payout/payout.repository.ts at reasoning_effort=low
+[02-payout.repository.ts-retry] in 5358/32768  out 12754/16384  think 43645c  1317s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts (8052 bytes)
+[03-payout.service.ts] in 6695/32768  out 11192/16384  think 42105c  1148s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.service.ts (3094 bytes)
+[04-payout-worker.service.ts] in 6692/32768  out 16384/16384  think 0c  1671s  9.8 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout-worker.service.ts (5101 bytes)
+         ceiling hit — retrying src/payout/payout-worker.service.ts at reasoning_effort=low
+[04-payout-worker.service.ts-retry] in 6680/32768  out 4035/16384  think 12675c  421s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout-worker.service.ts (3199 bytes)
+[05-payout.controller.ts] in 5318/32768  out 16384/16384  think 0c  1666s  9.8 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.controller.ts (4075 bytes)
+         ceiling hit — retrying src/payout/payout.controller.ts at reasoning_effort=low
+[05-payout.controller.ts-retry] in 5306/32768  out 2915/16384  think 9873c  295s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.controller.ts (1638 bytes)
+[06-payout.module.ts] in 9061/32768  out 1448/16384  think 5981c  183s  7.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.module.ts (1023 bytes)
+[07-app.module.ts] in 4756/32768  out 1455/16384  think 6431c  148s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (167 bytes)
+[08-main.ts] in 4546/32768  out 2375/16384  think 9775c  236s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (233 bytes)
+[09-payout.spec.ts-cases] in 8543/32768  out 16384/16384  think 0c  1716s  9.5 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/09-payout.spec.ts-cases.txt (79964 bytes)
+[10-DESIGN.md] in 4399/32768  out 6315/16384  think 24461c  624s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/DESIGN.md (1603 bytes)
+
+files written: 9/10
+  EMPTY  test/payout.spec.ts
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck clean
+[gate] cleaned install artifacts from the workspace
+
+wall 250.4 min   requests 16   in 80372   out 146619   9.8 tok/s
+generation 249.4 min   model loads 0s   gate+io 1.0 min
+OUTPUT CEILING HIT on: plan, 02-payout.repository.ts, 04-payout-worker.service.ts, 05-payout.controller.ts, 09-payout.spec.ts-cases  <-- read the reasoning first
+retried at reasoning_effort=low after a ceiling hit: plan, src/payout/payout.repository.ts, src/payout/payout-worker.service.ts, src/payout/payout.controller.ts
+
+failures (2):
+  09-payout.spec.ts: reply produced no file content
+  test/payout.spec.ts: declared by the plan, came back empty
+
+artifacts in problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md
+ft-run: [09-payout.spec.ts] prompt ~37424 tokens + 16384 output exceeds the 32768 window. Split the phase; do not raise the window.

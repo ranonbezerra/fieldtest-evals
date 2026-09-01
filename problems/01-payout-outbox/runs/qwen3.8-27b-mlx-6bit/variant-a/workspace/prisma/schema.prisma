@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id             String   @id @default(uuid()) @map("id") @db.Uuid
+  settledBalance BigInt   @default(0) @map("settled_balance") @db.BigInt
+  heldAmount     BigInt   @default(0) @map("held_amount") @db.BigInt
+
+  payouts        Payout[]
+  ledgerEntries  LedgerEntry[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String         @id @default(uuid()) @map("id") @db.Uuid
+  accountId          String         @map("account_id") @db.Uuid
+  amount             BigInt         @map("amount") @db.BigInt
+  destinationAddress String         @map("destination_address") @db.Text
+  idempotencyKey     String         @unique @map("idempotency_key") @db.Text
+  status             PayoutStatus   @default(CREATED) @map("status")
+  txHash             String?        @map("tx_hash") @db.Text
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime       @default(now()) @map("updated_at") @db.Timestamptz
+
+  account            Account        @relation(fields: [accountId], references: [id])
+  ledgerEntries      LedgerEntry[]
+  outboxMessage      OutboxMessage?
+
+  @@map("payouts")
+}
+
+model LedgerEntry {
+  id        String          @id @default(uuid()) @map("id") @db.Uuid
+  accountId String          @map("account_id") @db.Uuid
+  payoutId  String          @map("payout_id") @db.Uuid
+  amount    BigInt          @map("amount") @db.BigInt
+  entryType LedgerEntryType @map("entry_type")
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  account   Account         @relation(fields: [accountId], references: [id])
+  payout    Payout          @relation(fields: [payoutId], references: [id])
+
+  @@map("ledger_entries")
+}
+
+model OutboxMessage {
+  id                  String        @id @default(uuid()) @map("id") @db.Uuid
+  payoutId            String        @unique @map("payout_id") @db.Uuid
+  status              MessageStatus @default(PENDING) @map("status")
+  attempts            Int           @default(0) @map("attempts")
+  maxAttempts         Int           @default(3) @map("max_attempts")
+  lastError           String?       @map("last_error") @db.Text
+  processingStartedAt DateTime?     @map("processing_started_at") @db.Timestamptz
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+
+  payout              Payout        @relation(fields: [payoutId], references: [id])
+
+  @@map("outbox_messages")
+}
+
+enum PayoutStatus {
+  CREATED      @map("created")
+  PROCESSING   @map("processing")
+  COMPLETED    @map("completed")
+  FAILED       @map("failed")
+  NEEDS_REVIEW @map("needs_review")
+}
+
+enum LedgerEntryType {
+  HOLD
+  SETTLE
+  RELEASE
+}
+
+enum MessageStatus {
+  PENDING    @map("pending")
+  PROCESSING @map("processing")
+  DONE       @map("done")
+  FAILED     @map("failed")
+}
