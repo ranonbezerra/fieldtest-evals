@@ -248,6 +248,14 @@ def main():
         # repair loop running, one run was killed at exactly six hours with
         # every file written and no meta.yaml to show for it.
         rc, out = sh(cmd, timeout=8 * 3600)
+        if rc == 124:
+            # subprocess kills the child it started, not the grandchild. A timed-out
+            # ft-go leaves its ft-request alive and generating, and since the server
+            # serialises, the next run then queues behind a process nobody is waiting
+            # for. Observed: a 22-minute orphan from a killed run stalling its
+            # successor.
+            sh(["pkill", "-f", "ft-run --label"], timeout=60)
+            say("run timed out; killed the request it left behind")
         (prob / "runs" / slug / vslug / "ft-go.log").write_text(out, errors="replace") \
             if (prob / "runs" / slug / vslug).is_dir() else None
         for line in out.splitlines():

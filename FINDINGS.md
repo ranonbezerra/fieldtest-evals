@@ -271,6 +271,21 @@ already wrote the rule down — *a chat agent cannot supervise a run* — about 
 This is the same rule with a different mechanism, and it was violated for most of a
 session.
 
+### 4.5 A timed-out run leaves its request alive, and the next run queues behind it
+
+`subprocess.run(timeout=…)` kills the child it started. It does not kill the
+grandchild. So a timed-out `ft-go` leaves its in-flight `ft-run` generating, and
+because the server serialises one request at a time, **the next run then waits behind
+a process nobody is listening to.**
+
+Observed directly: problem 02 was killed at its timeout, and twenty-two minutes later
+its orphaned request was still generating a repair for a run that no longer existed,
+while problem 03 sat in the queue showing a phase name from the previous problem.
+Reading the phase label was what gave it away — it named a file problem 03 does not
+have.
+
+*Changed:* on a timeout, `ft-campaign` kills the request the run left behind.
+
 ### 4.4 Killing the watcher killed the run, twice, and it looked like a clean exit
 
 `ft-campaign` captures `ft-go` through a pipe. Kill the orchestrator and the read end
