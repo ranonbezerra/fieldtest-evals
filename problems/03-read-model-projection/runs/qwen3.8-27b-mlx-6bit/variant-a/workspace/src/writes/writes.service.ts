@@ -1,5 +1,5 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { ProjectionsService } from '../projections/projections.service';
 import { CreateOrderInput, OrderStatus } from '../projections/projections.types';
 
@@ -10,27 +10,15 @@ export class WritesService {
     private readonly projections: ProjectionsService,
   ) {}
 
-  async createOrder(
-    input: CreateOrderInput,
-  ): Promise<{ id: string; status: OrderStatus }> {
+  async createOrder(input: CreateOrderInput): Promise<{ id: string; status: OrderStatus }> {
     return this.prisma.$transaction(async (tx) => {
-      // ASSUMPTION: schema.prisma is not visible here; the Prisma model name for
-      // payment_orders (`paymentOrder`) and its relation properties (`worker`, `event`)
-      // are inferred from the plan's table/column layout.
       const order = await tx.paymentOrder.create({
         data: {
           companyId: input.companyId,
           workerId: input.workerId,
           eventId: input.eventId,
-          status: 'pending',
           amountCents: input.amountCents,
         },
-      });
-
-      // Joined source row (order + worker + event), read inside the same transaction.
-      await tx.paymentOrder.findUniqueOrThrow({
-        where: { id: order.id },
-        include: { worker: true, event: true },
       });
 
       await this.projections.applyOrderCreated(input, {
@@ -42,59 +30,39 @@ export class WritesService {
     });
   }
 
-  async approveOrder(
-    orderId: string,
-  ): Promise<{ id: string; status: OrderStatus }> {
-    return this.prisma.$transaction(async (tx) =>
-      this.changeOrderStatus(tx, orderId, 'approved'),
-    );
+  async approveOrder(orderId: string): Promise<{ id: string; status: OrderStatus }> {
+    return this.changeOrderStatus(orderId, 'approved');
   }
 
-  async rejectOrder(
-    orderId: string,
-  ): Promise<{ id: string; status: OrderStatus }> {
-    return this.prisma.$transaction(async (tx) =>
-      this.changeOrderStatus(tx, orderId, 'rejected'),
-    );
+  async rejectOrder(orderId: string): Promise<{ id: string; status: OrderStatus }> {
+    return this.changeOrderStatus(orderId, 'rejected');
   }
 
   private async changeOrderStatus(
-    tx: Prisma.TransactionClient,
     orderId: string,
-    targetStatus: OrderStatus,
+    newStatus: OrderStatus,
   ): Promise<{ id: string; status: OrderStatus }> {
-    const order = await tx.paymentOrder.findUnique({ where: { id: orderId } });
-    if (!order) {
-      throw new NotFoundException({
-        error: {
-          code: 'order_not_found',
-          message: `Order ${orderId} was not found in payment_orders.`,
-          details: { orderId },
-        },
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.paymentOrder.findUnique({
+        where: { id: orderId },
       });
-    }
 
-    if (order.status === targetStatus) {
-      throw new ConflictException({
-        error: {
-          code: 'invalid_transition',
-          message: `Order ${orderId} is already '${order.status}'; it cannot be transitioned to '${targetStatus}'.`,
-          details: {
-            orderId,
-            currentStatus: order.status,
-            requestedStatus: targetStatus,
-          },
-        },
+      if (!order) {
+        throw new NotFoundException(`Order ${orderId} not found`);
+      }
+
+      if (order.status === newStatus) {
+        throw new BadRequestException(`Invalid transition: order is already ${newStatus}`);
+      }
+
+      await tx.paymentOrder.update({
+        where: { id: orderId },
+        data: { status: newStatus },
       });
-    }
 
-    const updated = await tx.paymentOrder.update({
-      where: { id: orderId },
-      data: { status: targetStatus },
+      await this.projections.applyOrderStatusChanged(orderId, newStatus);
+
+      return { id: order.id, status: newStatus };
     });
-
-    await this.projections.applyOrderStatusChanged(orderId, targetStatus);
-
-    return { id: updated.id, status: updated.status };
   }
 }

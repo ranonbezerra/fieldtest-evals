@@ -1,0 +1,47 @@
+- Read-your-own-writes: create order then query dashboard — the new row must appear with correct denormalised fields (workerName, eventTitle, eventLocation) on the very next read. Fails if the sync hook is missing, runs outside the transaction (so it's invisible until a later commit), or the joined source read inside `applyOrderCreated` doesn't populate the denormalised columns.
+
+- Read-your-own-writes: approve order then query dashboard with `status=approved` — the row must show `status: 'approved'`. Fails if `applyOrderStatusChanged` doesn't call `updateOrderStatus`, or if the projection row's status column isn't actually updated (e.g. wrong field name in the `update` data).
+
+- Read-your-own-writes: reject order then query dashboard with `status=rejected` — the row must show `status: 'rejected'`. Fails if the reject path in `changeOrderStatus` doesn't propagate to the projection, or if `applyOrderStatusChanged` only handles the `approved` branch.
+
+- Concurrent approvals on the same company — N concurrent `approveOrder` calls on distinct orders must yield `approvedTotalCents` equal to the exact sum of all approved amounts and `pendingCount` decremented by N. Fails if `adjustTotals` uses a read-then-write pattern (lost update), or if the `increment` on the upsert isn't atomic under concurrent row-lock contention.
+
+- Concurrent interleaved create and approve for one company — fire `createOrder` and `approveOrder` in parallel (some approves target orders created earlier in the same batch); final `approvedTotalCents` and `pendingCount` must match the sum of final statuses. Fails if the create path's `pendingDelta: +1` and the approve path's `pendingDelta: -1` race such that one increment is lost, or if an approve targets an order whose projection row isn't yet committed (should be prevented by the same-transaction constraint, but a broken transaction boundary would allow it).
+
+- Drift repair: projection row has wrong status — corrupt a projection row's `status` to `'approved'` while source says `'pending'`; run `repairDrift`; the projection row must be restored to `'pending'` and totals must reflect the correction (approved total decreased, pending count increased). Fails if `repairDrift`'s comparison misses the status field, or if it upserts the row but doesn't call `resetTotals` for the affected company.
+
+- Drift repair: projection row has wrong amount — corrupt `amountCents` on a projection row; run `repairDrift`; the amount must match source and totals must be corrected. Fails if the field-by-field comparison in `repairDrift` omits `amountCents`, or if totals are reset from the stale projection rather than from source.
+
+- Drift repair: projection row is missing — delete a projection row directly via the repository; run `repairDrift`; the row must be reinserted with all fields matching source and totals must include it. Fails if `repairDrift` only iterates over rows present in the projection (and thus never sees the gap), or if `upsertOrder` is called but `resetTotals` is skipped because `affectedCompanies` isn't populated for insertions.
+
+- Drift repair: orphan projection row (present in projection, absent from source) — `repairDrift` counts it as corrected but the implementation does not delete it. The test would assert the orphan is gone; it fails against the current code because the loop only increments `rowsCorrected` without calling any delete. This documents the known gap where orphans persist until a full `rederive`.
+
+- Re-derivation: corrupt projection then rebuild — create orders, tamper with two projection rows (wrong status + wrong amount), run `rederive(from, to)` covering their window; all projection rows in the window must match source exactly. Fails if `rederive` doesn't call `deleteProjectionWindow` first (so stale rows survive), or if `fetchSourceWindow`'s raw SQL JOIN is wrong (e.g. missing a join condition).
+
+- Re-derivation: totals after rebuild include only in-window orders — create 3 orders for company A (two in the rederive window, one before it); run `rederive` for the window; `approvedTotalCents` for company A must reflect all 3 orders (or at least not be wrong due to partial reset). Fails because the implementation's `resetTotals` overwrites the entire totals row with sums computed from only the in-window rows, discarding contributions from out-of-window orders. This is a real bug the test would expose.
+
+- Pagination: first page — 25 rows exist for a company; query `page=1, pageSize=10`; must return 10 items and `total=25`. Fails if `skip` is computed as `page * pageSize` (off-by-one) or if the `count` query uses a different `where` than the `findMany`.
+
+- Pagination: last partial page — 25 rows; query `page=3, pageSize=10`; must return 5 items and `total=25`. Fails if the repository doesn't handle a result set smaller than `take`, or if `total` is computed as the length of the current page instead of the full filtered count.
+
+- Pagination: `pageSize` exceeds 100 — query with `pageSize=101`; must return the standard error envelope with `code: 'invalid_query_params'`. Fails if the service's validation uses `>=` instead of `>`, or if the error is thrown as a bare string without the envelope shape.
+
+- Pagination: `page` less than 1 — query with `page=0`; must return `invalid_query_params`. Fails if validation only guards `pageSize` and doesn't check `page < 1`.
+
+- Date range filter: only in-range rows returned — insert orders with `createdAt` at known timestamps; query with `from` and `to` that exclude some; only in-range rows must appear. Fails if the repository's `where` clause is missing, or if the projection's `createdAt` was set to the projection's `updatedAt` (current time) rather than the source order's original `createdAt`.
+
+- Date range boundary: `from` is inclusive, `to` is exclusive — insert a row with `createdAt` exactly equal to `from` and another exactly equal to `to`; query with that range; the first must be included, the second excluded. Fails if the repository uses `gt`/`lte` instead of `gte`/`lt`, or if the raw SQL in `fetchSourceWindow` uses different operators than the Prisma query in `findPage`.
+
+- Status filter: only matching status returned — insert orders with mixed statuses; query `status=approved`; only approved rows must appear and `total` must reflect the filtered count. Fails if the `where` clause doesn't include the status condition, or if Prisma's enum comparison is case-sensitive in a way that mismatches the stored value.
+
+- Error: approve a non-existent order — call `approveOrder` with an ID that was never created; must return the error envelope with `code: 'order_not_found'`. Fails if the service doesn't check for `null` after `findUnique`, or if it throws a generic 500 instead of the structured envelope.
+
+- Error: approve an already-approved order — call `approveOrder` twice on the same order; the second call must return `code: 'invalid_transition'`. Fails if the transition guard is missing, or if it compares `order.status !== targetStatus` with wrong operand order (always true).
+
+- Error: reject an already-rejected order — call `rejectOrder` twice; second call must return `invalid_transition`. Fails for the same reason as above but on the reject path specifically.
+
+- Totals: `pendingCount` decrements on approve — create 3 orders (all pending), approve 1; read totals; `pendingCount` must be 2. Fails if `applyOrderStatusChanged` doesn't check the old status before computing `pendingDelta`, or if it hardcodes `pendingDelta: -1` without verifying the old status was actually `'pending'`.
+
+- Totals: `approvedTotalCents` is exact under large values — create orders with amounts that sum to a value exceeding `Number.MAX_SAFE_INTEGER` / use `BigInt` arithmetic; approve all; read totals; the sum must be bit-exact. Fails if `amountCents` is stored as `Int` (32-bit) in the Prisma model and overflows, or if the accumulation in `rederive` uses `Number` instead of `BigInt`.
+
+- Deliberately not tested: performance (p95 < 50 ms), because the projection's value is architectural and a single-row test on a dev database cannot reproduce the 3M-row cardinality that makes the original query slow; and orphan deletion by `repairDrift`, because the implementation has a documented gap (orphans are counted but not removed) and testing for it would assert behaviour the code does not yet have.
