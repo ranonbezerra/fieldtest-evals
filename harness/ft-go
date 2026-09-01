@@ -371,22 +371,24 @@ def main():
                                 reads=[variant], out_file=plan_md, system=cheatsheet,
                                 verbatim=True, effort="low")
                     ceiling_retries.append("plan")
-                # A phase cut off at the ceiling did not answer; it was still
-                # thinking. Writing what came back as though it were the artifact is
-                # how a run continues against 68 KB of deliberation -- observed, and
-                # every later phase inherits it.
-                u = json.loads((steps / "00-plan.md.usage.json").read_text())
-                if u.get("output_ceiling_hit"):
-                    say("\nphase 0 hit the output ceiling: it was cut off mid-reasoning,")
-                    say("so what came back is not a plan. Recorded as the result.")
+                # Only if the retry ALSO overflowed. The abort here was written
+                # before the retry existed and read the FIRST attempt's counters, so a
+                # successful retry was overwritten by a note saying no plan was
+                # produced. Two fixes written at different times, contradicting each
+                # other. The self-test caught it in 31 minutes.
+                ru = Path(str(steps / "00-plan-retry.md") + ".usage.json")
+                src = ru if ru.is_file() else (pu if pu.is_file() else None)
+                if src and json.loads(src.read_text()).get("output_ceiling_hit"):
+                    say("\nphase 0 hit the ceiling at reasoning_effort=low as well.")
+                    say("What came back is reasoning, not a plan. Recorded as the result.")
                     plan_md.write_text(
-                        "PHASE 0 PRODUCED NO PLAN — output ceiling reached at "
-                        f"{u.get('completion_tokens')} tokens. The reply is in "
-                        "steps/00-plan.md and is reasoning, not a specification.\n")
-                    (rundir / "GATE.md").write_text("plan phase hit the output ceiling\n")
+                        "PHASE 0 PRODUCED NO PLAN — the output ceiling was reached at "
+                        "the model's default effort and again at low. The replies are "
+                        "in steps/ and are reasoning, not a specification.\n")
+                    (rundir / "GATE.md").write_text("plan phase hit the ceiling twice\n")
                     failures.append({"phase": "plan", "exit": None,
-                                     "reason": "output ceiling reached while still "
-                                               "reasoning; no specification emitted"})
+                                     "reason": "output ceiling reached at the model's "
+                                               "default effort and again at low"})
                     return 1
                 if rc != 0:
                     say("\nphase 0 produced no plan. That is the result: record it and stop.")
