@@ -271,6 +271,25 @@ already wrote the rule down — *a chat agent cannot supervise a run* — about 
 This is the same rule with a different mechanism, and it was violated for most of a
 session.
 
+### 4.6 A fix to the orchestrator does not reach the orchestrator already running
+
+The run timeout was raised from six hours to eight after problem 02 was killed at
+exactly six. Problem 03 was then killed at exactly six as well.
+
+`ft-campaign` reads its source once, at launch, and had been running for seventeen
+hours. `ft-go` is re-invoked per problem and picks up changes immediately; the
+orchestrator around it does not. Two runs were lost to a fix that had been committed,
+pushed, and was sitting in the file the running process was no longer reading.
+
+*Changed:* nothing in the code. The rule is operational and belongs written down:
+**a change to `ft-campaign` requires restarting `ft-campaign`.** A change to `ft-go`,
+`ft-run` or the instructions does not.
+
+Third variant today of the same shape: a correction applied in one place and not
+another. The retry existed for file phases and not for the case phase; the abort in
+phase 0 read the first attempt's counters and not the retry's; and here the fix
+reached the file but not the process.
+
 ### 4.5 A timed-out run leaves its request alive, and the next run queues behind it
 
 `subprocess.run(timeout=…)` kills the child it started. It does not kill the
