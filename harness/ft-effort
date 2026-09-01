@@ -143,25 +143,46 @@ def main():
         print(f"  {label}  ({path})")
         subprocess.run(cmd, input=instruction, text=True)
 
-        after = overflowed(str(raw) + ".usage.json") or {}
+        # A refused request writes no usage record. Reading the absent record as
+        # "no ceiling hit" reported every refusal as a phase that fit — ten of them,
+        # in this tool's first run. No result is not a result.
+        after = overflowed(str(raw) + ".usage.json")
+        if after is None:
+            print(f"      NOT RUN — the request was refused or failed; "
+                  f"no usage record written\n")
+            results.append({"phase": label, "path": path, "ran": False,
+                            "baseline": {"effort": before.get("reasoning_effort")
+                                         or "default",
+                                         "tokens": before.get("completion_tokens"),
+                                         "ceiling": True}})
+            continue
+        # Two phases in this set had already been lowered to `low` when they
+        # overflowed, so their baseline is not the default and must not be labelled
+        # as one — comparing medium against low answers a different question.
         row = {
             "phase": label, "path": path,
-            "default": {"tokens": before.get("completion_tokens"),
-                        "ceiling": bool(before.get("output_ceiling_hit"))},
+            "baseline": {"effort": before.get("reasoning_effort") or "default",
+                         "tokens": before.get("completion_tokens"),
+                         "ceiling": bool(before.get("output_ceiling_hit"))},
             a.effort: {"tokens": after.get("completion_tokens"),
                        "ceiling": bool(after.get("output_ceiling_hit"))},
         }
+        row["ran"] = True
         results.append(row)
         verdict = "OVERFLOWED AGAIN" if row[a.effort]["ceiling"] else "fits"
-        print(f"      default {row['default']['tokens']} tok (ceiling) -> "
-              f"{a.effort} {row[a.effort]['tokens']} tok — {verdict}\n")
+        print(f"      {row['baseline']['effort']} {row['baseline']['tokens']} tok "
+              f"(ceiling) -> {a.effort} {row[a.effort]['tokens']} tok — {verdict}\n")
 
     (out / "summary.json").write_text(json.dumps(
         {"effort": a.effort, "run": str(rundir.relative_to(ROOT)),
          "phases": results}, indent=2) + "\n")
 
-    fit = sum(1 for r in results if not r[a.effort]["ceiling"])
-    print(f"{fit} of {len(results)} phases fit at {a.effort}")
+    ran = [r for r in results if r.get("ran")]
+    fit = sum(1 for r in ran if not r[a.effort]["ceiling"])
+    if len(ran) < len(results):
+        print(f"{len(results) - len(ran)} of {len(results)} phases did not run")
+    print(f"{fit} of {len(ran)} phases that ran fit at {a.effort}"
+          if ran else "no phase ran; nothing to compare")
     print(f"written to {out.relative_to(ROOT)}/")
     return 0
 

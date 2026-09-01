@@ -410,6 +410,27 @@ per-request count.
 campaign's value — for the case where `FT_ENV` had not been sourced. It never fired,
 because `ft-env.sh` sets 1.0. It is now 1.0 in both places.
 
+### 4.8 A new instrument's first run reported ten refusals as ten successes
+
+`ft-effort` replays the phases that overflowed at a different `reasoning_effort`. Its
+first run was refused by `ft-run` on all ten phases — the host had 4.1 GiB of margin
+against the 6.0 GiB the harness requires — and it printed `fits` ten times.
+
+A refused request writes no usage record. The tool read the absent record with
+`.get("output_ceiling_hit")`, got `None`, and `bool(None)` is `False`: no ceiling hit,
+therefore it fit. The absence of evidence was read as evidence of success, in the
+direction that produces a finding rather than a blank.
+
+*Changed:* a missing usage record is now `NOT RUN`, counted separately, and the summary
+distinguishes "phases that ran" from "phases". A run where nothing ran now says so.
+
+This is the eighth instrument to fail in this direction and it was written after the
+seven others were catalogued, in a file that opens by naming the pattern. Writing the
+finding down does not confer immunity to it. The rule that does the work is narrower
+and mechanical: **when a measurement comes back empty, the code must say which of "it
+did not happen" and "it happened and was fine" it is looking at.** Every defect in this
+section is a place where those two collapsed into one branch.
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was
