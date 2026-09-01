@@ -36,6 +36,17 @@ nothing more. They will be replaced by the first runs at the correct parameters.
 
 The whole acervo does not fit in one sitting, so the order has to earn its place.
 
+## The configuration is fixed for all eighteen
+
+Every run in this pass uses the same generation parameters and leaves
+`reasoning_effort` at the model's default. If a better setting is found partway
+through — and `medium` is being measured precisely because it might be — **it does not
+get applied to this pass.** Eighteen problems measured under two configurations are
+not a set, and the earlier campaign was discarded for exactly that reason.
+
+A better setting is an argument for a second pass against a first one that is
+internally consistent.
+
 ## Order
 
 **Pass 1 — variant A of every problem, 01 through 18.**

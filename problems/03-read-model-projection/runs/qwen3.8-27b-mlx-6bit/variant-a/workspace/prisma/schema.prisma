@@ -1,0 +1,80 @@
+// ASSUMPTION: The plan does not pin a Prisma client generator, so the standard
+// prisma-client-js provider is used.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  approved
+  rejected
+}
+
+// ASSUMPTION: The plan specifies only table names (via @@map), not Prisma model
+// identifiers; the model names below are the PascalCase singular of each table.
+
+// Source tables (pre-existing domain; defined here so Prisma can type them)
+model PaymentOrder {
+  id          String      @id @default(uuid())
+  companyId   String      @map("company_id")
+  workerId    String      @map("worker_id")
+  eventId     String      @map("event_id")
+  status      OrderStatus @default(pending)
+  amountCents Int         @map("amount_cents")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("payment_orders")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  title     String
+  location  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("events")
+}
+
+model Worker {
+  id        String   @id @default(uuid())
+  name      String
+  companyId String   @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("workers")
+}
+
+// Projection tables (kept in sync by write-path hooks; rebuilt by re-derivation)
+model OperationReadModel {
+  id            String      @id
+  companyId     String      @map("company_id")
+  workerId      String      @map("worker_id")
+  workerName    String      @map("worker_name")
+  eventId       String      @map("event_id")
+  eventTitle    String      @map("event_title")
+  eventLocation String      @map("event_location")
+  status        OrderStatus
+  amountCents   Int         @map("amount_cents")
+  createdAt     DateTime    @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@index([companyId, status, createdAt(sort: Desc)])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("operation_read_models")
+}
+
+model CompanyFinancialTotal {
+  companyId          String @id @map("company_id")
+  approvedTotalCents BigInt @default(0) @map("approved_total_cents")
+  rejectedTotalCents BigInt @default(0) @map("rejected_total_cents")
+  pendingCount       Int    @default(0) @map("pending_count")
+
+  @@map("company_financial_totals")
+}

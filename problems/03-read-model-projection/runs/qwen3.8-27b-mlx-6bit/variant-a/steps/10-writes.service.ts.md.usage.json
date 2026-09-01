@@ -1,0 +1,29 @@
+{
+  "label": "10-writes.service.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "model default",
+  "prompt_tokens": 7683,
+  "completion_tokens": 14363,
+  "reasoning_chars": 58048,
+  "content_chars": 3131,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 1406.5,
+  "server_seconds": 1406.5,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 10.2,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.types.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

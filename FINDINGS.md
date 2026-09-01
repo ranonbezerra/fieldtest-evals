@@ -353,6 +353,32 @@ never been tested against a model that needs three.
 
 Written before the data, so they can be wrong rather than rationalised afterwards.
 
+### 6.2 `medium` may be the better setting, and the campaign will not use it
+
+At the model's own default effort, **12 of 30 phases (40%) hit the output ceiling**.
+When the retry at `low` then succeeds, the work it actually needed was a median of
+**7,115 tokens, ranging 1,433–13,202** — much closer to the 16,384 ceiling than the
+early trivial-task measurements suggested. There is less room between `low` and the
+ceiling than expected, so `medium` producing more than `low` may simply overflow too.
+
+**This will be measured and not acted upon.** The test reruns phases that
+demonstrably overflowed at the default, at `medium`, with everything else held — the
+same one-axis shape used for the reasoning experiment. If they fit, `medium` becomes a
+serious candidate; if they overflow, it is dismissed for the cost of one afternoon
+rather than several days.
+
+**And the campaign keeps the current configuration regardless of the answer.** Not
+because the answer does not matter, but because eighteen problems measured under two
+settings are not a set — the first ones would be incomparable to the rest, exactly the
+mistake that cost the first campaign. A better setting found halfway through is an
+argument for a second pass, not for switching mid-flight.
+
+There is also a real question underneath, which the measurement alone will not settle:
+running at the model's default measures **the model as shipped**, while running at
+`medium` measures **the model as a competent user would configure it**. Both are
+legitimate and they answer different questions. The default is the standard here
+because it is the one that needs no justification.
+
 ### 6.1 Test files may overflow, and the two-pass phase is already in place
 
 Under the discarded parameters, test files hit the output ceiling **5 of 9** times
