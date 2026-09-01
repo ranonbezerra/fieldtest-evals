@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id                 String   @id @default(uuid()) @db.Uuid
+  supplier_key       String   @db.VarChar(255)
+  /// Money in minor units (integers only); always > 0.
+  amount_minor_units BigInt
+  effective_date     DateTime @db.Date
+  /// Derived deterministically from the order and its effective date; stable across re-sends.
+  txid               String   @unique @db.VarChar(64)
+  /// One of: pending, sent, in_doubt, rejected, settled, parked_manual_review.
+  status             String   @db.VarChar(32)
+  /// Send attempts made so far; the order is parked for manual review once the cap (5) is reached.
+  attempt_count      Int      @default(0)
+  last_attempt_at    DateTime?
+  /// Set by reconciliation once the settlement is confirmed.
+  settled_at         DateTime?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([effective_date])
+  @@index([status, effective_date])
+  @@map("orders")
+}
+
+/// Local cache/audit of what the bank reported; one row per txid (upserted on conflict).
+model Settlement {
+  id                 String   @id @default(uuid()) @db.Uuid
+  txid               String   @unique @db.VarChar(64)
+  /// Amount as reported by the bank, in minor units.
+  amount_minor_units BigInt
+  /// The bank's settlement timestamp.
+  settled_at         DateTime
+  /// The date argument to getStatement in which the entry was found.
+  statement_date     DateTime @db.Date
+  created_at         DateTime @default(now())
+
+  @@map("settlements")
+}
