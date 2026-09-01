@@ -17,10 +17,16 @@ failure_mode: reference_gap
               # './payout/payout.module.js' correctly in problem 01, same scaffold.
 
 revisions:    {self_repairs: 7, dropped_a_requirement: no}
-cost:         {wall_minutes: 57, output_tokens: 35116, tokens_per_second: 10.3,
-               output_ceiling_hits: []}
-host:         {pressure_samples: 0 of 12, ceiling_gib: [37.44, 37.44],
+cost:         {wall_minutes: 340, output_tokens: 200810, tokens_per_second: 9.9,
+               requests: 23,
+               output_ceiling_hits: [00-plan, 03-payment.repository.ts,
+                                     04-payment.service.ts,
+                                     07-payment.spec.ts (already at low)]}
+host:         {requests_under_pressure: 0 of 23, ceiling_gib: [37.44, 37.44],
                comparable: yes}
+interrupted:  yes — killed mid-gate and resumed at 15:20. meta.yaml timed only the
+              segment after the resume and reported 57 minutes and 35,116 tokens.
+              The figures above are summed from every request's own usage record.
 
 would_merge:  after_changes
 headline:     Gets the hardest reasoning in the set right and ships it in a project

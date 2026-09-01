@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""Replay the phases that overflowed, at a different reasoning_effort.
+
+One axis. Same instruction, same reads, same system message, same temperature,
+same ceiling — only `reasoning_effort` moves. Nothing is written into the run's
+workspace: artifacts land in `effort-<setting>/` beside it, so the judged run
+stays exactly as it was measured.
+
+    ft-effort <run-dir> --effort medium
+
+Reads the run's own PLAN.md for the manifest, so the phase list and each phase's
+dependencies are the ones that actually ran, not a reconstruction.
+"""
+import argparse, importlib.util, importlib.machinery, json, os, subprocess, sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+RUNNER = HERE / "ft-run"
+
+# ft-go reads FT_ROOT at import time. Sourcing ft-env.sh sets it; this keeps the
+# tool runnable either way, and every generation parameter still comes from there.
+os.environ.setdefault("FT_ROOT", str(ROOT))
+
+spec = importlib.util.spec_from_loader(
+    "ftgo", importlib.machinery.SourceFileLoader("ftgo", str(HERE / "ft-go")))
+ftgo = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ftgo)
+
+
+def overflowed(usage_path):
+    p = Path(usage_path)
+    if not p.is_file():
+        return None
+    try:
+        return json.loads(p.read_text())
+    except json.JSONDecodeError:
+        return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("rundir")
+    ap.add_argument("--effort", choices=["xhigh", "medium", "low"], required=True)
+    ap.add_argument("--only", help="comma-separated phase labels; default is every "
+                                   "phase that overflowed at the default effort")
+    ap.add_argument("--ignore-pressure", action="store_true")
+    a = ap.parse_args()
+
+    rundir = Path(a.rundir).resolve()
+    steps = rundir / "steps"
+    ws = rundir / "workspace"
+    plan_md = rundir / "PLAN.md"
+    if not plan_md.is_file():
+        sys.exit(f"no PLAN.md in {rundir}")
+
+    # problems/<problem>/runs/<tag>/<variant>
+    prob = rundir.parent.parent.parent
+    variant = prob / "variants" / f"{rundir.name}.md"
+    cheatsheet = prob / "CHEATSHEET.md"
+    if not cheatsheet.is_file():
+        cheatsheet = HERE / "cheatsheet" / "typescript-nestjs.md"
+
+    manifest, _ = ftgo.parse_manifest(plan_md.read_text())
+    order = {item["path"]: i for i, item in enumerate(manifest)}
+
+    # Which phases overflowed at the default? The first attempt only: a *-retry
+    # step ran at `low` already and is not what this compares against.
+    candidates = []
+    for u in sorted(steps.glob("*.md.usage.json")):
+        label = u.name[:-len(".md.usage.json")]
+        if label.endswith("-retry"):
+            continue
+        d = overflowed(u)
+        if d and d.get("output_ceiling_hit"):
+            candidates.append((label, d))
+
+    if a.only:
+        want = {s.strip() for s in a.only.split(",")}
+        candidates = [(l, d) for l, d in candidates if l in want]
+
+    if not candidates:
+        print("no phase overflowed at the default effort in this run")
+        return 0
+
+    out = rundir / f"effort-{a.effort}"
+    out.mkdir(exist_ok=True)
+    results = []
+
+    print(f"{rundir.parent.parent.parent.name} — {len(candidates)} phase(s) "
+          f"at reasoning_effort={a.effort}\n")
+
+    for label, before in candidates:
+        # Rebuild the instruction the way ft-go built it.
+        if label == "00-plan":
+            instruction = (HERE / "instructions" / "phase0-plan.md").read_text()
+            reads, verbatim = [variant], True
+            path = "PLAN.md"
+        else:
+            stem = label.split("-", 1)[1] if "-" in label else label
+            is_cases = stem.endswith("-cases")
+            path_name = stem[:-len("-cases")] if is_cases else stem
+            item = next((it for it in manifest
+                         if Path(it["path"]).name == path_name), None)
+            if item is None:
+                print(f"  {label}: no manifest row; skipped")
+                continue
+            path = item["path"]
+            if is_cases:
+                tmpl = (HERE / "instructions" / "phase-test-cases.md").read_text()
+                instruction = tmpl.replace("{{PATH}}", path)
+                verbatim = True
+            else:
+                tmpl = (HERE / "instructions" / "phase-file.md").read_text()
+                instruction = (tmpl.replace("{{PATH}}", path)
+                                   .replace("{{NOTE}}", item["note"]
+                                            or "as the plan specifies"))
+                verbatim = False
+            # Only dependencies that came *earlier* in the manifest existed when
+            # this phase ran. The workspace now holds every file, so filtering by
+            # manifest position is what keeps the replay faithful.
+            here = order.get(path, len(manifest))
+            reads = [variant, plan_md]
+            for d in item["reads"]:
+                if order.get(d, len(manifest)) >= here:
+                    continue
+                dp = ws / d
+                if dp.is_file() and dp.stat().st_size > 0:
+                    reads.append(dp)
+
+        raw = out / f"{label}.md"
+        cmd = [str(RUNNER), "--label", f"{label}@{a.effort}", "--instruction", "-",
+               "--raw", str(raw), "--reasoning-effort", a.effort,
+               "--system", str(cheatsheet),
+               "--file", str(out / f"{label}.out")]
+        if verbatim:
+            cmd.append("--verbatim")
+        if a.ignore_pressure:
+            cmd.append("--ignore-pressure")
+        for r in reads:
+            cmd += ["--read", str(r)]
+
+        print(f"  {label}  ({path})")
+        subprocess.run(cmd, input=instruction, text=True)
+
+        after = overflowed(str(raw) + ".usage.json") or {}
+        row = {
+            "phase": label, "path": path,
+            "default": {"tokens": before.get("completion_tokens"),
+                        "ceiling": bool(before.get("output_ceiling_hit"))},
+            a.effort: {"tokens": after.get("completion_tokens"),
+                       "ceiling": bool(after.get("output_ceiling_hit"))},
+        }
+        results.append(row)
+        verdict = "OVERFLOWED AGAIN" if row[a.effort]["ceiling"] else "fits"
+        print(f"      default {row['default']['tokens']} tok (ceiling) -> "
+              f"{a.effort} {row[a.effort]['tokens']} tok — {verdict}\n")
+
+    (out / "summary.json").write_text(json.dumps(
+        {"effort": a.effort, "run": str(rundir.relative_to(ROOT)),
+         "phases": results}, indent=2) + "\n")
+
+    fit = sum(1 for r in results if not r[a.effort]["ceiling"])
+    print(f"{fit} of {len(results)} phases fit at {a.effort}")
+    print(f"written to {out.relative_to(ROOT)}/")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

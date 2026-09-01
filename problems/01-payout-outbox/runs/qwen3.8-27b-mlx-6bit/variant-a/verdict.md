@@ -23,7 +23,7 @@ cost:         {wall_minutes: 250, output_tokens: 146619, tokens_per_second: 9.8,
                output_ceiling_hits: [plan, payout.repository.ts,
                                      payout-worker.service.ts,
                                      payout.controller.ts, payout.spec.ts-cases]}
-host:         {pressure_samples: 0 of 12, ceiling_gib: [37.44, 37.44],
+host:         {requests_under_pressure: 0 of 15, ceiling_gib: [37.44, 37.44],
                comparable: yes}
 
 would_merge:  no

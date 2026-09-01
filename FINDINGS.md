@@ -58,6 +58,30 @@ on the parameters that produced the reply.)
 *Changed:* `ft-go` treats a ceiling hit in phase 0 as a failure and writes no artifact.
 A phase that was cut off did not answer.
 
+### 1.3 The plan is more reliable than the code that implements it
+
+Across the three judged runs, **every must-have in all three rubrics was decided in
+`PLAN.md`** — twenty of twenty, none absent, none deferred. Three were then contradicted
+by the code that was supposed to implement them:
+
+| Run | Must-have | The plan said | The code did |
+|---|---|---|---|
+| 01 | M4 consumer dedup | `WHERE status = 'pending'` "so two workers cannot claim" | `status: { in: [PENDING, PROCESSING] }` |
+| 01 | M7 no revert in uncertainty | "a human inspects **before releasing** or confirming" | calls `releaseHold` on exhaustion |
+| 03 | M1 atomic projection | "`createOrder` opens a Prisma transaction … Commit transaction" | two sequential commits, no transaction |
+
+All three failures are the same shape: a guard the plan had narrowed, widened in the
+code until it stopped guarding.
+
+*What this means for a developer:* design review of this model's plan will not catch
+its failures, because the plan is right. The diff is where the money is.
+
+*Not established:* whether the drift is caused by the file phase running at a lowered
+`reasoning_effort` after a ceiling hit. Two of the three lost must-haves live in files
+written at `low` — but so does problem 01's `SELECT ... FOR UPDATE`, the hardest correct
+thing in the campaign, and the plans themselves were regenerated at `low` and are where
+all twenty decisions were made right. See §6.2.
+
 ## 2. The machine
 
 Full detail in [`harness/host-limits.md`](harness/host-limits.md).
@@ -321,6 +345,49 @@ watching it** — the whole point of the campaign design is that it survives bei
 alone. `ft-campaign` also tees each run's output to `ft-go.log` inside the run
 directory, so a killed orchestrator does not take the log with it.
 
+### 4.7 A resumed run reported the tail of itself as the whole run
+
+`meta.yaml` summed only the phases of the invocation that wrote it. Both problems 02
+and 03 were interrupted and resumed, so both recorded the segment after the resume as
+if it were the run:
+
+| | meta.yaml said | the requests say |
+|---|---|---|
+| 02 | 57 min, 35,116 tokens | **340 min, 200,810 tokens, 23 requests** |
+| 03 | 172 min, 104,583 tokens | **454 min, 272,380 tokens, 37 requests** |
+
+Problem 01 ran start to finish in one invocation and its meta matches the requests
+exactly — 250 against 249 minutes, tokens identical. That agreement is what made the
+other two look trustworthy.
+
+The numbers were not implausible. A 57-minute run beside a 250-minute one reads as a
+model finding — *this problem was easier* — and it was published as one. The
+underestimate is six-fold and points the same direction every time, because the tail
+of a run is always shorter than the run.
+
+*Changed, three things:*
+
+- `ft-go` now totals from `steps/*.usage.json`, which every request appends to and a
+  resume adds to rather than replaces. `wall_minutes` stays this invocation's, now
+  flagged `wall_is_this_invocation_only`, and `resumed` is recorded.
+- `ft-campaign` appends to `ft-go.log` with a timestamped separator instead of
+  overwriting it. The old behaviour left two runs' logs reading, in their entirety,
+  `timed out` — the first invocation's output was discarded on `TimeoutExpired` and
+  the second invocation never wrote there at all.
+- `sh()` keeps what the child had already written when it kills it. `TimeoutExpired`
+  carries `stdout`; the handler was returning the string `"timed out"` in its place.
+
+*And a better instrument was already there.* Every request records
+`host_pressure_at_send`, which is the condition at the moment it mattered rather than
+a periodic sample. By that measure all three runs are clean — 0 of 15, 0 of 23, 0 of
+37 requests sent under pressure — where `host.samples` had taken 12, 1 and 2 samples
+respectively and could not have supported the claim. The verdicts now quote the
+per-request count.
+
+*Also swept:* `ft-go` recorded `temperature` with a fallback of `0.6` — the discarded
+campaign's value — for the case where `FT_ENV` had not been sourced. It never fired,
+because `ft-env.sh` sets 1.0. It is now 1.0 in both places.
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was
@@ -345,6 +412,47 @@ phase in the self-test. Five repairs put the run past the limit.
 gate, and now fails it faster. That is the intended behaviour — `revisions.self_repairs`
 is recorded and a repaired run is the one to read first — but the ceiling on repairs has
 never been tested against a model that needs three.
+
+### 3.6 One file per request holds a convention inside a run of phases and drops it between them
+
+The single largest cause of gate failure so far is not a domain error. It is the `.js`
+extension that `"type": "module"` with `moduleResolution: NodeNext` requires on relative
+imports. Omitting it produces `TS2307: Cannot find module` on files that exist.
+
+It accounts for **23 of the 32 remaining errors in problem 03** and **every unresolved
+error in problem 02**, whose six must-haves are otherwise all satisfied. Problem 01
+compiled on the first attempt.
+
+The scaffold is byte-identical across all three runs. What differs is the model, and it
+differs *within* a run. Problem 03's split follows the phase order exactly:
+
+| phases | files | extension |
+|---|---|---|
+| 02–05 | `projections/*` | none |
+| 06–09 | `operations/*` | `.js` |
+| 10 | `writes.service.ts` | none |
+| 11 | `writes.module.ts` | `.js` |
+| 12–14 | `drift-repair/*`, `app.module.ts` | none |
+
+Consistent inside a run of consecutive phases, reset between them. Each file is an
+independent request, and nothing carries the previous file's import style forward, so
+the convention is re-decided from scratch every few phases. Problem 01 compiled because
+its coin came up `.js` fourteen times; problem 02 failed because it never did.
+
+The model does not recognise the symptom as its own. `drift-repair.processor.ts` carries
+`// ASSUMPTION: ../projections/projections.service ... cannot be resolved` written
+directly above the import that cannot be resolved — it saw the error and attributed it
+to the workspace.
+
+*Not changed, deliberately.* Setting `moduleResolution: bundler` in the scaffold would
+tolerate both styles and lift two runs from fail to judged-on-merit. It is not being
+done, for the same reason as §6.2: the standard has to hold for all eighteen problems,
+and this is a real property of the model's output that problem 01 shows is within its
+reach. It is recorded here as the first candidate for a second pass.
+
+*This is the cost of the phase design in §3.1.* The decomposition that made the work fit
+the ceiling is also what breaks cross-file consistency. Feeding each phase the import
+lines of the files already written is the obvious repair and is not yet built.
 
 ## 5. What is not established
 
@@ -374,7 +482,10 @@ Written before the data, so they can be wrong rather than rationalised afterward
 
 ### 6.2 `medium` may be the better setting, and the campaign will not use it
 
-At the model's own default effort, **12 of 30 phases (40%) hit the output ceiling**.
+At the model's own default effort, **14 of 60 phases (23%) hit the output ceiling**.
+(An earlier draft said 40% of 30 phases. That was read from `meta.yaml`, which counts
+only the phases of the last invocation — see §4.7. Counted from the requests
+themselves: 5 of 11 in problem 01, 4 of 17 in 02, 5 of 32 in 03.)
 When the retry at `low` then succeeds, the work it actually needed was a median of
 **7,115 tokens, ranging 1,433–13,202** — much closer to the 16,384 ceiling than the
 early trivial-task measurements suggested. There is less room between `low` and the

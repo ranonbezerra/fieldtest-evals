@@ -17,11 +17,17 @@ failure_mode: wrong_answer
               # applyOrderCreated() runs in its own transaction.
 
 revisions:    {self_repairs: 9, dropped_a_requirement: yes}
-cost:         {wall_minutes: 172, output_tokens: 104583, tokens_per_second: 10.1,
-               output_ceiling_hits: [test/operations.spec.ts-cases,
-                                     test/operations.spec.ts]}
-host:         {pressure_samples: 0 of 2, ceiling_gib: [37.44, 37.44],
+cost:         {wall_minutes: 454, output_tokens: 272380, tokens_per_second: 10.0,
+               requests: 37,
+               output_ceiling_hits: [00-plan, 04-projections.service.ts,
+                                     06-operations.repository.ts,
+                                     15-operations.spec.ts-cases,
+                                     15-operations.spec.ts (already at low)]}
+host:         {requests_under_pressure: 0 of 37, ceiling_gib: [37.44, 37.44],
                comparable: yes}
+interrupted:  yes — killed and resumed at 16:30, with the test phase and the repairs
+              still to run. meta.yaml timed only that segment: 172 minutes and
+              104,583 tokens. The figures above are summed from every request.
 
 would_merge:  no
 headline:     Writes an excellent design document, then builds drift repair to paper

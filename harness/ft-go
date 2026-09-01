@@ -637,13 +637,30 @@ def main():
             parts.append("\n---\n")
         (rundir / "transcript.md").write_text("\n".join(parts), encoding="utf-8")
 
-        tot_in = sum(p.get("prompt_tokens") or 0 for p in phases)
-        tot_out = sum(p.get("completion_tokens") or 0 for p in phases)
-        gen_s = sum(p.get("server_seconds") or 0 for p in phases)
-        load_s = sum(p.get("model_load_seconds") or 0 for p in phases)
-        rates = [p["output_tokens_per_second"] for p in phases
+        # `phases` is what THIS invocation ran. A resumed run skips everything
+        # already written, so summing only that reports the tail of a run as though
+        # it were the whole one: problem 02 recorded 57 minutes and 35k tokens for a
+        # run that had cost 340 minutes and 201k. The steps directory is the run's
+        # actual account, because every request writes its usage there and a resume
+        # adds to it rather than replacing it.
+        on_disk = []
+        for u in sorted(steps.glob("*.md.usage.json")):
+            try:
+                on_disk.append(json.loads(u.read_text()))
+            except (json.JSONDecodeError, OSError):
+                pass
+        segment_out = sum(p.get("completion_tokens") or 0 for p in phases)
+
+        tot_in = sum(p.get("prompt_tokens") or 0 for p in on_disk)
+        tot_out = sum(p.get("completion_tokens") or 0 for p in on_disk)
+        gen_s = sum(p.get("server_seconds") or 0 for p in on_disk)
+        load_s = sum(p.get("model_load_seconds") or 0 for p in on_disk)
+        rates = [p["output_tokens_per_second"] for p in on_disk
                  if p.get("output_tokens_per_second")]
-        ceilings = [p["label"] for p in phases if p.get("output_ceiling_hit")]
+        ceilings = [p["label"] for p in on_disk if p.get("output_ceiling_hit")]
+        # Wall time from this invocation's clock is the segment's, not the run's.
+        # Generation seconds come from the requests themselves and survive a resume.
+        resumed = len(on_disk) > len(phases)
         for p in empty:
             failures.append({"phase": str(p.relative_to(ws)), "exit": None,
                              "reason": "declared by the plan, came back empty"})
@@ -669,8 +686,9 @@ def main():
             "problem": prob.name, "variant": vslug,
             "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "wall_seconds": round(wall), "wall_minutes": round(wall / 60, 1),
+            "wall_is_this_invocation_only": resumed,
             "parameters": {
-                "temperature": float(os.environ.get("FT_TEMPERATURE", 0.6)),
+                "temperature": float(os.environ.get("FT_TEMPERATURE", 1.0)),
                 "top_p": float(os.environ.get("FT_TOP_P", 0.95)),
                 "top_k": int(os.environ.get("FT_TOP_K", 20)),
                 "max_tokens": int(os.environ.get("FT_MAX_TOKENS", 16384)),
@@ -683,10 +701,13 @@ def main():
                 },
             },
             "runner": a.runner, "spec_source": a.spec,
-            "requests": len(phases),
+            "requests": len(on_disk),
+            "resumed": resumed,
+            "requests_this_invocation": len(phases),
             "tokens": {
                 "prompt_total": tot_in,
                 "completion_total": tot_out,
+                "completion_this_invocation": segment_out,
                 "are_estimates": a.runner == "aider",
             },
             "throughput": {

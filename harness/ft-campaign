@@ -54,8 +54,17 @@ def sh(cmd, timeout=600, cwd=None):
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
         return p.returncode, (p.stdout or "") + (p.stderr or "")
-    except subprocess.TimeoutExpired:
-        return 124, "timed out"
+    except subprocess.TimeoutExpired as e:
+        # TimeoutExpired carries what the child had already written, and it is the
+        # only account of how far the run got. Discarding it replaced a run's whole
+        # log with the words "timed out" — twice — and the loss was invisible,
+        # because a log that exists reads as a log that was kept.
+        def text(stream):
+            if stream is None:
+                return ""
+            return stream.decode(errors="replace") if isinstance(stream, bytes) else stream
+        return 124, (text(e.stdout) + text(e.stderr)
+                     + f"\n[campaign] killed after {timeout}s\n")
     except FileNotFoundError:
         return 127, f"{cmd[0]}: not found"
 
@@ -256,8 +265,14 @@ def main():
             # successor.
             sh(["pkill", "-f", "ft-run --label"], timeout=60)
             say("run timed out; killed the request it left behind")
-        (prob / "runs" / slug / vslug / "ft-go.log").write_text(out, errors="replace") \
-            if (prob / "runs" / slug / vslug).is_dir() else None
+        # Append, never overwrite. A resumed run invokes ft-go a second time in the
+        # same directory, and overwriting left the log describing only the tail while
+        # the steps directory held the whole run.
+        logf = prob / "runs" / slug / vslug / "ft-go.log"
+        if logf.parent.is_dir():
+            stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            with logf.open("a", errors="replace") as fh:
+                fh.write(f"\n===== ft-go invocation, {stamp} =====\n{out}")
         for line in out.splitlines():
             if line.strip():
                 print("   " + line, flush=True)
