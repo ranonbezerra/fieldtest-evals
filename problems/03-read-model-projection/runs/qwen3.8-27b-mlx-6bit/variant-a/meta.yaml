@@ -1,0 +1,627 @@
+{
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "03-read-model-projection",
+  "variant": "variant-a",
+  "date": "2026-09-01T21:54:55+00:00",
+  "wall_seconds": 10322,
+  "wall_minutes": 172.0,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": 16384,
+    "context_window": 32768,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [
+        "cases:test/operations.spec.ts",
+        "test/operations.spec.ts"
+      ],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "runner": "api",
+  "spec_source": "model",
+  "requests": 13,
+  "tokens": {
+    "prompt_total": 98879,
+    "completion_total": 104583,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 9.9,
+    "output_tokens_per_second_overall": 10.1,
+    "generation_seconds": 10310,
+    "model_load_seconds": 0,
+    "overhead_seconds": 11
+  },
+  "revisions": {
+    "self_repairs": 9,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 2,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": true,
+    "ceiling_gib_min": 37.44,
+    "ceiling_gib_max": 37.44,
+    "swap_used_gib_max": 10.21,
+    "free_percent_min": 82,
+    "trace": [
+      {
+        "at": "2026-09-01T16:02:49",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.0,
+          "available_gib": 11.14,
+          "anonymous_gib": 33.59,
+          "wired_gib": 4.32,
+          "compressed_gib": 4.1,
+          "swap_used_gib": 10.21,
+          "swap_total_gib": 11.0,
+          "free_percent": 82
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.53,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 2.5,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 2.76,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 1.24,
+            "command": "idea"
+          },
+          {
+            "gib": 0.64,
+            "command": "Browser Helper (Renderer)"
+          },
+          {
+            "gib": 0.56,
+            "command": "com.apple.Virtualization.VirtualMachine"
+          },
+          {
+            "gib": 0.46,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": {
+          "running": 1,
+          "vm_gib": 0.56,
+          "names": [
+            "freeler_db"
+          ]
+        },
+        "pressure": []
+      },
+      {
+        "at": "2026-09-01T16:02:53",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.19,
+          "available_gib": 15.7,
+          "anonymous_gib": 33.43,
+          "wired_gib": 4.28,
+          "compressed_gib": 4.09,
+          "swap_used_gib": 10.21,
+          "swap_total_gib": 11.0,
+          "free_percent": 82
+        },
+        "swap_rate": {
+          "swapins_per_sec": 22.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.4,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 1.6,
+          "competitors": [
+            {
+              "cpu": 37.8,
+              "command": "WindowServer"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 2.76,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 1.24,
+            "command": "idea"
+          },
+          {
+            "gib": 0.64,
+            "command": "Browser Helper (Renderer)"
+          },
+          {
+            "gib": 0.56,
+            "command": "com.apple.Virtualization.VirtualMachine"
+          },
+          {
+            "gib": 0.46,
+            "command": "Browser Helper (Renderer)"
+          }
+        ],
+        "docker": {
+          "running": 1,
+          "vm_gib": 0.56,
+          "names": [
+            "freeler_db"
+          ]
+        },
+        "pressure": []
+      }
+    ]
+  },
+  "output_ceiling_hits": [
+    "15-operations.spec.ts-cases",
+    "15-operations.spec.ts"
+  ],
+  "two_pass_test_files": [
+    "test/operations.spec.ts"
+  ],
+  "files_declared": 16,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": false,
+    "repairs": 9,
+    "gate_scaffold_added": []
+  },
+  "failures": [
+    {
+      "phase": "15-operations.spec.ts",
+      "exit": null,
+      "reason": "test file overflowed at reasoning_effort=low, the lowest setting. The truncated reply is in steps/ and was not written as an artifact."
+    },
+    {
+      "phase": "gate",
+      "exit": null,
+      "reason": "typecheck still failing after 2 repairs"
+    }
+  ],
+  "phases": [
+    {
+      "label": "15-operations.spec.ts-cases",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 9718,
+      "completion_tokens": 16384,
+      "reasoning_chars": 64147,
+      "content_chars": 8736,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 1627.8,
+      "server_seconds": 1627.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/writes/writes.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "15-operations.spec.ts-cases-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 9706,
+      "completion_tokens": 2072,
+      "reasoning_chars": 3142,
+      "content_chars": 5754,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 244.9,
+      "server_seconds": 244.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 8.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/writes/writes.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.types.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "15-operations.spec.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 11193,
+      "completion_tokens": 16384,
+      "reasoning_chars": 44348,
+      "content_chars": 16929,
+      "finish_reason": "length",
+      "output_ceiling_hit": true,
+      "wall_seconds": 1634.5,
+      "server_seconds": 1634.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.0,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/writes/writes.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.types.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/15-operations.spec.ts-cases.txt"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "15-operations.spec.ts-retry",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 11193,
+      "completion_tokens": 11532,
+      "reasoning_chars": 20754,
+      "content_chars": 23297,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1131.0,
+      "server_seconds": 1130.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.2,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/writes/writes.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/projections/projections.types.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/15-operations.spec.ts-cases.txt"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-projections.service.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 5476,
+      "completion_tokens": 9130,
+      "reasoning_chars": 29266,
+      "content_chars": 7309,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 877.8,
+      "server_seconds": 877.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-app.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6439,
+      "completion_tokens": 943,
+      "reasoning_chars": 3398,
+      "content_chars": 437,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 106.8,
+      "server_seconds": 106.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 8.8,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-operations.spec.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6442,
+      "completion_tokens": 7938,
+      "reasoning_chars": 19694,
+      "content_chars": 11365,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 771.3,
+      "server_seconds": 771.3,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-drift-repair.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6460,
+      "completion_tokens": 2186,
+      "reasoning_chars": 8585,
+      "content_chars": 388,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 222.8,
+      "server_seconds": 222.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.8,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-projections.service.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6448,
+      "completion_tokens": 11452,
+      "reasoning_chars": 37490,
+      "content_chars": 7806,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1106.9,
+      "server_seconds": 1106.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-writes.service.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6448,
+      "completion_tokens": 11036,
+      "reasoning_chars": 44140,
+      "content_chars": 2092,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1067.2,
+      "server_seconds": 1067.1,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-projections.repository.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6448,
+      "completion_tokens": 10479,
+      "reasoning_chars": 36591,
+      "content_chars": 5817,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 1012.3,
+      "server_seconds": 1012.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-drift-repair.processor.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6460,
+      "completion_tokens": 1868,
+      "reasoning_chars": 6428,
+      "content_chars": 1037,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 192.5,
+      "server_seconds": 192.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-projections.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6448,
+      "completion_tokens": 3179,
+      "reasoning_chars": 13466,
+      "content_chars": 323,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 315.6,
+      "server_seconds": 315.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}

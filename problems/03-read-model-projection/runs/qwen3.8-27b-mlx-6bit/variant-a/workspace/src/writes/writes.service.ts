@@ -11,58 +11,54 @@ export class WritesService {
   ) {}
 
   async createOrder(input: CreateOrderInput): Promise<{ id: string; status: OrderStatus }> {
-    return this.prisma.$transaction(async (tx) => {
-      const order = await tx.paymentOrder.create({
-        data: {
-          companyId: input.companyId,
-          workerId: input.workerId,
-          eventId: input.eventId,
-          amountCents: input.amountCents,
-        },
-      });
-
-      await this.projections.applyOrderCreated(input, {
-        id: order.id,
-        createdAt: order.createdAt,
-      });
-
-      return { id: order.id, status: order.status };
+    const order = await this.prisma.paymentOrder.create({
+      data: {
+        companyId: input.companyId,
+        workerId: input.workerId,
+        eventId: input.eventId,
+        amountCents: input.amountCents,
+        status: 'pending',
+      },
     });
+
+    await this.projections.applyOrderCreated(input, { id: order.id, createdAt: order.createdAt });
+
+    return { id: order.id, status: 'pending' };
   }
 
   async approveOrder(orderId: string): Promise<{ id: string; status: OrderStatus }> {
-    return this.changeOrderStatus(orderId, 'approved');
+    return this.transitionOrder(orderId, 'approved');
   }
 
   async rejectOrder(orderId: string): Promise<{ id: string; status: OrderStatus }> {
-    return this.changeOrderStatus(orderId, 'rejected');
+    return this.transitionOrder(orderId, 'rejected');
   }
 
-  private async changeOrderStatus(
+  private async transitionOrder(
     orderId: string,
     newStatus: OrderStatus,
   ): Promise<{ id: string; status: OrderStatus }> {
-    return this.prisma.$transaction(async (tx) => {
-      const order = await tx.paymentOrder.findUnique({
-        where: { id: orderId },
+    const order = await this.prisma.paymentOrder.findUnique({ where: { id: orderId } });
+
+    if (!order) {
+      throw new NotFoundException({
+        error: { code: 'order_not_found', message: `Order ${orderId} not found`, details: {} },
       });
+    }
 
-      if (!order) {
-        throw new NotFoundException(`Order ${orderId} not found`);
-      }
-
-      if (order.status === newStatus) {
-        throw new BadRequestException(`Invalid transition: order is already ${newStatus}`);
-      }
-
-      await tx.paymentOrder.update({
-        where: { id: orderId },
-        data: { status: newStatus },
+    if (order.status === newStatus) {
+      throw new BadRequestException({
+        error: { code: 'invalid_transition', message: `Order is already ${newStatus}`, details: {} },
       });
+    }
 
-      await this.projections.applyOrderStatusChanged(orderId, newStatus);
-
-      return { id: order.id, status: newStatus };
+    await this.prisma.paymentOrder.update({
+      where: { id: orderId },
+      data: { status: newStatus },
     });
+
+    await this.projections.applyOrderStatusChanged(orderId, newStatus);
+
+    return { id: orderId, status: newStatus };
   }
 }

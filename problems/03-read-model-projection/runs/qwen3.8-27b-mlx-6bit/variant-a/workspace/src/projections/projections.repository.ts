@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { OperationRow, OrderStatus, CompanyTotals } from './projections.types';
+import { CompanyTotals, OperationRow, OrderStatus } from './projections.types';
 
 @Injectable()
 export class ProjectionsRepository {
@@ -46,20 +46,18 @@ export class ProjectionsRepository {
     companyId: string,
     delta: { approvedCents?: bigint; rejectedCents?: bigint; pendingDelta?: number },
   ): Promise<void> {
-    await this.prisma.companyFinancialTotal.upsert({
-      where: { companyId },
-      update: {
-        approvedTotalCents: { increment: delta.approvedCents ?? 0n },
-        rejectedTotalCents: { increment: delta.rejectedCents ?? 0n },
-        pendingCount: { increment: delta.pendingDelta ?? 0 },
-      },
-      create: {
-        companyId,
-        approvedTotalCents: delta.approvedCents ?? 0n,
-        rejectedTotalCents: delta.rejectedCents ?? 0n,
-        pendingCount: delta.pendingDelta ?? 0,
-      },
-    });
+    const approved = delta.approvedCents ?? 0n;
+    const rejected = delta.rejectedCents ?? 0n;
+    const pending = delta.pendingDelta ?? 0;
+
+    await this.prisma.$executeRaw`
+      INSERT INTO company_financial_totals (company_id, approved_total_cents, rejected_total_cents, pending_count)
+      VALUES (${companyId}, ${approved}, ${rejected}, ${pending})
+      ON CONFLICT (company_id) DO UPDATE SET
+        approved_total_cents = company_financial_totals.approved_total_cents + ${approved},
+        rejected_total_cents = company_financial_totals.rejected_total_cents + ${rejected},
+        pending_count = company_financial_totals.pending_count + ${pending}
+    `;
   }
 
   async resetTotals(companyId: string, totals: CompanyTotals): Promise<void> {
@@ -71,7 +69,7 @@ export class ProjectionsRepository {
         pendingCount: totals.pendingCount,
       },
       create: {
-        companyId,
+        companyId: totals.companyId,
         approvedTotalCents: totals.approvedTotalCents,
         rejectedTotalCents: totals.rejectedTotalCents,
         pendingCount: totals.pendingCount,
@@ -79,39 +77,31 @@ export class ProjectionsRepository {
     });
   }
 
-  async fetchSourceWindow(from: Date, to: Date): Promise<OperationRow[]> {
-    const rows = await this.prisma.$queryRaw<Array<{
-      id: string;
-      companyId: string;
-      workerId: string;
-      workerName: string;
-      eventId: string;
-      eventTitle: string;
-      eventLocation: string;
-      status: string;
-      amountCents: number;
-      createdAt: Date;
-    }>>`
-      SELECT
-        po.id AS "id",
-        po.company_id AS "companyId",
-        po.worker_id AS "workerId",
-        w.name AS "workerName",
-        po.event_id AS "eventId",
-        e.title AS "eventTitle",
-        e.location AS "eventLocation",
-        po.status AS "status",
-        po.amount_cents AS "amountCents",
-        po.created_at AS "createdAt"
-      FROM payment_orders po
-      JOIN workers w ON w.id = po.worker_id
-      JOIN events e ON e.id = po.event_id
-      WHERE po.created_at >= ${from} AND po.created_at < ${to}
-    `;
+  // ASSUMPTION: The Prisma schema defines relation fields (worker, event) on PaymentOrder
+  // so that `include` can be used for the source-window join.
 
-    return rows.map((row) => ({
-      ...row,
-      status: row.status as OrderStatus,
+  async fetchSourceWindow(from: Date, to: Date): Promise<OperationRow[]> {
+    const rows = await this.prisma.paymentOrder.findMany({
+      where: {
+        createdAt: { gte: from, lt: to },
+      },
+      include: {
+        worker: true,
+        event: true,
+      },
+    });
+
+    return rows.map((r) => ({
+      id: r.id,
+      companyId: r.companyId,
+      workerId: r.workerId,
+      workerName: r.worker.name,
+      eventId: r.eventId,
+      eventTitle: r.event.title,
+      eventLocation: r.event.location,
+      status: r.status as OrderStatus,
+      amountCents: r.amountCents,
+      createdAt: r.createdAt,
     }));
   }
 
@@ -122,17 +112,17 @@ export class ProjectionsRepository {
       },
     });
 
-    return rows.map((row) => ({
-      id: row.id,
-      companyId: row.companyId,
-      workerId: row.workerId,
-      workerName: row.workerName,
-      eventId: row.eventId,
-      eventTitle: row.eventTitle,
-      eventLocation: row.eventLocation,
-      status: row.status,
-      amountCents: row.amountCents,
-      createdAt: row.createdAt,
+    return rows.map((r) => ({
+      id: r.id,
+      companyId: r.companyId,
+      workerId: r.workerId,
+      workerName: r.workerName,
+      eventId: r.eventId,
+      eventTitle: r.eventTitle,
+      eventLocation: r.eventLocation,
+      status: r.status as OrderStatus,
+      amountCents: r.amountCents,
+      createdAt: r.createdAt,
     }));
   }
 
@@ -148,9 +138,9 @@ export class ProjectionsRepository {
   async bulkUpsert(rows: OperationRow[]): Promise<void> {
     if (rows.length === 0) return;
 
-    await this.prisma.$transaction(async (tx) => {
-      for (const row of rows) {
-        await tx.operationReadModel.upsert({
+    await this.prisma.$transaction(
+      rows.map((row) =>
+        this.prisma.operationReadModel.upsert({
           where: { id: row.id },
           update: {
             companyId: row.companyId,
@@ -175,9 +165,9 @@ export class ProjectionsRepository {
             amountCents: row.amountCents,
             createdAt: row.createdAt,
           },
-        });
-      }
-    });
+        }),
+      ),
+    );
   }
 
   async getTotals(companyId: string): Promise<CompanyTotals | null> {
