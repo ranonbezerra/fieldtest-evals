@@ -593,8 +593,15 @@ def main():
                         rlabel = f"repair{attempt+1}-{f.name}"
                         rmsg = (rtmpl.replace("{{PATH}}", str(rel))
                                      .replace("{{ERRORS}}", out[-4000:]))
+                        # At `low`, deliberately, and this is a harness choice worth
+                        # naming: a repair is not design work. It is "change exactly
+                        # what these compiler messages require", with the messages
+                        # quoted in full. At the model's default effort each repair
+                        # rewrote a whole file in ~19 minutes, five of them pushed one
+                        # run past the six-hour timeout, and the run was killed with
+                        # every file written and no meta.yaml.
                         ft_run(rlabel, rmsg, steps / f"{rlabel}.md",
-                               reads=reads, out_file=f, system=cheatsheet)
+                               reads=reads, out_file=f, system=cheatsheet, effort="low")
                         # Repairs overflow too — three of four did on problem 05,
                         # burning 28 minutes each to produce nothing. The retry was
                         # added to file phases and not here, which is where a run
@@ -605,7 +612,7 @@ def main():
                                 f"with reasoning off")
                             ft_run(f"{rlabel}-retry", rmsg, steps / f"{rlabel}-retry.md",
                                    reads=reads, out_file=f, system=cheatsheet,
-                                   effort="low")
+                                   effort="low")  # already lowest; retried for the roll
                             ceiling_retries.append(f"repair:{rel}")
             else:
                 say("\n[gate] no tsconfig.json in the workspace; typecheck skipped")
@@ -670,6 +677,7 @@ def main():
                 "context_window": int(os.environ.get("FT_CONTEXT_WINDOW", 32768)),
                 "reasoning": {
                     "effort": "the model's own default",
+                    "repair_phase_effort": "low",
                     "lowered_to_low_after_ceiling": ceiling_retries,
                     "test_write_pass_effort": "low",
                 },

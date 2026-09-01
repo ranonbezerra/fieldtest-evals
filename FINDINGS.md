@@ -287,6 +287,31 @@ watching it** — the whole point of the campaign design is that it survives bei
 alone. `ft-campaign` also tees each run's output to `ft-go.log` inside the run
 directory, so a killed orchestrator does not take the log with it.
 
+### 3.5 The gate roughly doubles a run, and the repair loop is why
+
+With the gate armed for the first time, problem 02 wrote all ten of its files and was
+then **killed at exactly six hours** by the campaign's own timeout, with no
+`meta.yaml`. Every file existed; the run did not.
+
+The repair loop is the cost. A repair rewrites the whole file — `whole` format, not a
+diff — and at the model's default effort it deliberates over the rewrite as if it were
+new work. **Roughly 19 minutes per repaired file**, against 6–7 minutes for the same
+phase in the self-test. Five repairs put the run past the limit.
+
+*Changed, two ways:*
+
+- **Repairs run at `reasoning_effort: low`.** Named as a harness choice rather than
+  slipped in: a repair is not design work. It is *"change exactly what these compiler
+  messages require"*, with the messages quoted in full — a constrained edit against an
+  exact specification, which is the one place lowering the dial costs least.
+- **The timeout goes from six hours to eight.** Six was set when the gate could not
+  fire and runs took five.
+
+*What this does not fix:* a run that needs more than two repair rounds still fails the
+gate, and now fails it faster. That is the intended behaviour — `revisions.self_repairs`
+is recorded and a repaired run is the one to read first — but the ceiling on repairs has
+never been tested against a model that needs three.
+
 ## 5. What is not established
 
 - **Nothing about the model.** The first campaign ran at the wrong temperature and was

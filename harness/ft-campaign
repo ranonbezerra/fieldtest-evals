@@ -244,7 +244,10 @@ def main():
             cmd.append("--ignore-pressure")
         # Tee to a file as well: if this orchestrator is killed mid-run, the child
         # keeps going and its output has somewhere to land.
-        rc, out = sh(cmd, timeout=6 * 3600)
+        # Eight hours, not six. Six was set before the gate could fire; with the
+        # repair loop running, one run was killed at exactly six hours with
+        # every file written and no meta.yaml to show for it.
+        rc, out = sh(cmd, timeout=8 * 3600)
         (prob / "runs" / slug / vslug / "ft-go.log").write_text(out, errors="replace") \
             if (prob / "runs" / slug / vslug).is_dir() else None
         for line in out.splitlines():

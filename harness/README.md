@@ -164,8 +164,7 @@ meta.yaml        below
 | group | fields |
 |---|---|
 | identity | `model`, `model_repo`, `quantization`, `architecture`, `modality`, `server`, `harness`, `runner`, `spec_source`, `problem`, `variant`, `date` |
-| parameters | `temperature`, `top_p`, `top_k`, `max_tokens`, `context_window` |
-| reasoning | `effort` (the model's default), `lowered_to_low_after_ceiling`, `test_write_pass_effort` |
+| parameters | `temperature`, `top_p`, `top_k`, `max_tokens`, `context_window`, and nested under it `reasoning`: `effort` (the model's default), `lowered_to_low_after_ceiling`, `test_write_pass_effort` |
 | cost | `wall_seconds` / `wall_minutes`, `requests`, `tokens`, `throughput` split into generation / model loads / gate+io |
 | outcome | `output_ceiling_hits`, `two_pass_test_files`, `files_declared`, `files_empty`, `revisions`, `gate` including `gate_scaffold_added`, and an explicit **`failures`** list naming each in the terms that decide what to do about it |
 | host | `pressure_samples` of `samples`, the ceiling's range, peak swap, minimum free memory, and the full `trace` |
