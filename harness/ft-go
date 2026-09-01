@@ -439,11 +439,43 @@ def main():
             if IS_TEST.search(item["path"]):
                 cases = steps / f"{label}-cases.md"
                 ctmpl = (HARNESS / "instructions" / "phase-test-cases.md").read_text()
-                ft_run(f"{label}-cases", ctmpl.replace("{{PATH}}", item["path"]),
-                       cases, reads=reads, out_file=cases.with_suffix(".txt"),
+                cmsg = ctmpl.replace("{{PATH}}", item["path"])
+                ft_run(f"{label}-cases", cmsg, cases,
+                       reads=reads, out_file=cases.with_suffix(".txt"),
                        system=cheatsheet, verbatim=True)
+
+                # The case phase needs the same ceiling retry as every other phase.
+                # Without it, an overflow here wrote 80 KB of deliberation as "the
+                # case list", that was fed to the writing phase as context, the
+                # prompt then exceeded the window, ft-run correctly refused, and the
+                # test file came back empty. One missing retry, four steps later an
+                # empty artifact.
+                cu = Path(str(cases) + ".usage.json")
+                cases_over = (json.loads(cu.read_text()).get("output_ceiling_hit")
+                              if cu.is_file() else False)
+                if cases_over:
+                    say(f"         ceiling hit enumerating cases — retrying at "
+                        f"reasoning_effort=low")
+                    ft_run(f"{label}-cases-retry", cmsg,
+                           steps / f"{label}-cases-retry.md",
+                           reads=reads, out_file=cases.with_suffix(".txt"),
+                           system=cheatsheet, verbatim=True, effort="low")
+                    ru = Path(str(steps / f"{label}-cases-retry.md") + ".usage.json")
+                    cases_over = (json.loads(ru.read_text()).get("output_ceiling_hit")
+                                  if ru.is_file() else True)
+                    ceiling_retries.append(f"cases:{item['path']}")
+
                 case_list = cases.with_suffix(".txt")
-                if case_list.is_file() and case_list.stat().st_size > 0:
+                # A list that overflowed is deliberation, not a list. Passing it on
+                # is how the writing phase lost its budget to someone else's thinking.
+                if cases_over and case_list.is_file():
+                    say("         the case list overflowed twice; writing the file "
+                        "without it")
+                    case_list.write_text(
+                        "CASE ENUMERATION PRODUCED NO LIST — the ceiling was reached "
+                        "at the model's default effort and again at low. The replies "
+                        "are in steps/ and are reasoning, not a list.\n")
+                if not cases_over and case_list.is_file() and case_list.stat().st_size > 0:
                     reads = list(reads) + [case_list]
                     instruction += (
                         "\n\nThe read-only file above lists the cases you already "
@@ -451,6 +483,19 @@ def main():
                         "decisions, not a suggestion.")
                 ft_run(label, instruction, steps / f"{label}.md",
                        reads=reads, out_file=target, system=cheatsheet, effort="low")
+                # Already at the lowest effort, so there is nowhere to retry to. What
+                # matters is not writing a fragment that reads like a test file: an
+                # empty file announces itself, a plausible half of one does not.
+                wu = Path(str(steps / f"{label}.md") + ".usage.json")
+                if wu.is_file() and json.loads(wu.read_text()).get("output_ceiling_hit"):
+                    say(f"         {item['path']} overflowed at the lowest effort; "
+                        f"the reply is truncated and is not written")
+                    target.write_text("")
+                    failures.append({
+                        "phase": label, "exit": None,
+                        "reason": "test file overflowed at reasoning_effort=low, the "
+                                  "lowest setting. The truncated reply is in steps/ "
+                                  "and was not written as an artifact."})
                 two_pass_tests.append(item["path"])
             else:
                 ft_run(label, instruction, steps / f"{label}.md",
