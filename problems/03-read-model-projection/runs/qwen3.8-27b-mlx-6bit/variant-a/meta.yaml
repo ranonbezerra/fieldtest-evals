@@ -2,7 +2,7 @@
   "model": "Qwen3.8-27B-MLX-6bit",
   "model_repo": "Qwen/Qwen3.8-27B",
   "quantization": "6-bit MLX, group_size 64, affine",
-  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "architecture": "64 layers, hidden 5120 — 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
   "modality": "natively multimodal; text path only",
   "server": "oMLX",
   "harness": "fieldtest ft-go",
@@ -623,5 +623,14 @@
       "exit": 0,
       "runner": "api"
     }
-  ]
+  ],
+  "resumed": true,
+  "wall_is_this_invocation_only": true,
+  "run_totals_from_requests": {
+    "note": "This run was interrupted and resumed. The wall_minutes, requests and tokens fields above cover only the invocation that wrote this file. These are the totals across every request in steps/, which is the run.",
+    "wall_minutes": 454,
+    "completion_total": 272380,
+    "requests": 37,
+    "output_tokens_per_second_overall": 10.0
+  }
 }

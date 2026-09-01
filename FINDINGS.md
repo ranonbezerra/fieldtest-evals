@@ -405,8 +405,23 @@ phase in the self-test. Five repairs put the run past the limit.
   slipped in: a repair is not design work. It is *"change exactly what these compiler
   messages require"*, with the messages quoted in full — a constrained edit against an
   exact specification, which is the one place lowering the dial costs least.
-- **The timeout goes from six hours to eight.** Six was set when the gate could not
-  fire and runs took five.
+- **The timeout goes from six hours to twelve.** Six was set when the gate could not
+  fire and runs took five. Eight was set next, and problem 03 then ran 7.6 hours —
+  twenty-four minutes of margin, which is not margin.
+
+*Now measured, on three complete runs:*
+
+| run | repair requests | share of output | time | gate |
+|---|--:|--:|--:|:-:|
+| 01 payout outbox | 0 of 15 | 0% | — | passed |
+| 02 reconciliation resend | 10 of 23 | **33%** | 1.9 h | failed |
+| 03 read model projection | 14 of 37 | **33%** | 2.5 h | failed |
+
+Both failing runs spent exactly a third of their output on repairs, and both still
+failed. The repair loop is not a rescue with a cost — on this evidence it is a cost
+that has not yet rescued anything. What it did buy is diagnosis: problem 02's three
+rounds fixed every type error they understood and never once touched the `TS2307`
+that was in the output all three times (§3.6), and that contrast is the finding.
 
 *What this does not fix:* a run that needs more than two repair rounds still fails the
 gate, and now fails it faster. That is the intended behaviour — `revisions.self_repairs`

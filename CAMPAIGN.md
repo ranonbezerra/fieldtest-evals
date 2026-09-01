@@ -11,28 +11,37 @@ Written before the first run, so the order is a decision rather than a habit.
 on some phases, reasoning switched off — both wrong, both from misreading the model's
 `config.json` class name as its model name. See `FINDINGS.md` §0.
 
-Nothing about the model survives from it. The figures below are from those runs and
-are kept only as an order of magnitude for planning; they will be replaced by the
-first runs at the correct parameters.
+Nothing about the model survives from it. The figures below are no longer its — they
+are measured from the first three runs at the corrected parameters.
 
 ## The arithmetic
 
-**From the discarded campaign.** These are the only figures available and they were
-taken at the wrong temperature, so they are an order of magnitude for planning and
-nothing more. They will be replaced by the first runs at the correct parameters.
+**Measured, at the correct parameters, on the first three runs.** These replace the
+discarded campaign's estimates, which were roughly a third of the truth.
 
-| | measured, at parameters since corrected |
-|---|--:|
-| plan phase, reasoning off, problem 01 | 4,327 tokens · **7 min** |
-| a file phase | 2,361–7,068 tokens · **4–11 min** |
-| files problem 01's own plan declared | **14** |
-| **one run** | **1.1 – 2.7 h** |
+| run | requests | output tokens | generation |
+|---|--:|--:|--:|
+| 01 payout outbox | 15 | 146,619 | **4.2 h** |
+| 02 reconciliation resend | 23 | 200,810 | **5.7 h** |
+| 03 read model projection | 37 | 272,380 | **7.6 h** |
+
+Throughput is flat across all three — 9.8, 9.9, 10.0 tok/s — so a run's length is
+almost entirely a function of how many tokens it takes, and that ranges over 2× for
+problems of comparable size.
+
+The repair loop is most of the spread. Problem 01 compiled on the first attempt and
+spent **nothing** on repairs. Problems 02 and 03 each spent **33% of their output** on
+them — 1.9 h and 2.5 h — and both still failed the gate. Budget a third of a run for
+repairs that may not repair anything.
 
 | scope | wall time |
 |---|--:|
-| variant A of all 18 problems | **19 – 48 h** |
-| A and B | 38 – 97 h |
-| all 54 | **57 – 145 h** |
+| variant A of all 18 problems | **76 – 137 h** |
+| A and B | 152 – 274 h |
+| all 54 | **228 – 411 h** |
+
+The earlier projection said 19–48 h for variant A. It was built from phase timings taken
+before the gate could fire, and the gate is what doubles a run.
 
 The whole acervo does not fit in one sitting, so the order has to earn its place.
 
