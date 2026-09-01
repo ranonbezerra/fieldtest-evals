@@ -106,15 +106,13 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 
 <!-- results:start -->
 
-No runs have been judged yet. The table below is the shape it will take;
-every cell is filled by `harness/ft-results --write` from the `verdict.md`
-files, never by hand.
+### qwen3.8-27b-mlx-6bit
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | – | – | – | – | *not yet run* |
-| 02 | reconciliation resend | – | – | – | – | *not yet run* |
-| 03 | read model projection | – | – | – | – | *not yet run* |
+| 01 | payout outbox | ✗<br><sub>M4, M7</sub> | – | – | – | Designs the whole thing correctly, then widens two guards in the code until they stop guarding. |
+| 02 | reconciliation resend | ✗ | – | – | – | Gets the hardest reasoning in the set right and ships it in a project that does not compile. |
+| 03 | read model projection | ✗<br><sub>M1</sub> | – | – | – | Writes an excellent design document, then builds drift repair to paper over the atomicity it forgot to implement. |
 | 04 | grounded llm product | – | – | – | – | *not yet run* |
 | 05 | onchain anchoring | – | – | – | – | *not yet run* |
 | 06 | multi tenant isolation | – | – | – | – | *not yet run* |
@@ -130,6 +128,7 @@ files, never by hand.
 | 16 | migration that lied | – | – | – | – | *not yet run* |
 | 17 | token rotation reuse | – | – | – | – | *not yet run* |
 | 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+
 
 <!-- results:end -->
 

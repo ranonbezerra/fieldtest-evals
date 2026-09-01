@@ -22,8 +22,22 @@ MARK = {"PASS": "✓", "PASS_WITH_NOTES": "~", "FAIL": "✗"}
 
 
 def field(text, name):
+    """One field, including the lines it wraps onto.
+
+    The verdict template wraps long values to keep them readable, so reading only
+    the matched line truncated every headline mid-sentence — "builds drift repair
+    to paper" is not what the verdict said, and it reached the README.
+    """
     m = re.search(rf"^{name}:\s*(.+?)\s*$", text, re.M)
-    return m.group(1).strip() if m else None
+    if not m:
+        return None
+    parts = [m.group(1).strip()]
+    for line in text[m.end():].splitlines()[1:]:
+        # A new key at column 0, or a blank line, ends the value.
+        if not line.strip() or re.match(r"^\S+:", line) or line.startswith("```"):
+            break
+        parts.append(line.strip())
+    return " ".join(parts).strip()
 
 
 def collect():
@@ -94,6 +108,10 @@ def render():
                 bad = failed_musts(r["gate"])
                 cells.append(f"{mark}<br><sub>{bad}</sub>" if bad else mark)
             note = (got.get("a") or got.get("b") or got.get("c") or {}).get("headline") or ""
+            # Once one problem is judged, the rest are not blank — they are unrun,
+            # and a public table has to say so rather than leave fifteen empty cells.
+            if not any(got.get(s) for s in ("a", "b", "c", "ladder")):
+                note = "*not yet run*"
             lines.append(f"| {n} | {title} | " + " | ".join(cells) + f" | {note} |")
         lines.append("")
     return "\n".join(lines)
