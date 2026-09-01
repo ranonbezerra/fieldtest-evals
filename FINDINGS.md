@@ -58,29 +58,51 @@ on the parameters that produced the reply.)
 *Changed:* `ft-go` treats a ceiling hit in phase 0 as a failure and writes no artifact.
 A phase that was cut off did not answer.
 
-### 1.3 The plan is more reliable than the code that implements it
+### 1.3 The plan contradicts itself, and the code implements the executable half
 
-Across the three judged runs, **every must-have in all three rubrics was decided in
-`PLAN.md`** — twenty of twenty, none absent, none deferred. Three were then contradicted
-by the code that was supposed to implement them:
+Across the three judged runs, **every must-have in all three rubrics was named in
+`PLAN.md`** — twenty of twenty. Three were then missing from the code, and the first
+reading of that was drift: decided right, lost in implementation. That reading was
+wrong. In all three cases the plan states the requirement **and its violation**, in
+different sections, and the code is a faithful implementation of one of them.
 
-| Run | Must-have | The plan said | The code did |
-|---|---|---|---|
-| 01 | M4 consumer dedup | `WHERE status = 'pending'` "so two workers cannot claim" | `status: { in: [PENDING, PROCESSING] }` |
-| 01 | M7 no revert in uncertainty | "a human inspects **before releasing** or confirming" | calls `releaseHold` on exhaustion |
-| 03 | M1 atomic projection | "`createOrder` opens a Prisma transaction … Commit transaction" | two sequential commits, no transaction |
+Both plans use the same structure, unprompted: §1 Assumptions, §2 Data model, §3 Types
+and signatures (ending in *Ordering rules*), §4 Control flow, §5 Tests, §6 Manifest.
+Invariants live in §3 as prose and as type signatures. Procedures live in §4 as
+numbered steps and literal SQL. The three failures are all a disagreement across that
+boundary.
 
-All three failures are the same shape: a guard the plan had narrowed, widened in the
-code until it stopped guarding.
+| Run | MH | The invariant | The procedure | Built |
+|---|---|---|---|:-:|
+| 01 | M4 | §3:164 — *"must use a conditional update (`WHERE status = 'pending'`) so two workers cannot claim"* | §4:190 — `UPDATE … WHERE id=? AND status IN ('pending','processing')` | §4 |
+| 01 | M7 | §1 — *"never assume a transfer failed when we cannot confirm; a human inspects before releasing or confirming"* | §4:196 — *"if attempts >= maxAttempts: in one transaction → `releaseHold`, `updatePayoutStatus(→ needs_review)`"* | §4 |
+| 03 | M1 | §4:271–277 — *"opens a Prisma transaction … all inside the transaction … Commit transaction"* | §3:195 — `applyOrderCreated(input, order): Promise<void>`, no parameter to carry one | §3 |
 
-*What this means for a developer:* design review of this model's plan will not catch
-its failures, because the plan is right. The diff is where the money is.
+The pattern is not "§4 wins". It is **the more executable form wins**: literal SQL beats
+a prose rule, and an existing parameter list beats a prose instruction. In problem 03 the
+signature had a second advantage — it was written at phase 04 and needed at phase 10, so
+by then it was a file on disk that the new file had to compile against. Prose in §4
+cannot change a parameter list.
 
-*Not established:* whether the drift is caused by the file phase running at a lowered
-`reasoning_effort` after a ceiling hit. Two of the three lost must-haves live in files
-written at `low` — but so does problem 01's `SELECT ... FOR UPDATE`, the hardest correct
-thing in the campaign, and the plans themselves were regenerated at `low` and are where
-all twenty decisions were made right. See §6.2.
+*What this means for a developer:* the model is not failing to follow its plan. It
+follows it exactly. Reading the plan and approving it is not enough, because the plan
+approves of two incompatible things and only says so if you read its sections against
+each other. The check is mechanical and cheap: take every *must* in the ordering rules,
+find the numbered step that implements it, and read them side by side. All three defects
+here are visible in that one pass, before any code exists.
+
+*What this means for the harness:* phase 0 emits a specification that is never checked
+against itself. A consistency pass between phase 0 and phase 1 — quote each invariant,
+name the step that satisfies it, reconcile the disagreements — is the intervention this
+finding argues for. It is **not** being applied in this pass; the configuration is fixed
+for all eighteen (§6.2). Recorded as the strongest candidate for a second pass, alongside
+§3.6.
+
+*Superseded:* an earlier version of this finding was titled *"The plan is more reliable
+than the code that implements it"* and read the three failures as implementation drift.
+It reached the verdicts for problems 01 and 03 before it was checked against the plans'
+§4 sections. Both verdicts now record `plan_gate: wrong` for the affected must-haves
+rather than `decided`.
 
 ## 2. The machine
 

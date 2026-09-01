@@ -4,19 +4,22 @@
 verdict:      FAIL
 condition:    {runner: api, spec: model}
 
-plan_gate:    [M1 decided, M2 decided, M3 decided, M4 decided, M5 decided,
-               M6 decided, M7 decided, M8 decided]
+plan_gate:    [M1 decided, M2 decided, M3 decided, M4 wrong, M5 decided,
+               M6 decided, M7 wrong, M8 decided]
 gate:         [M1 ✓, M2 ✓, M3 ✓, M4 ✗, M5 ✓, M6 ✓, M7 ✗, M8 ✓]
 
 graded:       {state_machine: 2, tx_boundaries: 3, errors: 0, tests: n/a,
                quality: 3, process: 3}
 
 failure_mode: wrong_answer
-              # Both lost must-haves were specified correctly in PLAN.md and
-              # contradicted in the code. PLAN.md:164 — "claimMessage /
-              # claimStaleMessages must use a conditional update (WHERE status =
-              # 'pending') so two workers cannot claim" — became
-              # `status: { in: [PENDING, PROCESSING] }`.
+              # Not drift. PLAN.md contradicts itself, and the code implements the
+              # concrete half. §3 Ordering rules:164 — "must use a conditional
+              # update (WHERE status = 'pending') so two workers cannot claim".
+              # §4 Control flow:190 — "UPDATE ... WHERE id=? AND status IN
+              # ('pending','processing')". The code is a faithful transcription of
+              # the second. Same for M7: §1 reasons "a human inspects before
+              # releasing or confirming", §4:196 specifies releaseHold on
+              # exhaustion, and §4 is what was built.
 
 revisions:    {self_repairs: 0, dropped_a_requirement: yes}
 cost:         {wall_minutes: 250, output_tokens: 146619, tokens_per_second: 9.8,
@@ -27,20 +30,21 @@ host:         {requests_under_pressure: 0 of 15, ceiling_gib: [37.44, 37.44],
                comparable: yes}
 
 would_merge:  no
-headline:     Designs the whole thing correctly, then widens two guards in the code
-              until they stop guarding.
+headline:     States the invariant in prose, then writes the SQL that breaks it two
+              sections later, and builds the SQL.
 notes: |
-  The plan is the strongest artifact in this run. It names the eight hard
-  decisions, resolves each one, and justifies them. Every must-have was decided
-  before a line was written.
-  Two were then lost in implementation, both by widening a predicate the plan had
-  narrowed. M4: the claim admits PROCESSING with no staleness test, so under READ
-  COMMITTED a second worker re-evaluates the WHERE after the first commits, still
-  matches, and also returns count === 1. Both send the payout.
-  M7: the plan's own rationale reads "a human inspects before releasing or
-  confirming"; the exhaustion branch calls releaseHold, un-reserving money whose
-  provider outcome is unknown. It parks in NEEDS_REVIEW correctly and gives the
-  funds back on the way there.
+  The plan names the eight hard decisions and resolves each one. It also contradicts
+  itself twice, and both contradictions are what the gate caught. The code is not
+  unfaithful to the plan; it is faithful to the wrong half of it.
+  M4: §3 requires the claim to match only `pending`, and says why — "so two workers
+  cannot claim". §4 then writes the statement out as `status IN
+  ('pending','processing')`, because the same flow feeds it stale PROCESSING rows to
+  reclaim and nothing reconciled the two. The code copies §4. Under READ COMMITTED a
+  second worker re-evaluates the WHERE after the first commits, still matches, and
+  also returns count === 1. Both send the payout.
+  M7: §1 reasons its way to the right principle — "a human inspects before releasing
+  or confirming" — and §4 step 6 specifies `releaseHold` on exhaustion anyway, into
+  a state its own diagram labels "outcome unknown". The code does what §4 says.
   What it got right is not the easy half. M2 is a real `SELECT ... FOR UPDATE` via
   $queryRaw inside the transaction, not an invented Prisma option. M5 carries both
   guards: pre-check and P2002 re-read of the winner. M8 is BigInt end to end with

@@ -110,9 +110,9 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | ✗<br><sub>M4, M7</sub> | – | – | – | Designs the whole thing correctly, then widens two guards in the code until they stop guarding. |
+| 01 | payout outbox | ✗<br><sub>M4, M7</sub> | – | – | – | States the invariant in prose, then writes the SQL that breaks it two sections later, and builds the SQL. |
 | 02 | reconciliation resend | ✗ | – | – | – | Gets the hardest reasoning in the set right and ships it in a project that does not compile. |
-| 03 | read model projection | ✗<br><sub>M1</sub> | – | – | – | Writes an excellent design document, then builds drift repair to paper over the atomicity it forgot to implement. |
+| 03 | read model projection | ✗<br><sub>M1</sub> | – | – | – | Demands the transaction in one section and designs the function that cannot receive one in another, then repairs the drift that results. |
 | 04 | grounded llm product | – | – | – | – | *not yet run* |
 | 05 | onchain anchoring | – | – | – | – | *not yet run* |
 | 06 | multi tenant isolation | – | – | – | – | *not yet run* |

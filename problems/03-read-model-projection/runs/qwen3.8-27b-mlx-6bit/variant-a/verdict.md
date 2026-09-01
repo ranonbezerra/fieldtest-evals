@@ -4,17 +4,25 @@
 verdict:      FAIL
 condition:    {runner: api, spec: model}
 
-plan_gate:    [M1 decided, M2 decided, M3 decided, M4 decided, M5 decided, M6 decided]
+plan_gate:    [M1 wrong, M2 decided, M3 decided, M4 decided, M5 decided, M6 decided]
+              # M1 is "wrong" and not "decided" because the plan specified it twice,
+              # incompatibly: §4 demands the transaction, §3 designs the interface
+              # that cannot accept one.
 gate:         [M1 ✗, M2 ✓, M3 ✓, M4 ✓, M5 ✓, M6 ✓]
 
 graded:       {schema_design: 3, rebuild_story: 3, tradeoffs: 3, tests: 3,
                quality: 1, process: 1}
 
 failure_mode: wrong_answer
-              # PLAN.md:271 "WritesService.createOrder opens a Prisma transaction",
-              # :273 "all inside the transaction", :277 "Commit transaction".
-              # writes.service.ts opens none: create() commits, then
-              # applyOrderCreated() runs in its own transaction.
+              # PLAN.md §4:271 "WritesService.createOrder opens a Prisma
+              # transaction", :273 "all inside the transaction", :277 "Commit
+              # transaction". PLAN.md §3:195 designs the callee as
+              # `applyOrderCreated(input, order): Promise<void>` — under a comment
+              # reading "Called by write services inside the same transaction as the
+              # source write", and with no parameter that could carry one. The
+              # signature was written at phase 04 and writes.service.ts at phase 10,
+              # by which point it was a file on disk. §4 was unimplementable against
+              # §3, and the compilable half won.
 
 revisions:    {self_repairs: 9, dropped_a_requirement: yes}
 cost:         {wall_minutes: 454, output_tokens: 272380, tokens_per_second: 10.0,
@@ -30,14 +38,19 @@ interrupted:  yes — killed and resumed at 16:30, with the test phase and the r
               104,583 tokens. The figures above are summed from every request.
 
 would_merge:  no
-headline:     Writes an excellent design document, then builds drift repair to paper
-              over the atomicity it forgot to implement.
+headline:     Demands the transaction in one section and designs the function that
+              cannot receive one in another, then repairs the drift that results.
 
 notes: |
   M1 is the point of this problem and the only must-have it missed. The plan says
   the projection upsert belongs in the source write's transaction, in three separate
-  places. The code awaits the source write, lets it commit, then awaits the
-  projection. A crash in between leaves the read model permanently behind.
+  places in §4 — and in §3 gives the projection method no parameter to receive a
+  transaction through, under a doc comment asserting it will be called inside one.
+  The code awaits the source write, lets it commit, then awaits the projection. A
+  crash in between leaves the read model permanently behind.
+  This is not the model ignoring its plan. By phase 10 the signature from phase 04
+  was a file it had to compile against, and prose in §4 does not change a parameter
+  list. It chose the version that runs.
   The compensation is already in the box: a @Cron(EVERY_5_MINUTES) drift repair and
   a rederive routine. Both are good work, and both exist to clean up a window that
   M1 would have closed. The model built the cure and skipped the prevention.
