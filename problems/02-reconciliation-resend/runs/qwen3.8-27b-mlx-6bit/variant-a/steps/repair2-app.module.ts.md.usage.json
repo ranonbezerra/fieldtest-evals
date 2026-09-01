@@ -1,5 +1,5 @@
 {
-  "label": "repair1-payment.service.ts",
+  "label": "repair2-app.module.ts",
   "model": "Qwen3.8-27B-MLX-6bit",
   "temperature": 1.0,
   "top_p": 0.95,
@@ -8,19 +8,20 @@
   "context_window": 32768,
   "thinking": true,
   "reasoning_effort": "low",
-  "prompt_tokens": 5545,
-  "completion_tokens": 5400,
-  "reasoning_chars": 14497,
-  "content_chars": 6835,
+  "prompt_tokens": 6521,
+  "completion_tokens": 971,
+  "reasoning_chars": 3894,
+  "content_chars": 184,
   "finish_reason": "stop",
   "output_ceiling_hit": false,
-  "wall_seconds": 517.5,
-  "server_seconds": 517.5,
+  "wall_seconds": 109.4,
+  "server_seconds": 109.3,
   "model_load_seconds": 0.0,
-  "output_tokens_per_second": 10.4,
+  "output_tokens_per_second": 8.9,
   "reads": [
     "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/variants/variant-a.md",
-    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payment/payment.repository.ts"
   ],
   "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
   "host_pressure_at_send": []

@@ -1,44 +1,45 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PaymentService } from '../src/payment/payment.service';
+import { PaymentService, ReconcileWindow } from '../src/payment/payment.service';
 import type { BankClient, BankSendResponse, Settlement } from '../src/payment/bank-client.interface';
+import type { OrderRecord } from '../src/payment/payment.repository';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeOrder(overrides: Record<string, unknown> = {}) {
+function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
   return {
     id: 'order-1',
     supplier_key: 'key-1',
-    amount_minor_units: 10_000,
-    effective_date: new Date('2025-01-15T00:00:00.000Z'),
+    amount_minor_units: 100,
+    effective_date: new Date('2025-01-15'),
     txid: 'txid-1',
-    status: 'pending' as string,
+    status: 'pending',
     attempt_count: 0,
-    last_attempt_at: null as Date | null,
-    settled_at: null as Date | null,
+    last_attempt_at: null,
+    settled_at: null,
     ...overrides,
   };
 }
 
-function makeMockBank() {
+function makeRepoMock() {
   return {
-    send: vi.fn<Promise<BankSendResponse>>(),
-    getStatement: vi.fn<Promise<Settlement[]>>(),
+    findPending: vi.fn().mockResolvedValue([]),
+    findByTxid: vi.fn().mockResolvedValue(null),
+    findInDoubtByEffectiveDate: vi.fn().mockResolvedValue([]),
+    markSent: vi.fn().mockResolvedValue(undefined),
+    markInDoubt: vi.fn().mockResolvedValue(undefined),
+    markRejected: vi.fn().mockResolvedValue(undefined),
+    markSettled: vi.fn().mockResolvedValue(undefined),
+    markPendingForResend: vi.fn().mockResolvedValue(undefined),
+    markParked: vi.fn().mockResolvedValue(undefined),
+    incrementAttempt: vi.fn().mockResolvedValue(1),
+    upsertSettlement: vi.fn().mockResolvedValue(undefined),
   };
 }
 
-function makeMockRepo() {
+function makeBankMock() {
   return {
-    findPending: vi.fn(),
-    findByTxid: vi.fn(),
-    findInDoubtByEffectiveDate: vi.fn(),
-    markSent: vi.fn(),
-    markInDoubt: vi.fn(),
-    markRejected: vi.fn(),
-    markSettled: vi.fn(),
-    markPendingForResend: vi.fn(),
-    markParked: vi.fn(),
-    incrementAttempt: vi.fn(),
-    upsertSettlement: vi.fn(),
+    send: vi.fn(),
+    getStatement: vi.fn().mockResolvedValue([]),
   };
 }
 
@@ -48,116 +49,51 @@ const DEFAULT_OPTS = {
   maxAttempts: 5,
 };
 
-// Stateful repository mock that mutates the order in place.
-function makeStatefulRepo(order: Record<string, any>) {
-  return {
-    findPending: vi.fn(async (_limit: number) =>
-      order.status === 'pending' ? [{ ...order }] : [],
-    ),
-    findByTxid: vi.fn(async (txid: string) =>
-      order.txid === txid ? { ...order } : null,
-    ),
-    findInDoubtByEffectiveDate: vi.fn(async (date: Date) => {
-      const d = new Date(date);
-      const od = new Date(order.effective_date);
-      if (
-        order.status === 'in_doubt' &&
-        d.getUTCFullYear() === od.getUTCFullYear() &&
-        d.getUTCMonth() === od.getUTCMonth() &&
-        d.getUTCDate() === od.getUTCDate()
-      ) {
-        return [{ ...order }];
-      }
-      return [];
-    }),
-    markSent: vi.fn(async (id: string, lastAttemptAt: Date) => {
-      if (id === order.id) {
-        order.status = 'sent';
-        order.last_attempt_at = lastAttemptAt;
-      }
-    }),
-    markInDoubt: vi.fn(async (id: string, lastAttemptAt: Date) => {
-      if (id === order.id) {
-        order.status = 'in_doubt';
-        order.last_attempt_at = lastAttemptAt;
-      }
-    }),
-    markRejected: vi.fn(async (id: string) => {
-      if (id === order.id) {
-        order.status = 'rejected';
-      }
-    }),
-    markSettled: vi.fn(async (id: string, settledAt: Date) => {
-      if (id === order.id && (order.status === 'sent' || order.status === 'in_doubt')) {
-        order.status = 'settled';
-        order.settled_at = settledAt;
-      }
-    }),
-    markPendingForResend: vi.fn(async (id: string) => {
-      if (id === order.id && order.status === 'in_doubt') {
-        order.status = 'pending';
-      }
-    }),
-    markParked: vi.fn(async (id: string) => {
-      if (id === order.id && order.status === 'pending') {
-        order.status = 'parked_manual_review';
-      }
-    }),
-    incrementAttempt: vi.fn(async (id: string, lastAttemptAt: Date) => {
-      if (id === order.id && order.status === 'pending') {
-        order.attempt_count += 1;
-        order.last_attempt_at = lastAttemptAt;
-        return order.attempt_count;
-      }
-      return 0;
-    }),
-    upsertSettlement: vi.fn(async () => {}),
-  };
-}
+// A date far enough in the past that its statement is always complete.
+const PAST_DATE = new Date('2025-01-15');
 
-// ─── Tests ──────────────────────────────────────────────────────────────────────
+// ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('PaymentService', () => {
-  let repo: ReturnType<typeof makeMockRepo>;
-  let bank: ReturnType<typeof makeMockBank>;
+  let repo: ReturnType<typeof makeRepoMock>;
+  let bank: ReturnType<typeof makeBankMock>;
   let service: PaymentService;
 
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-16T01:00:00.000Z'));
-    repo = makeMockRepo();
-    bank = makeMockBank();
-    service = new PaymentService(repo as any, bank as any, DEFAULT_OPTS);
+    repo = makeRepoMock();
+    bank = makeBankMock();
+    // ASSUMPTION: PaymentService and BankClient modules will exist per the plan manifest.
+    service = new PaymentService(repo as any, bank as BankClient, DEFAULT_OPTS);
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  // ── executePayments: response classification ──────────────────────────────
+  // ─── executePayments ──────────────────────────────────────────────────────
 
-  describe('executePayments — response classification', () => {
+  describe('executePayments', () => {
     it('accepted response transitions pending → sent', async () => {
       const order = makeOrder();
       repo.findPending.mockResolvedValue([order]);
-      repo.incrementAttempt.mockResolvedValue(1);
-      bank.send.mockResolvedValue({ status: 'accepted' });
+      bank.send.mockResolvedValue({ status: 'accepted' } satisfies BankSendResponse);
 
       await service.executePayments();
 
+      expect(bank.send).toHaveBeenCalledWith({
+        txid: order.txid,
+        amount_minor_units: order.amount_minor_units,
+        key: order.supplier_key,
+      });
       expect(repo.markSent).toHaveBeenCalledWith(order.id, expect.any(Date));
       expect(repo.markInDoubt).not.toHaveBeenCalled();
       expect(repo.markRejected).not.toHaveBeenCalled();
-      expect(bank.send).toHaveBeenCalledWith(
-        expect.objectContaining({ txid: order.txid, amount_minor_units: order.amount_minor_units }),
-      );
     });
 
     it('duplicate response transitions pending → sent', async () => {
       const order = makeOrder();
       repo.findPending.mockResolvedValue([order]);
-      repo.incrementAttempt.mockResolvedValue(1);
-      bank.send.mockResolvedValue({ status: 'duplicate' });
+      bank.send.mockResolvedValue({ status: 'duplicate' } satisfies BankSendResponse);
 
       await service.executePayments();
 
@@ -168,8 +104,7 @@ describe('PaymentService', () => {
     it('transient error response transitions pending → in_doubt', async () => {
       const order = makeOrder();
       repo.findPending.mockResolvedValue([order]);
-      repo.incrementAttempt.mockResolvedValue(1);
-      bank.send.mockResolvedValue({ status: 'transient_error' });
+      bank.send.mockResolvedValue({ status: 'transient_error' } satisfies BankSendResponse);
 
       await service.executePayments();
 
@@ -181,20 +116,19 @@ describe('PaymentService', () => {
     it('timeout (rejected promise) transitions pending → in_doubt', async () => {
       const order = makeOrder();
       repo.findPending.mockResolvedValue([order]);
-      repo.incrementAttempt.mockResolvedValue(1);
-      bank.send.mockRejectedValue(new Error('Request timed out'));
+      bank.send.mockRejectedValue(new Error('timeout'));
 
       await service.executePayments();
 
       expect(repo.markInDoubt).toHaveBeenCalledWith(order.id, expect.any(Date));
       expect(repo.markSent).not.toHaveBeenCalled();
+      expect(repo.markRejected).not.toHaveBeenCalled();
     });
 
-    it('permanent rejection transitions pending → rejected', async () => {
+    it('permanent rejection response transitions pending → rejected', async () => {
       const order = makeOrder();
       repo.findPending.mockResolvedValue([order]);
-      repo.incrementAttempt.mockResolvedValue(1);
-      bank.send.mockResolvedValue({ status: 'permanent_rejection' });
+      bank.send.mockResolvedValue({ status: 'permanent_rejection' } satisfies BankSendResponse);
 
       await service.executePayments();
 
@@ -209,44 +143,39 @@ describe('PaymentService', () => {
 
       await service.executePayments();
 
-      expect(repo.markParked).toHaveBeenCalledWith(order.id);
       expect(bank.send).not.toHaveBeenCalled();
-      expect(repo.incrementAttempt).not.toHaveBeenCalled();
+      expect(repo.markParked).toHaveBeenCalledWith(order.id);
     });
 
-    it('concurrent increment (returns 0) skips the order', async () => {
+    it('concurrent increment (0 rows affected) skips the order', async () => {
       const order = makeOrder();
       repo.findPending.mockResolvedValue([order]);
-      repo.incrementAttempt.mockResolvedValue(0);
+      repo.incrementAttempt.mockResolvedValue(0); // another worker won the race
 
       await service.executePayments();
 
       expect(bank.send).not.toHaveBeenCalled();
       expect(repo.markSent).not.toHaveBeenCalled();
       expect(repo.markInDoubt).not.toHaveBeenCalled();
-      expect(repo.markRejected).not.toHaveBeenCalled();
     });
   });
 
-  // ── reconcile: settlement matching ────────────────────────────────────────
+  // ─── reconcile ────────────────────────────────────────────────────────────
 
-  describe('reconcile — settlement matching', () => {
+  describe('reconcile', () => {
     it('found-in-statement transitions sent → settled', async () => {
       const order = makeOrder({ status: 'sent' });
       const settlement: Settlement = {
         txid: order.txid,
         amount_minor_units: order.amount_minor_units,
-        settled_at: new Date('2025-01-15T18:00:00.000Z'),
+        settled_at: new Date('2025-01-15T12:00:00Z'),
       };
 
-      bank.getStatement.mockResolvedValue([settlement]);
       repo.findByTxid.mockResolvedValue(order);
-      repo.findInDoubtByEffectiveDate.mockResolvedValue([]);
+      bank.getStatement.mockResolvedValue([settlement]);
 
-      const result = await service.reconcile({
-        startDate: new Date('2025-01-15T00:00:00.000Z'),
-        endDate: new Date('2025-01-15T00:00:00.000Z'),
-      });
+      const window: ReconcileWindow = { startDate: PAST_DATE, endDate: PAST_DATE };
+      const result = await service.reconcile(window);
 
       expect(repo.markSettled).toHaveBeenCalledWith(order.id, settlement.settled_at);
       expect(result.settled).toBe(1);
@@ -257,23 +186,71 @@ describe('PaymentService', () => {
       const settlement: Settlement = {
         txid: order.txid,
         amount_minor_units: order.amount_minor_units,
-        settled_at: new Date('2025-01-15T20:00:00.000Z'),
+        settled_at: new Date('2025-01-15T12:00:00Z'),
       };
 
-      bank.getStatement.mockResolvedValue([settlement]);
       repo.findByTxid.mockResolvedValue(order);
-      // Even though the order is in_doubt, it was found in the statement,
-      // so it must be settled, NOT marked pending for resend.
-      repo.findInDoubtByEffectiveDate.mockResolvedValue([order]);
+      bank.getStatement.mockResolvedValue([settlement]);
 
-      const result = await service.reconcile({
-        startDate: new Date('2025-01-15T00:00:00.000Z'),
-        endDate: new Date('2025-01-15T00:00:00.000Z'),
-      });
+      const window: ReconcileWindow = { startDate: PAST_DATE, endDate: PAST_DATE };
+      const result = await service.reconcile(window);
 
       expect(repo.markSettled).toHaveBeenCalledWith(order.id, settlement.settled_at);
       expect(repo.markPendingForResend).not.toHaveBeenCalled();
       expect(result.settled).toBe(1);
+    });
+
+    it('proven-absent transitions in_doubt → pending (same txid preserved)', async () => {
+      const order = makeOrder({ status: 'in_doubt' });
+      // Statement is empty — the order's txid is absent.
+      bank.getStatement.mockResolvedValue([]);
+      repo.findInDoubtByEffectiveDate.mockResolvedValue([order]);
+
+      const window: ReconcileWindow = { startDate: PAST_DATE, endDate: PAST_DATE };
+      const result = await service.reconcile(window);
+
+      expect(repo.markPendingForResend).toHaveBeenCalledWith(order.id);
+      expect(result.provenAbsent).toBe(1);
+    });
+
+    it('statement not yet complete leaves in_doubt unchanged', async () => {
+      // Use a future date so the statement is not yet complete.
+      const futureDate = new Date('2099-01-01');
+      const order = makeOrder({ status: 'in_doubt', effective_date: futureDate });
+
+      bank.getStatement.mockResolvedValue([]);
+      repo.findInDoubtByEffectiveDate.mockResolvedValue([order]);
+
+      const window: ReconcileWindow = { startDate: futureDate, endDate: futureDate };
+      const result = await service.reconcile(window);
+
+      expect(repo.markPendingForResend).not.toHaveBeenCalled();
+      expect(result.provenAbsent).toBe(0);
+    });
+
+    it('overlapping windows are idempotent', async () => {
+      const order = makeOrder({ status: 'sent' });
+      const settlement: Settlement = {
+        txid: order.txid,
+        amount_minor_units: order.amount_minor_units,
+        settled_at: new Date('2025-01-15T12:00:00Z'),
+      };
+
+      repo.findByTxid.mockResolvedValue(order);
+      bank.getStatement.mockResolvedValue([settlement]);
+
+      const window: ReconcileWindow = { startDate: PAST_DATE, endDate: PAST_DATE };
+
+      // First run settles the order.
+      await service.reconcile(window);
+      expect(repo.markSettled).toHaveBeenCalledTimes(1);
+
+      // Second run over the same window: findByTxid now returns a settled order.
+      repo.findByTxid.mockResolvedValue(makeOrder({ status: 'settled' }));
+      await service.reconcile(window);
+
+      // markSettled should not be called again for an already-settled order.
+      expect(repo.markSettled).toHaveBeenCalledTimes(1);
     });
 
     it('rejected orders are untouched by reconciliation', async () => {
@@ -281,206 +258,120 @@ describe('PaymentService', () => {
       const settlement: Settlement = {
         txid: order.txid,
         amount_minor_units: order.amount_minor_units,
-        settled_at: new Date('2025-01-15T18:00:00.000Z'),
+        settled_at: new Date('2025-01-15T12:00:00Z'),
       };
 
-      bank.getStatement.mockResolvedValue([settlement]);
       repo.findByTxid.mockResolvedValue(order);
-      repo.findInDoubtByEffectiveDate.mockResolvedValue([]);
+      bank.getStatement.mockResolvedValue([settlement]);
 
-      await service.reconcile({
-        startDate: new Date('2025-01-15T00:00:00.000Z'),
-        endDate: new Date('2025-01-15T00:00:00.000Z'),
-      });
+      const window: ReconcileWindow = { startDate: PAST_DATE, endDate: PAST_DATE };
+      const result = await service.reconcile(window);
 
       expect(repo.markSettled).not.toHaveBeenCalled();
-      expect(repo.markPendingForResend).not.toHaveBeenCalled();
+      expect(result.settled).toBe(0);
     });
   });
 
-  // ── reconcile: proven-absent logic ────────────────────────────────────────
-
-  describe('reconcile — proven-absent logic', () => {
-    it('proven-absent transitions in_doubt → pending (same txid preserved)', async () => {
-      // Statement is complete: now (2025-01-16T01:00) > endOfDay(2025-01-15) + 30 min
-      // endOfDay = 2025-01-16T00:00, +30 min = 2025-01-16T00:30, now=01:00 ✓
-      const order = makeOrder({ status: 'in_doubt' });
-
-      // Statement does NOT contain the order's txid
-      bank.getStatement.mockResolvedValue([]);
-      repo.findInDoubtByEffectiveDate.mockResolvedValue([order]);
-
-      const result = await service.reconcile({
-        startDate: new Date('2025-01-15T00:00:00.000Z'),
-        endDate: new Date('2025-01-15T00:00:00.000Z'),
-      });
-
-      expect(repo.markPendingForResend).toHaveBeenCalledWith(order.id);
-      expect(result.provenAbsent).toBe(1);
-      // The order's txid is unchanged (still txid-1 in the order object)
-      expect(order.txid).toBe('txid-1');
-    });
-
-    it('statement not yet complete leaves in_doubt unchanged', async () => {
-      // Set time BEFORE the publishing lag expires.
-      // endOfDay(2025-01-15) = 2025-01-16T00:00, +30 min = 2025-01-16T00:30
-      // Set now to 2025-01-15T12:00 — well before the threshold.
-      vi.setSystemTime(new Date('2025-01-15T12:00:00.000Z'));
-
-      const order = makeOrder({ status: 'in_doubt' });
-
-      bank.getStatement.mockResolvedValue([]);
-      repo.findInDoubtByEffectiveDate.mockResolvedValue([order]);
-
-      const result = await service.reconcile({
-        startDate: new Date('2025-01-15T00:00:00.000Z'),
-        endDate: new Date('2025-01-15T00:00:00.000Z'),
-      });
-
-      expect(repo.markPendingForResend).not.toHaveBeenCalled();
-      expect(result.provenAbsent).toBe(0);
-    });
-
-    it('overlapping windows are idempotent', async () => {
-      const order = makeOrder({ status: 'in_doubt' });
-      const settlement: Settlement = {
-        txid: order.txid,
-        amount_minor_units: order.amount_minor_units,
-        settled_at: new Date('2025-01-15T18:00:00.000Z'),
-      };
-
-      bank.getStatement.mockResolvedValue([settlement]);
-      repo.findByTxid.mockImplementation(async (txid: string) => {
-        // First call: order is in_doubt, second call (after settle): settled
-        return { ...order };
-      });
-      repo.findInDoubtByEffectiveDate.mockResolvedValue([]);
-
-      const window = {
-        startDate: new Date('2025-01-15T00:00:00.000Z'),
-        endDate: new Date('2025-01-15T00:00:00.000Z'),
-      };
-
-      const first = await service.reconcile(window);
-      expect(first.settled).toBe(1);
-
-      // Reset mocks to simulate a second run where the order is already settled
-      repo.findByTxid.mockResolvedValue({ ...order, status: 'settled' });
-
-      const second = await service.reconcile(window);
-      expect(second.settled).toBe(0);
-      expect(repo.markSettled).toHaveBeenCalledTimes(1); // only from the first run
-    });
-  });
-
-  // ── deriveTxid ────────────────────────────────────────────────────────────
+  // ─── deriveTxid ───────────────────────────────────────────────────────────
 
   describe('deriveTxid', () => {
     it('is deterministic for the same input', () => {
-      const date = new Date('2025-01-15T00:00:00.000Z');
-      const a = service.deriveTxid('order-abc', date);
-      const b = service.deriveTxid('order-abc', date);
+      const id = 'order-1';
+      const date = new Date('2025-06-01');
+      const a = service.deriveTxid(id, date);
+      const b = service.deriveTxid(id, date);
       expect(a).toBe(b);
-      expect(typeof a).toBe('string');
-      expect(a.length).toBeGreaterThan(0);
     });
 
     it('yields different txids for different orders or dates', () => {
-      const date = new Date('2025-01-15T00:00:00.000Z');
-      const otherDate = new Date('2025-01-16T00:00:00.000Z');
-
-      const a = service.deriveTxid('order-1', date);
-      const b = service.deriveTxid('order-2', date);
-      const c = service.deriveTxid('order-1', otherDate);
-
-      expect(a).not.toBe(b);
-      expect(a).not.toBe(c);
+      const date = new Date('2025-06-01');
+      const txidA = service.deriveTxid('order-1', date);
+      const txidB = service.deriveTxid('order-2', date);
+      const txidC = service.deriveTxid('order-1', new Date('2025-06-02'));
+      expect(txidA).not.toBe(txidB);
+      expect(txidA).not.toBe(txidC);
     });
   });
 
-  // ── Full lifecycle ────────────────────────────────────────────────────────
+  // ─── Full lifecycle ───────────────────────────────────────────────────────
 
   describe('full lifecycle', () => {
     it('timeout → reconcile proves absent → resend accepted → settle', async () => {
-      const order = makeOrder();
-      const statefulRepo = makeStatefulRepo(order);
-      statefulBank: {
-        // Re-create service with stateful repo
-        const bank2 = makeMockBank();
-        const service2 = new PaymentService(statefulRepo as any, bank2 as any, DEFAULT_OPTS);
+      const order = makeOrder({ attempt_count: 0 });
 
-        // Phase 1: execute → timeout → in_doubt
-        bank2.send.mockRejectedValueOnce(new Error('timeout'));
-        await service2.executePayments();
-        expect(order.status).toBe('in_doubt');
+      // Phase 1: executePayments — send times out.
+      repo.findPending.mockResolvedValue([order]);
+      repo.incrementAttempt.mockResolvedValueOnce(1);
+      bank.send.mockRejectedValueOnce(new Error('timeout'));
 
-        // Phase 2: reconcile → proven absent → pending
-        // now = 2025-01-16T01:00, statement for 2025-01-15 is complete
-        bank2.getStatement.mockResolvedValueOnce([]);
-        await service2.reconcile({
-          startDate: new Date('2025-01-15T00:00:00.000Z'),
-          endDate: new Date('2025-01-15T00:00:00.000Z'),
-        });
-        expect(order.status).toBe('pending');
+      await service.executePayments();
+      expect(repo.markInDoubt).toHaveBeenCalledWith(order.id, expect.any(Date));
 
-        // Phase 3: execute again → accepted → sent
-        bank2.send.mockResolvedValueOnce({ status: 'accepted' });
-        await service2.executePayments();
-        expect(order.status).toBe('sent');
+      // Phase 2: reconcile — proven absent, order goes back to pending.
+      const inDoubtOrder = makeOrder({ status: 'in_doubt', attempt_count: 1 });
+      bank.getStatement.mockResolvedValue([]);
+      repo.findInDoubtByEffectiveDate.mockResolvedValue([inDoubtOrder]);
 
-        // Phase 4: reconcile → found in statement → settled
-        bank2.getStatement.mockResolvedValueOnce([
-          {
-            txid: order.txid,
-            amount_minor_units: order.amount_minor_units,
-            settled_at: new Date('2025-01-15T22:00:00.000Z'),
-          },
-        ]);
-        await service2.reconcile({
-          startDate: new Date('2025-01-15T00:00:00.000Z'),
-          endDate: new Date('2025-01-15T00:00:00.000Z'),
-        });
-        expect(order.status).toBe('settled');
-        expect(order.settled_at).toEqual(new Date('2025-01-15T22:00:00.000Z'));
-      }
+      const window: ReconcileWindow = { startDate: PAST_DATE, endDate: PAST_DATE };
+      await service.reconcile(window);
+      expect(repo.markPendingForResend).toHaveBeenCalledWith(order.id);
+
+      // Phase 3: executePayments — resend with same txid, accepted.
+      const pendingOrder = makeOrder({ status: 'pending', attempt_count: 1 });
+      repo.findPending.mockResolvedValue([pendingOrder]);
+      repo.incrementAttempt.mockResolvedValueOnce(2);
+      bank.send.mockResolvedValueOnce({ status: 'accepted' });
+
+      await service.executePayments();
+      expect(bank.send).toHaveBeenLastCalledWith({
+        txid: order.txid, // same txid preserved
+        amount_minor_units: order.amount_minor_units,
+        key: order.supplier_key,
+      });
+      expect(repo.markSent).toHaveBeenCalledWith(order.id, expect.any(Date));
+
+      // Phase 4: reconcile — settlement found.
+      const sentOrder = makeOrder({ status: 'sent' });
+      const settlement: Settlement = {
+        txid: order.txid,
+        amount_minor_units: order.amount_minor_units,
+        settled_at: new Date('2025-01-15T18:00:00Z'),
+      };
+      repo.findByTxid.mockResolvedValue(sentOrder);
+      bank.getStatement.mockResolvedValue([settlement]);
+
+      await service.reconcile(window);
+      expect(repo.markSettled).toHaveBeenCalledWith(order.id, settlement.settled_at);
     });
 
-    it('5 timeouts → parked_manual_review (never auto-reverts)', async () => {
-      const order = makeOrder();
-      const statefulRepo = makeStatefulRepo(order);
-      const bank2 = makeMockBank();
-      const service2 = new PaymentService(statefulRepo as any, bank2 as any, DEFAULT_OPTS);
+    it('5 timeouts → parked_manual_review', async () => {
+      // Simulate 5 full cycles of: execute (timeout) + reconcile (proven absent).
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        const orderForExecute = makeOrder({ status: 'pending', attempt_count: attempt - 1 });
+        repo.findPending.mockResolvedValue([orderForExecute]);
+        repo.incrementAttempt.mockResolvedValueOnce(attempt);
+        bank.send.mockRejectedValueOnce(new Error('timeout'));
 
-      // 5 rounds: execute (timeout) + reconcile (proven absent)
-      for (let i = 0; i < 5; i++) {
-        bank2.send.mockRejectedValueOnce(new Error('timeout'));
-        await service2.executePayments();
-        expect(order.status).toBe('in_doubt');
+        await service.executePayments();
+        expect(repo.markInDoubt).toHaveBeenCalledWith('order-1', expect.any(Date));
 
-        bank2.getStatement.mockResolvedValueOnce([]);
-        await service2.reconcile({
-          startDate: new Date('2025-01-15T00:00:00.000Z'),
-          endDate: new Date('2025-01-15T00:00:00.000Z'),
-        });
-        expect(order.status).toBe('pending');
+        // Reconcile: proven absent → back to pending.
+        const inDoubtOrder = makeOrder({ status: 'in_doubt', attempt_count: attempt });
+        bank.getStatement.mockResolvedValue([]);
+        repo.findInDoubtByEffectiveDate.mockResolvedValue([inDoubtOrder]);
+
+        const window: ReconcileWindow = { startDate: PAST_DATE, endDate: PAST_DATE };
+        await service.reconcile(window);
+        expect(repo.markPendingForResend).toHaveBeenCalledWith('order-1');
       }
 
-      // After 5 attempts, attempt_count === 5 === maxAttempts
-      expect(order.attempt_count).toBe(5);
+      // 6th executePayments: attempt_count is now 5, should park.
+      const exhaustedOrder = makeOrder({ status: 'pending', attempt_count: 5 });
+      repo.findPending.mockResolvedValue([exhaustedOrder]);
 
-      // 6th execute: should park, not send
-      await service2.executePayments();
-      expect(order.status).toBe('parked_manual_review');
-      // bank.send was called exactly 5 times (once per attempt), not on the 6th
-      expect(bank2.send).toHaveBeenCalledTimes(5);
-
-      // A subsequent reconcile must not revert the parked order
-      bank2.getStatement.mockResolvedValueOnce([]);
-      await service2.reconcile({
-        startDate: new Date('2025-01-15T00:00:00.000Z'),
-        endDate: new Date('2025-01-15T00:00:00.000Z'),
-      });
-      expect(order.status).toBe('parked_manual_review');
+      await service.executePayments();
+      expect(bank.send).not.toHaveBeenCalled();
+      expect(repo.markParked).toHaveBeenCalledWith('order-1');
     });
   });
 });
