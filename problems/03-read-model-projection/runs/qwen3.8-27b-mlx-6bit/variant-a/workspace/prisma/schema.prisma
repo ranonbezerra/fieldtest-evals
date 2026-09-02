@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Worker {
+  id        String @id @default(uuid()) @db.Uuid
+  companyId String @map("company_id") @db.Uuid
+  name      String
+  role      String
+
+  paymentOrders PaymentOrder[]
+
+  @@map("workers")
+}
+
+model PaymentOrder {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  workerId  String   @map("worker_id") @db.Uuid
+  status    String
+  amount    Decimal  @db.Decimal(14, 2)
+  currency  String   @db.Char(3)
+  createdAt DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @map("updated_at") @default(now()) @db.Timestamptz(6)
+
+  worker    Worker     @relation(fields: [workerId], references: [id])
+  events    Event[]
+  operation Operation?
+
+  @@map("payment_orders")
+}
+
+model Event {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @map("order_id") @db.Uuid
+  eventType String   @map("event_type")
+  payload   Json     @default("{}")
+  createdAt DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+
+  paymentOrder PaymentOrder @relation(fields: [orderId], references: [id])
+
+  @@map("events")
+}
+
+model Operation {
+  orderId       String   @id @map("order_id") @db.Uuid
+  companyId     String   @map("company_id") @db.Uuid
+  status        String
+  amount        Decimal  @db.Decimal(14, 2)
+  currency      String   @db.Char(3)
+  workerName    String   @map("worker_name")
+  workerRole    String   @map("worker_role")
+  lastEventType String?  @map("last_event_type")
+  createdAt     DateTime @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @map("updated_at") @db.Timestamptz(6)
+
+  paymentOrder PaymentOrder @relation(fields: [orderId], references: [id])
+
+  @@index([companyId, status, createdAt(sort: Desc)])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("operations")
+}
+
+model CompanyFinancialTotal {
+  companyId   String   @id @map("company_id") @db.Uuid
+  totalAmount Decimal  @default(0) @map("total_amount") @db.Decimal(14, 2)
+  orderCount  Int      @default(0) @map("order_count")
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("company_financial_totals")
+}

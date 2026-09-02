@@ -1,0 +1,25 @@
+- **re-derive rejects a window where date_from equals date_to** — proves the guard uses `>=` (not `>`); would fail if the comparison is strictly greater-than or missing, letting a zero-width window through to an empty SELECT that returns 0 rows instead of raising `InvalidDateRangeError`.
+
+- **re-derive rejects a window where date_from is after date_to** — proves the guard catches an inverted range; would fail if the comparison logic is reversed or only checks equality.
+
+- **re-derive on a window with no matching orders returns `{ rows_rewritten: 0 }` without side-effects** — proves the empty-result path is handled; would fail if the code throws on an empty array, or if it still opens a transaction and "recomputes" totals for companies that have no orders in the window (a no-op if absolute, but a mutation if delta-based).
+
+- **re-derive restores a projection row whose status, amount, and last_event_type were manually corrupted to wrong values** — proves the upsert actually overwrites an existing row (not insert-only) and maps every denormalised field from source; would fail if the upsert is keyed wrong, a field is omitted from the update set, or the code reads from the projection instead of source.
+
+- **re-derive is idempotent: running the same window a second time yields byte-identical projection rows and unchanged company totals** — proves totals are computed as absolute SUM/COUNT from source, not as a delta added on top; would fail if the totals step adds the window's amounts again (double-counting) or if the upsert creates a duplicate row.
+
+- **re-derive reflects a concurrent source update: an order's amount is changed in `payment_orders` after the window fetch but before the batch commits, and the projection and totals reflect the new amount** — proves the absolute SUM/COUNT reads source at commit time; would fail if the code snapshots the amount during the fetch loop and writes that stale value, or if totals are delta-based (the write path already applied the delta, so an absolute recompute is the only correct reconciliation).
+
+- **re-derive skips an order whose worker_id does not resolve to a row in `workers`, excludes it from `rows_rewritten`, and leaves any pre-existing projection row for that order untouched** — proves the missing-worker branch is a `continue`, not a throw or a zero-fill; would fail if the code throws `ResourceNotFoundError` (aborting the whole window), counts the skipped row in `rows_rewritten`, or writes a projection row with empty worker fields.
+
+- **re-derive sets `last_event_type` to null on the projection row when the order has no events** — proves the nullable path is handled; would fail if the code substitutes an empty string, a default sentinel, or throws on the null from `findLastEventForOrder`.
+
+- **re-derive with exactly BATCH_SIZE (500) orders completes in a single batch, and with BATCH_SIZE + 1 (501) orders both rows are written and totals for all affected companies are correct** — proves the slice arithmetic at the boundary is `i < orders.length` with step 500 (not off-by-one); would fail if the loop condition is `<=` (skipping the last row) or if the second batch's per-company set is contaminated by the first batch's companies.
+
+- **re-derive does not modify or delete projection rows whose `created_at` falls outside the requested window** — proves the operation is scoped to the window; would fail if the code groups by `company_id` and rewrites all rows for that company regardless of date, or issues a DELETE to "clean up" before upserting.
+
+- **re-derive correctly attributes totals to distinct companies: a window containing orders from company A and company B produces independent, correct totals for each** — proves the `affectedCompanies` set is keyed per company and the recompute is per-company, not a global aggregate; would fail if the code sums across companies or shares a single accumulator.
+
+- **re-derive returns a `rows_rewritten` count that excludes orders skipped due to missing workers** — proves the counter increments only after the worker check passes; would fail if the counter is incremented at the top of the loop body before the `continue`.
+
+Deliberately not testing here: the `@Cron` scheduling cadence of drift-repair (covered in `test/drift-repair.spec.ts`), the correctness of the dashboard read query against the projection (covered in `test/operations.spec.ts`), and the interactive-transaction isolation level of the write path (covered by the concurrent-totals test in `test/operations.spec.ts`). Re-derivation tests exercise only the re-derivation service's own contract: input validation, batched upsert correctness, absolute-totals semantics, and scope boundaries.

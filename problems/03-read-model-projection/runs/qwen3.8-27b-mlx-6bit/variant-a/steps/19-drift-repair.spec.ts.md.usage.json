@@ -1,0 +1,30 @@
+{
+  "label": "19-drift-repair.spec.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 8315,
+  "completion_tokens": 8102,
+  "reasoning_chars": 20004,
+  "content_chars": 12105,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 849.8,
+  "server_seconds": 849.8,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 9.5,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.types.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/19-drift-repair.spec.ts-cases.txt"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}
