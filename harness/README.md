@@ -45,7 +45,7 @@ harness/
 | temperature | 1.0 | **The model card's own recommendation for thinking mode**, which is this model's default mode. An earlier campaign ran at 0.6, carried over from Qwen3 guidance for a different model after misreading `model_type: qwen3_5` in the config as the model's name. Those runs were discarded rather than compared against these. The obvious choice — 0.2, for determinism — is wrong twice over: it is not what the card says, and near-greedy decoding sends a reasoning model into repetition paid out of the same budget as the answer. Determinism is bought with variants and repeat runs. |
 | top_p | 0.95 | card's recommendation |
 | top_k | 20 | card's recommendation |
-| `reasoning_effort` | unset | The model's own dial (`xhigh`/`medium`/`low`). Left at the model's default so a run measures the model rather than a setting. The harness lowers it to `low` **only** as a recorded fallback after a phase overflows its budget, and on the writing pass of the two-pass test phase. |
+| `reasoning_effort` | **medium** | The model's own dial (`xhigh`/`medium`/`low`). Measured, not chosen — see below |
 | max_tokens | 16384 | the server's ceiling; not a choice |
 | context window | 32768 | measured — see below |
 | system prompt | the problem's cheatsheet, nothing else | |
@@ -101,15 +101,34 @@ measured under the wrong parameters and is being re-measured. `FINDINGS.md` Appe
 holds the old figures for comparison; none should be quoted.
 
 
-### Reasoning runs at the model's own default
+### Reasoning runs at `medium`, and that is a measurement
 
-`reasoning_effort` is left unset, so every phase carries the model's default. The
-harness lowers it to `low` in exactly two places, both recorded per run: as a fallback
-after a phase overflows its budget, and on the writing pass of the two-pass test phase.
+`reasoning_effort: medium` is set in `ft-env.sh`. It is not a preference for a
+middle setting; it is where the model produces a complete answer inside this
+server's 16,384-token output ceiling.
+
+At the model's own default, **phase 0 overflowed in 3 of 3 runs**. It spent the whole
+budget deliberating and returned no plan — problem 01's attempt does not contain the
+word `claimMessage`, because it was cut off before reaching its own interface section.
+The harness then fell back to `low`, so **every run in the first campaign was governed
+by a plan written at low effort**, and the three must-haves those runs failed are all
+defects in those plans.
+
+Replayed at `medium` with every other axis held, **6 of 6 phases fit** — the largest
+using 65% of the ceiling, the median 36%. The `medium` plan for problem 01 is *shorter*
+than the `low` one, 5,380 tokens against 7,140, so the extra deliberation bought a
+tighter document rather than a longer one. It also stopped contradicting itself on both
+must-haves that had failed.
+
+The harness still lowers to `low` in two places, both recorded per run: as a fallback
+after a phase overflows, and on the writing pass of the two-pass test phase. The second
+of those has **not** been measured at `medium` and is the next thing to check — the
+two-pass design was built when test phases were overflowing at every setting tried.
 
 An earlier version disabled reasoning outright for phase 0, from measurements taken at
 the wrong temperature and before `reasoning_effort` was known to exist. Turning off a
-model's defining behaviour by default is not measuring the model.
+model's defining behaviour by default is not measuring the model; running it at a
+setting where it can finish a sentence is.
 
 
 ## The machine is part of the measurement

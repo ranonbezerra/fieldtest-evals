@@ -81,7 +81,7 @@ model and expect back.**
 | **Model** | [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B), released 14 August 2026 — 27B dense, **natively multimodal** (only the text path is exercised here) |
 | **Architecture** | 64 layers, hidden 5,120, hybrid: `16 × (3 × Gated DeltaNet → 1 × Gated Attention)`. Linear attention in 48 layers, full attention in 16 |
 | **Quantization** | 6-bit MLX (LM Studio community build), group size 64 · **22.27 GiB resident** |
-| **Reasoning** | **thinking mode by default**, paid out of the same budget as the answer. The model exposes `reasoning_effort` (`xhigh`/`medium`/`low`) |
+| **Reasoning** | thinking mode by default, paid out of the same budget as the answer. Runs at **`reasoning_effort: medium`** — measured, not chosen: at the model's own default the planning phase overflowed the output ceiling in 3 of 3 runs and returned no plan |
 | **Generation** | **temperature 1.0, top_p 0.95, top_k 20** — the model card's own recommendation for thinking mode, not this harness's choice |
 | **Machine** | MacBook Pro, **Apple M4 Pro**, 14 cores (10P/4E), **48 GB unified memory**, macOS 26.6 |
 | **Server** | oMLX, OpenAI-compatible endpoint |
@@ -106,13 +106,15 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 
 <!-- results:start -->
 
-### qwen3.8-27b-mlx-6bit
+No runs have been judged yet. The table below is the shape it will take;
+every cell is filled by `harness/ft-results --write` from the `verdict.md`
+files, never by hand.
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | ✗<br><sub>M4, M7</sub> | – | – | – | States the invariant in prose, then writes the SQL that breaks it two sections later, and builds the SQL. |
-| 02 | reconciliation resend | ✗ | – | – | – | Gets the hardest reasoning in the set right and ships it in a project that does not compile. |
-| 03 | read model projection | ✗<br><sub>M1</sub> | – | – | – | Demands the transaction in one section and designs the function that cannot receive one in another, then repairs the drift that results. |
+| 01 | payout outbox | – | – | – | – | *not yet run* |
+| 02 | reconciliation resend | – | – | – | – | *not yet run* |
+| 03 | read model projection | – | – | – | – | *not yet run* |
 | 04 | grounded llm product | – | – | – | – | *not yet run* |
 | 05 | onchain anchoring | – | – | – | – | *not yet run* |
 | 06 | multi tenant isolation | – | – | – | – | *not yet run* |
@@ -128,7 +130,6 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 16 | migration that lied | – | – | – | – | *not yet run* |
 | 17 | token rotation reuse | – | – | – | – | *not yet run* |
 | 18 | timing equal enumeration | – | – | – | – | *not yet run* |
-
 
 <!-- results:end -->
 
@@ -179,31 +180,44 @@ then mapped back to model ids.
 
 Full record with numbers and consequences in [`FINDINGS.md`](FINDINGS.md).
 
-**About the model: nothing yet.** A first campaign of five runs was discarded when the
-generation parameters turned out to be wrong — the model was identified from its
-`config.json` class name and run at temperature 0.6 instead of the 1.0 its card
-recommends. Those runs are in `FINDINGS.md` Appendix A, labelled as not quotable. The
-campaign at the correct parameters has not started.
+**About the model: nothing quotable yet, after two discards.** The first five runs used
+the wrong generation parameters — the model was identified from its `config.json` class
+name and run at temperature 0.6 instead of the 1.0 its card recommends. The next three
+ran at the correct parameters and were judged, and were discarded for a subtler reason:
+**the planning phase overflowed the 16,384-token output ceiling in 3 of 3 runs**, so the
+harness fell back to `reasoning_effort: low` and every run was governed by a plan written
+at low effort. Those runs measured a specification the harness had degraded to make it
+fit, which is a fact about the harness. The campaign now runs at `medium`, where 6 of 6
+replayed phases fit using a median of 36% of the ceiling.
 
-**About the machine and the instruments, which the parameters could not affect:**
+Both discards are documented in [`FINDINGS.md`](FINDINGS.md) §0 rather than deleted. A
+results table is worth exactly what its worst row is worth.
+
+**About how this model works, which survives both discards:**
+
+| | Finding | Why it matters |
+|---|---|---|
+| 1 | **Its plan contradicts itself, and the code implements the executable half** — the invariant stated in one section, the procedure that breaks it written in another. All three failed must-haves were this | Reviewing the plan does not catch it. You have to read its sections against each other |
+| 2 | **It re-decides conventions between files.** Given one file per request, the `.js` import extension that ESM requires appeared in phases 06–09 and vanished in the rest of the same run | 23 of 32 remaining compile errors in one run. Nothing carries the previous file's style forward |
+| 3 | **It reaches for raw SQL when the ORM runs out, and gets it right** — a real `SELECT … FOR UPDATE`, a real `ON CONFLICT … DO UPDATE SET col = col + n` | The hard concurrency primitives are within reach |
+| 4 | **Repairs converge on what they understand and never touch what they do not.** Seven rounds fixed every type error and never once addressed the module-resolution error in the same output | A green repair loop is not a converging one |
+
+**About the machine and the instruments, which no parameter could affect:**
 
 | | Finding | What it changed |
 |---|---|---|
-| 1 | The output ceiling is **16,384 tokens with reasoning paid out of it** — a server setting, not a model limit | The deliverables of one problem cannot fit in one reply. Hence the phase design |
-| 2 | A ceiling hit **mid-reasoning returns the deliberation as the answer**, with `reasoning_content` empty | A cut-off phase writes no artifact. 68 KB of thinking had been saved as a plan |
-| 3 | The server's memory ceiling **moves with host load** — 37.44 to 32.36 GiB in one session — and under swap pressure it **dies rather than slowing**. One phase ran 46 minutes and produced zero bytes | Both runners refuse to start on a paging host; every run records the ceiling's range |
-| 4 | The model can be **"loaded" and paged out at once**: the server reporting 22.27 GiB resident while the host held 3.6 GiB wired and 24.2 GiB compressed | `ft-vitals` flags it. Unloading returned 23 GiB for a fourteen-second reload |
+| 1 | The output ceiling is **16,384 tokens with reasoning paid out of it** — a server setting, not a model limit | The whole phase design: one file per request |
+| 2 | A ceiling hit **mid-reasoning returns the deliberation as the answer**, with `reasoning_content` empty | A cut-off phase writes no artifact |
+| 3 | The server's memory ceiling **moves with host load** — 37.44 to 32.36 GiB in one session — and under swap pressure the server does not slow down, it dies | Runs are gated on a measured margin, not on free memory |
+| 4 | The model can be **"loaded" and paged out at once**: 22.27 GiB resident against 4.5 GiB wired | `ft-flush` recovers it; the run is refused until it does |
 | 5 | The cheatsheet was **leaking two rubric answers** in sentences that read as good advice | `ft-lint-cheatsheet`, validated against a planted leak |
-| 6 | **The agent watching the campaign was loading the machine it measured** — 27% to 47% compositor CPU, controlled test | Check a run rarely and in few calls |
+| 6 | **A resumed run reported the tail of itself as the whole run** — 57 minutes for a run that cost 340 | Totals now come from the requests, which survive a resume |
 
-Six of the harness's own instruments were wrong before they were right — five refusing
-work on a healthy machine, one reporting a number that meant nothing. `FINDINGS.md` §4
-has them, because a repository about criteria that pass for the wrong reason does not
-get to exempt its own.
-
-**Not yet established:** no problem has been run end to end at the correct parameters;
-no judging has been blind; the `aider` and `chat` conditions have not been run.
-`FINDINGS.md` §5 is the list.
+Eight of the harness's own instruments were wrong before they were right, and seven
+failed in the same direction: reporting success, or refusing healthy work. The eighth was
+written *after* the other seven were catalogued, in the file that names the pattern.
+[`FINDINGS.md`](FINDINGS.md) §4 has them all, because a repository about criteria that
+pass for the wrong reason does not get to exempt its own.
 
 ## How to use this repo
 

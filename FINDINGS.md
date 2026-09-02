@@ -18,24 +18,58 @@ temperature 1.0 / top_p 0.95 / top_k 20.
 
 ---
 
-## 0. Parameters, and why the first five runs are not here
+## 0. Why eight runs are not in the results table
 
-The model was identified from its `config.json`, which declares
-`model_type: qwen3_5` — the name of the implementation class in transformers, not of
-the model. Read as a model name, that led the harness to apply Qwen3's published
-guidance and run at **temperature 0.6**.
+Two discards, for two different reasons, both recorded here rather than quietly
+dropped. Neither removes what the runs taught; both remove them from the table that
+answers *what can this model do*.
+
+### The first five — wrong parameters
+
+The model was identified from its `config.json`, which declares `model_type: qwen3_5`
+— the name of the implementation class in transformers, not of the model. Read as a
+model name, that led the harness to apply Qwen3's published guidance and run at
+**temperature 0.6**.
 
 `Qwen/Qwen3.8-27B` recommends **1.0 / 0.95 / 20** for thinking mode, which is its
 default mode. It also exposes **`reasoning_effort`** (`xhigh`/`medium`/`low`) — a
 native dial for the budget problem the harness had been working around with a switch
 of its own.
 
-Five runs were discarded rather than compared against the corrected ones. What they
-produced about the model is in [Appendix A](#appendix-a--superseded-by-the-parameter-correction);
-what they produced about the machine and the instruments is in §2 and §4 and stands,
-because a false positive on swap occupancy is no less false for having been found at
-the wrong temperature.
----
+What those runs produced about the model is in
+[Appendix A](#appendix-a--superseded-by-the-parameter-correction); what they produced
+about the machine and the instruments is in §2 and §4 and stands, because a false
+positive on swap occupancy is no less false for having been found at the wrong
+temperature.
+
+### The next three — the harness was degrading the specification
+
+Problems 01, 02 and 03 ran at the corrected parameters, were judged, and their verdicts
+written. They are discarded anyway, and the reason is §6.2.
+
+At the model's own default, **phase 0 overflowed the 16,384-token output ceiling in 3
+of 3 runs**. It returned deliberation instead of a plan — problem 01's attempt does not
+contain the string `claimMessage`, having been cut off before it reached its own
+interface section. The harness then did what it was built to do and retried at `low`,
+and that retry is the document every subsequent file phase implemented.
+
+So those three runs measured the model working from a specification the harness had
+degraded in order to make it fit. All three failed must-haves (§1.3) are contradictions
+*inside those low-effort plans* — the invariant stated in one section, the procedure
+that breaks it written in another — and the code implements them faithfully. Replayed
+at `medium`, 6 of 6 phases fit, and problem 01's two failed must-haves are specified
+consistently.
+
+That is a finding about the harness, not an answer to *what can this model do*, and it
+would have been published as the second. The campaign now runs at `medium`.
+
+Three runs is the cheapest this correction will ever be. At problem thirteen it would
+have cost a hundred hours of machine time.
+
+*Kept and standing:* §1.3 on how a plan's sections disagree and which one the code
+follows, §3.6 on the import convention resetting between phases, §3.5 on what the
+repair loop costs, and everything in §2 and §4. None of those depend on the effort the
+plan was written at, and §1.3 is the reason the discard was findable at all.
 
 ## 1. The model
 
@@ -83,6 +117,14 @@ a prose rule, and an existing parameter list beats a prose instruction. In probl
 signature had a second advantage — it was written at phase 04 and needed at phase 10, so
 by then it was a file on disk that the new file had to compile against. Prose in §4
 cannot change a parameter list.
+
+*All three plans were written at `reasoning_effort: low`* — the harness's fallback,
+which fired because phase 0 overflowed at the default in every run (§6.2). At `medium`
+the same two must-haves in problem 01 are specified consistently, so the contradiction
+is at least partly a property of the setting rather than of the model. What survives
+the setting is the second half of this finding: **when a plan disagrees with itself,
+the code follows the executable half.** That is what makes the contradiction expensive,
+and it is why a plan review has to read the sections against each other.
 
 *What this means for a developer:* the model is not failing to follow its plan. It
 follows it exactly. Reading the plan and approving it is not enough, because the plan

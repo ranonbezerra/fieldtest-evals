@@ -40,9 +40,13 @@ export OMLX_BASE OMLX_MODEL OMLX_KEY
 : "${FT_TOP_P:=0.95}"
 : "${FT_TOP_K:=20}"
 # xhigh | medium | low. The model's own dial for how much it deliberates before
-# answering. Left unset here so requests carry the model's default; the harness
-# lowers it only as a documented fallback after a phase overflows its budget.
-: "${FT_REASONING_EFFORT:=}"
+# answering. Set to `medium`, measured rather than chosen: at the model's own default
+# the plan phase overflowed the 16,384-token ceiling in 3 of 3 runs and never produced
+# a specification, so the harness fell back to `low` and every run was governed by a
+# low-effort plan. At `medium`, 6 of 6 replayed phases fit — the largest using 65% of
+# the ceiling — and the plans stopped contradicting themselves. See FINDINGS 6.2.
+# The harness still lowers to `low` as a fallback after a phase overflows.
+: "${FT_REASONING_EFFORT:=medium}"
 : "${FT_MAX_TOKENS:=16384}"      # the server's output ceiling; thinking is paid out of it
 : "${FT_CONTEXT_WINDOW:=32768}"  # client-side budget; keep equal to the server's setting
 : "${FT_REQUEST_TIMEOUT:=3600}"  # seconds; a request that hangs must not hang the campaign

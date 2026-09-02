@@ -352,11 +352,14 @@ def main():
                                "runner": "none"})
             else:
                 instruction = (HARNESS / "instructions" / "phase0-plan.md").read_text()
-                # Every phase runs at the model's own default first. An earlier
-                # version of this harness disabled reasoning for phase 0 outright,
-                # from measurements taken at the wrong temperature and before
-                # `reasoning_effort` was known to exist. Turning the model's
-                # defining behaviour off by default is not measuring the model.
+                # Every phase runs at `reasoning_effort: medium`, set in ft-env.sh.
+                # That is a measurement, not a preference: at the model's own default
+                # this phase overflowed the ceiling in 3 of 3 runs and produced
+                # deliberation instead of a plan, so the fallback below fired every
+                # time and the whole campaign ran on plans written at `low`. Those
+                # plans contradict themselves — the invariant in one section, the
+                # procedure that breaks it in another — and that is what the runs
+                # were measuring. See FINDINGS 1.3 and 6.2.
                 #
                 # A phase that overflows is retried at `reasoning_effort: low` —
                 # the model's own dial rather than a switch the harness invented —
@@ -694,7 +697,8 @@ def main():
                 "max_tokens": int(os.environ.get("FT_MAX_TOKENS", 16384)),
                 "context_window": int(os.environ.get("FT_CONTEXT_WINDOW", 32768)),
                 "reasoning": {
-                    "effort": "the model's own default",
+                    "effort": os.environ.get("FT_REASONING_EFFORT")
+                              or "the model's own default",
                     "repair_phase_effort": "low",
                     "lowered_to_low_after_ceiling": ceiling_retries,
                     "test_write_pass_effort": "low",

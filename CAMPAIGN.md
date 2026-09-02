@@ -16,8 +16,11 @@ are measured from the first three runs at the corrected parameters.
 
 ## The arithmetic
 
-**Measured, at the correct parameters, on the first three runs.** These replace the
-discarded campaign's estimates, which were roughly a third of the truth.
+**Measured on the three discarded runs, and now an upper bound.** These replace the
+first campaign's estimates, which were roughly a third of the truth. They were taken
+with every phase burning the full 16,384-token ceiling, because that is what the default
+effort did. At `medium` the same phases produced complete answers in a median of 36% of
+the ceiling, so the real figures will be lower — by how much is not yet measured.
 
 | run | requests | output tokens | generation |
 |---|--:|--:|--:|
@@ -34,27 +37,44 @@ spent **nothing** on repairs. Problems 02 and 03 each spent **33% of their outpu
 them — 1.9 h and 2.5 h — and both still failed the gate. Budget a third of a run for
 repairs that may not repair anything.
 
-| scope | wall time |
+| scope | wall time, upper bound |
 |---|--:|
 | variant A of all 18 problems | **76 – 137 h** |
 | A and B | 152 – 274 h |
 | all 54 | **228 – 411 h** |
+
+Treat these as a ceiling on the ceiling. The first run at `medium` will replace them
+with something real; until then, plan against the larger number and be pleased.
 
 The earlier projection said 19–48 h for variant A. It was built from phase timings taken
 before the gate could fire, and the gate is what doubles a run.
 
 The whole acervo does not fit in one sitting, so the order has to earn its place.
 
-## The configuration is fixed for all eighteen
+## The configuration is fixed for all eighteen, at `reasoning_effort: medium`
 
-Every run in this pass uses the same generation parameters and leaves
-`reasoning_effort` at the model's default. If a better setting is found partway
-through — and `medium` is being measured precisely because it might be — **it does not
-get applied to this pass.** Eighteen problems measured under two configurations are
-not a set, and the earlier campaign was discarded for exactly that reason.
+Every run in this pass uses the same generation parameters and **`medium`**. That
+setting was measured into place, not chosen: at the model's own default, phase 0
+overflowed the 16,384-token ceiling in **3 of 3 runs** and returned deliberation
+instead of a plan. The harness fell back to `low`, so every run was governed by a
+low-effort specification — and the must-haves those runs failed are defects in those
+specifications, not in the code that implemented them. Replayed at `medium`, 6 of 6
+phases fit, using a median of 36% of the ceiling. See FINDINGS §1.3 and §6.2.
 
-A better setting is an argument for a second pass against a first one that is
-internally consistent.
+**The first three runs are discarded** rather than compared against runs at `medium`.
+Problems 01, 02 and 03 were judged and their verdicts written; they measured the model
+working from a plan the harness had degraded to make it fit, which is a property of the
+harness and not an answer to the question this repository asks. Eighteen problems
+measured under two configurations are not a set, and three runs is the cheapest this
+correction will ever be — at problem thirteen it would cost a hundred hours.
+
+What those runs established about the model, the machine and the instruments is kept
+in FINDINGS and stands, because a plan that contradicts itself is no less contradictory
+for having been written at the wrong setting.
+
+If a better setting is found partway through this pass — `xhigh` has not been measured —
+**it does not get applied to it.** That is an argument for a second pass against a first
+one that is internally consistent.
 
 ## Order
 
