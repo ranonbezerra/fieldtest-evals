@@ -500,6 +500,11 @@ fourth is the P2002 branch escaping as "Unique constraint failed".
 *Changed:* `ft-go` runs the suite after the typecheck and records `tests` in
 `meta.yaml`; `harness/ft-test` applies the same step to runs already finished.
 
+*The repair loop this argues for is in [`SECOND-PASS.md`](SECOND-PASS.md) §3, with the
+question that makes it worth running: handed a failing test it wrote itself, does the
+model fix the code or delete the assertion? Both turn the suite green, and they are not
+the same tool.*
+
 *Recorded and never repaired.* Feeding a failing test back as a repair round would
 change the artifact the model produced, and the eighteen runs have to be comparable.
 Running the suite changes only what is *known* about a run — which is precisely why it

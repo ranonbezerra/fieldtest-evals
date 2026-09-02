@@ -76,6 +76,13 @@ If a better setting is found partway through this pass — `xhigh` has not been 
 **it does not get applied to it.** That is an argument for a second pass against a first
 one that is internally consistent.
 
+The line that decides what may change mid-campaign: **observation can be added,
+intervention cannot.** Running the test suite a model wrote changes only what is known
+about a run, so it was added partway and applied backwards to runs already judged
+(FINDINGS §3.7). Repairing against that suite changes the artifact, so it waits.
+Everything the first pass has earned and cannot use is written down in
+[`SECOND-PASS.md`](SECOND-PASS.md) as it is found.
+
 ## Order
 
 **Pass 1 — variant A of every problem, 01 through 18.**

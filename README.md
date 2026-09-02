@@ -212,6 +212,12 @@ results table is worth exactly what its worst row is worth.
 | 5 | The cheatsheet was **leaking two rubric answers** in sentences that read as good advice | `ft-lint-cheatsheet`, validated against a planted leak |
 | 6 | **A resumed run reported the tail of itself as the whole run** — 57 minutes for a run that cost 340 | Totals now come from the requests, which survive a resume |
 
+Changes the first pass has earned and does not get to use — a plan-consistency check,
+a manifest reference check, feeding the test suite back as a repair round — are
+collected in [`SECOND-PASS.md`](SECOND-PASS.md) rather than applied. One configuration
+for all eighteen, and the improvements found along the way are the argument for a
+second pass, not for switching mid-flight.
+
 Eight of the harness's own instruments were wrong before they were right, and seven
 failed in the same direction: reporting success, or refusing healthy work. The eighth was
 written *after* the other seven were catalogued, in the file that names the pattern.

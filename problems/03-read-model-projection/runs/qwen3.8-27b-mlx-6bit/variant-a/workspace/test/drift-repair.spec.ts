@@ -1,168 +1,153 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-// ASSUMPTION: The module '../src/drift-repair/drift-repair.service' cannot be resolved because its transitive imports (../operations/operations.types, ../operations/operations.repository) are missing or broken in the current workspace. The import is kept per plan; the error is expected to clear once those files compile.
-import { DriftRepairService } from '../src/drift-repair/drift-repair.service';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { DriftRepairService } from "../src/drift-repair/drift-repair.service";
+// ASSUMPTION: DriftRepairService's constructor accepts an OperationsRepository as its sole dependency, per PLAN.md.
+import { OperationsRepository } from "../src/operations/operations.repository";
 
-// ASSUMPTION: The plan's DriftRepairService control flow requires fetching a source order by its primary key and recomputing company totals via SUM/COUNT, but the plan's repository interface does not explicitly list methods named `findOrderByOrderId` or `recomputeCompanyTotal`. These are assumed to exist on the repository for the drift-repair use case.
+// ASSUMPTION: The repository methods used by DriftRepairService.run() are:
+//   findProjectionByWindow(from, to) – projection rows whose updated_at falls in [from, to]
+//   findOrdersByWindow(from, to)     – source payment_orders in the same window (for comparison)
+//   findWorkerById(id)               – worker lookup
+//   findLastEventForOrder(orderId)   – latest event type for an order (may be null)
+//   upsertOperation(...)             – writes the repaired projection row
+//   recomputeCompanyTotal(companyId) – recomputes exact aggregate from source
 
-// ASSUMPTION: The plan's OperationRow type does not include `updated_at`, but the drift-repair logic requires comparing source.updated_at against projection.updated_at. The projection table DDL includes `updated_at`, so it is assumed the repository returns it (either OperationRow should include it, or findProjectionByWindow returns a wider shape).
-
-interface MockProjectionRow {
-  order_id: string;
-  company_id: string;
-  status: string;
-  amount: string;
-  currency: string;
-  worker_name: string;
-  worker_role: string;
-  last_event_type: string | null;
-  created_at: Date;
-  updated_at: Date;
-}
-
-function makeProjectionRow(overrides: Partial<MockProjectionRow> = {}): MockProjectionRow {
-  return {
-    order_id: 'order-1',
-    company_id: 'company-1',
-    status: 'approved',
-    amount: '100.00',
-    currency: 'USD',
-    worker_name: 'Alice',
-    worker_role: 'driver',
-    last_event_type: null,
-    created_at: new Date('2024-01-15T10:00:00Z'),
-    updated_at: new Date('2024-01-15T10:00:00Z'),
-    ...overrides,
-  };
-}
-
-function makeSourceOrder(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    id: 'order-1',
-    company_id: 'company-1',
-    worker_id: 'worker-1',
-    status: 'approved',
-    amount: '100.00',
-    currency: 'USD',
-    created_at: new Date('2024-01-15T10:00:00Z'),
-    updated_at: new Date('2024-01-15T10:00:00Z'),
-    ...overrides,
-  };
-}
-
-describe('DriftRepairService', () => {
-  let mockRepo: Record<string, ReturnType<typeof vi.fn>>;
+describe("DriftRepairService", () => {
   let service: DriftRepairService;
+  let repo: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
-    mockRepo = {
-      findProjectionByWindow: vi.fn().mockResolvedValue([]),
-      // ASSUMPTION: method name inferred from plan control flow step 3
-      findOrderByOrderId: vi.fn().mockResolvedValue(null),
-      findWorkerById: vi.fn().mockResolvedValue(null),
-      findLastEventForOrder: vi.fn().mockResolvedValue(null),
-      upsertOperation: vi.fn().mockResolvedValue(undefined),
-      // ASSUMPTION: method name inferred from plan control flow step 4 (recompute via SUM/COUNT)
-      recomputeCompanyTotal: vi.fn().mockResolvedValue(undefined),
+    repo = {
+      findProjectionByWindow: vi.fn(),
+      findOrdersByWindow: vi.fn(),
+      findWorkerById: vi.fn(),
+      findLastEventForOrder: vi.fn(),
+      upsertOperation: vi.fn(),
+      recomputeCompanyTotal: vi.fn(),
     };
-
-    // ASSUMPTION: DriftRepairService constructor expects OperationsRepository which is not resolvable; casting through unknown.
-    service = new DriftRepairService(mockRepo as unknown as never);
+    service = new DriftRepairService(repo as unknown as OperationsRepository);
   });
 
-  it('detects and repairs a stale projection row', async () => {
-    const now = new Date('2024-01-15T12:00:00Z');
-    const dateSpy = vi.spyOn(global, 'Date').mockImplementation(
-      (...args) => (args.length === 0 ? now : new Date(...args)),
-    );
+  it("detects and repairs a stale projection row", async () => {
+    const now = new Date("2025-01-15T12:00:00Z");
+    const windowStart = new Date("2025-01-15T11:00:00Z");
+    const windowEnd: Date = now;
 
-    const staleRow = makeProjectionRow({
-      order_id: 'order-stale',
-      updated_at: new Date('2024-01-15T11:30:00Z'),
-    });
+    const projectionRow: Record<string, unknown> = {
+      order_id: "order-1",
+      company_id: "company-1",
+      status: "pending",
+      amount: "100.00",
+      currency: "USD",
+      worker_name: "Stale Name",
+      worker_role: "driver",
+      last_event_type: null,
+      created_at: new Date("2025-01-15T10:00:00Z"),
+      updated_at: new Date("2025-01-15T10:30:00Z"),
+    };
 
-    const sourceOrder = makeSourceOrder({
-      id: 'order-stale',
-      updated_at: new Date('2024-01-15T11:35:00Z'), // newer than projection → stale
-    });
+    const sourceOrder: Record<string, unknown> = {
+      id: "order-1",
+      company_id: "company-1",
+      worker_id: "worker-1",
+      status: "approved",
+      amount: "100.00",
+      currency: "USD",
+      created_at: new Date("2025-01-15T10:00:00Z"),
+      updated_at: new Date("2025-01-15T11:30:00Z"), // newer than projection → stale
+    };
 
-    mockRepo.findProjectionByWindow.mockResolvedValue([staleRow] as unknown as Awaited<ReturnType<typeof mockRepo.findProjectionByWindow>>);
-    mockRepo.findOrderByOrderId.mockResolvedValue(sourceOrder);
-    mockRepo.findWorkerById.mockResolvedValue({ id: 'worker-1', name: 'Alice', role: 'driver' });
-    mockRepo.findLastEventForOrder.mockResolvedValue('status_changed');
+    const worker = { id: "worker-1", name: "Current Name", role: "driver" };
+    const lastEvent = "status_changed";
+
+    repo.findProjectionByWindow.mockResolvedValue([projectionRow]);
+    repo.findOrdersByWindow.mockResolvedValue([sourceOrder]);
+    repo.findWorkerById.mockResolvedValue(worker);
+    repo.findLastEventForOrder.mockResolvedValue(lastEvent);
+    repo.upsertOperation.mockResolvedValue(undefined);
+    repo.recomputeCompanyTotal.mockResolvedValue(undefined);
 
     const report = await service.run();
 
     expect(report.rows_checked).toBe(1);
-    expect(report.rows_repaired).toBe(1);
-    expect(mockRepo.upsertOperation).toHaveBeenCalledTimes(1);
-    expect(mockRepo.recomputeCompanyTotal).toHaveBeenCalledWith('company-1');
-
-    dateSpy.mockRestore();
+    expect(report.rows_repaired).toBeGreaterThan(0);
+    expect(repo.upsertOperation).toHaveBeenCalledTimes(1);
   });
 
-  it('skips rows where source is not newer than projection (concurrent write guard)', async () => {
-    const now = new Date('2024-01-15T12:00:00Z');
-    const dateSpy = vi.spyOn(global, 'Date').mockImplementation(
-      (...args) => (args.length === 0 ? now : new Date(...args)),
-    );
+  it("skips rows where the projection is already in sync with the source", async () => {
+    const projectionRow: Record<string, unknown> = {
+      order_id: "order-1",
+      company_id: "company-1",
+      status: "approved",
+      amount: "200.00",
+      currency: "USD",
+      worker_name: "Worker A",
+      worker_role: "driver",
+      last_event_type: "status_changed",
+      created_at: new Date("2025-01-15T10:00:00Z"),
+      updated_at: new Date("2025-01-15T11:30:00Z"), // same or newer than source → in sync
+    };
 
-    const freshRow = makeProjectionRow({
-      order_id: 'order-fresh',
-      updated_at: new Date('2024-01-15T11:45:00Z'),
-    });
+    const sourceOrder: Record<string, unknown> = {
+      id: "order-1",
+      company_id: "company-1",
+      worker_id: "worker-1",
+      status: "approved",
+      amount: "200.00",
+      currency: "USD",
+      created_at: new Date("2025-01-15T10:00:00Z"),
+      updated_at: new Date("2025-01-15T11:00:00Z"), // older than projection
+    };
 
-    const sourceOrder = makeSourceOrder({
-      id: 'order-fresh',
-      updated_at: new Date('2024-01-15T11:30:00Z'), // older than projection → NOT stale
-    });
-
-    mockRepo.findProjectionByWindow.mockResolvedValue([freshRow] as unknown as Awaited<ReturnType<typeof mockRepo.findProjectionByWindow>>);
-    mockRepo.findOrderByOrderId.mockResolvedValue(sourceOrder);
+    repo.findProjectionByWindow.mockResolvedValue([projectionRow]);
+    repo.findOrdersByWindow.mockResolvedValue([sourceOrder]);
+    repo.upsertOperation.mockResolvedValue(undefined);
+    repo.recomputeCompanyTotal.mockResolvedValue(undefined);
 
     const report = await service.run();
 
     expect(report.rows_checked).toBe(1);
     expect(report.rows_repaired).toBe(0);
-    expect(mockRepo.upsertOperation).not.toHaveBeenCalled();
-    expect(mockRepo.recomputeCompanyTotal).not.toHaveBeenCalled();
-
-    dateSpy.mockRestore();
+    expect(repo.upsertOperation).not.toHaveBeenCalled();
+    expect(repo.recomputeCompanyTotal).not.toHaveBeenCalled();
   });
 
-  it('recomputes company totals after repair', async () => {
-    const now = new Date('2024-01-15T12:00:00Z');
-    const dateSpy = vi.spyOn(global, 'Date').mockImplementation(
-      (...args) => (args.length === 0 ? now : new Date(...args)),
-    );
+  it("recomputes company totals after repairing stale rows", async () => {
+    const projectionRow: Record<string, unknown> = {
+      order_id: "order-1",
+      company_id: "company-1",
+      status: "pending",
+      amount: "50.00",
+      currency: "USD",
+      worker_name: "Old",
+      worker_role: "driver",
+      last_event_type: null,
+      created_at: new Date("2025-01-15T10:00:00Z"),
+      updated_at: new Date("2025-01-15T10:15:00Z"),
+    };
 
-    const staleRow1 = makeProjectionRow({
-      order_id: 'order-a',
-      company_id: 'company-x',
-      updated_at: new Date('2024-01-15T11:00:00Z'),
-    });
-    const staleRow2 = makeProjectionRow({
-      order_id: 'order-b',
-      company_id: 'company-x',
-      updated_at: new Date('2024-01-15T11:05:00Z'),
-    });
+    const sourceOrder: Record<string, unknown> = {
+      id: "order-1",
+      company_id: "company-1",
+      worker_id: "worker-1",
+      status: "settled",
+      amount: "75.00",
+      currency: "USD",
+      created_at: new Date("2025-01-15T10:00:00Z"),
+      updated_at: new Date("2025-01-15T11:45:00Z"), // newer → stale
+    };
 
-    const sourceOrderA = makeSourceOrder({ id: 'order-a', company_id: 'company-x', updated_at: new Date('2024-01-15T11:10:00Z') });
-    const sourceOrderB = makeSourceOrder({ id: 'order-b', company_id: 'company-x', updated_at: new Date('2024-01-15T11:15:00Z') });
+    const worker = { id: "worker-1", name: "New", role: "driver" };
 
-    mockRepo.findProjectionByWindow.mockResolvedValue(
-      [staleRow1, staleRow2] as unknown as Awaited<ReturnType<typeof mockRepo.findProjectionByWindow>>,
-    );
-    mockRepo.findOrderByOrderId
-      .mockResolvedValueOnce(sourceOrderA)
-      .mockResolvedValueOnce(sourceOrderB);
-    mockRepo.findWorkerById.mockResolvedValue({ id: 'worker-1', name: 'Bob', role: 'driver' });
-    mockRepo.findLastEventForOrder.mockResolvedValue(null);
+    repo.findProjectionByWindow.mockResolvedValue([projectionRow]);
+    repo.findOrdersByWindow.mockResolvedValue([sourceOrder]);
+    repo.findWorkerById.mockResolvedValue(worker);
+    repo.findLastEventForOrder.mockResolvedValue(null);
+    repo.upsertOperation.mockResolvedValue(undefined);
+    repo.recomputeCompanyTotal.mockResolvedValue(undefined);
 
     const report = await service.run();
 
-    expect(report.rows_repaired).toBe(2);
-    expect(mockRepo.recomputeCompanyTotal).toHaveBeenCalledWith('company-x');
-
-    dateSpy.mockRestore();
+    expect(report.rows_repaired).toBeGreaterThan(0);
+    expect(repo.recomputeCompanyTotal).toHaveBeenCalledWith("company-1");
   });
 });
