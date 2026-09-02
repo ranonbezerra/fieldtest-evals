@@ -582,8 +582,10 @@ Written before the data, so they can be wrong rather than rationalised afterward
 
 ### 6.2 `medium` fits, and the campaign has been running on plans written at `low`
 
-Measured, one axis, everything else held. Six phases ran; four were refused when
-`fileproviderd` took 130–143% CPU and are still pending.
+Measured, one axis, everything else held. Six of ten phases ran. The other four were
+refused when `fileproviderd` took 130–143% CPU, and cannot be run now: they needed the
+run directories, which the discard removed. Six was enough to decide, and the campaign
+at `medium` will produce better evidence than a replay could.
 
 | phase | at the default | at `medium` |
 |---|--:|--:|

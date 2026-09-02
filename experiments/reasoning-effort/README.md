@@ -37,6 +37,9 @@ those are the only ones that existed when the phase originally ran.
 
 Six of six fit. Four further phases of problem 03 were refused when `fileproviderd`
 took 130–143% CPU and the harness declined to measure throughput against a loaded host.
+They were not retried: the discard removed the run directories they replay from. Six
+phases decided the question, and the campaign at `medium` is better evidence than a
+seventh replay would have been.
 
 **The `medium` plan is shorter than the `low` one** — 5,380 tokens against 7,140 for
 problem 01. More deliberation bought a tighter document, not a longer one, which is the
