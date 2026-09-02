@@ -106,13 +106,11 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 
 <!-- results:start -->
 
-No runs have been judged yet. The table below is the shape it will take;
-every cell is filled by `harness/ft-results --write` from the `verdict.md`
-files, never by hand.
+### qwen3.8-27b-mlx-6bit
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | – | – | – | – | *not yet run* |
+| 01 | payout outbox | ✗ | – | – | – | Satisfies every must-have, including both it failed at low effort, and imports a file its own plan forgot to commission. |
 | 02 | reconciliation resend | – | – | – | – | *not yet run* |
 | 03 | read model projection | – | – | – | – | *not yet run* |
 | 04 | grounded llm product | – | – | – | – | *not yet run* |
@@ -130,6 +128,7 @@ files, never by hand.
 | 16 | migration that lied | – | – | – | – | *not yet run* |
 | 17 | token rotation reuse | – | – | – | – | *not yet run* |
 | 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+
 
 <!-- results:end -->
 
