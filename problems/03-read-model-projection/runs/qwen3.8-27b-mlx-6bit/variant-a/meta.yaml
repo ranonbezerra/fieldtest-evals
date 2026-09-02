@@ -2,7 +2,7 @@
   "model": "Qwen3.8-27B-MLX-6bit",
   "model_repo": "Qwen/Qwen3.8-27B",
   "quantization": "6-bit MLX, group_size 64, affine",
-  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "architecture": "64 layers, hidden 5120 — 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
   "modality": "natively multimodal; text path only",
   "server": "oMLX",
   "harness": "fieldtest ft-go",
@@ -521,7 +521,7 @@
         ],
         "docker": null,
         "pressure": [
-          "corespotlightd is using 89% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+          "corespotlightd is using 89% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap activity, so this does not show up in any memory figure"
         ]
       },
       {
@@ -1032,7 +1032,7 @@
         ],
         "docker": null,
         "pressure": [
-          "corespotlightd is using 156% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+          "corespotlightd is using 156% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap activity, so this does not show up in any memory figure"
         ]
       },
       {
@@ -1095,7 +1095,7 @@
         ],
         "docker": null,
         "pressure": [
-          "corespotlightd is using 142% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+          "corespotlightd is using 142% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap activity, so this does not show up in any memory figure"
         ]
       },
       {
@@ -1311,7 +1311,7 @@
     {
       "phase": "host",
       "exit": null,
-      "reason": "memory pressure during 3 of 21 samples: corespotlightd is using 89% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activ. Throughput here is the machine's, not the model's."
+      "reason": "memory pressure during 3 of 21 samples: corespotlightd is using 89% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap activ. Throughput here is the machine's, not the model's."
     }
   ],
   "phases": [
@@ -2910,5 +2910,20 @@
       "exit": 0,
       "runner": "api"
     }
-  ]
+  ],
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failed": 6,
+    "passed": 3,
+    "total": 9,
+    "failing": [
+      "DriftRepairService > detects and repairs a stale projection row",
+      "DriftRepairService > recomputes company totals after repairing stale rows",
+      "ReDerivationService.reDerive > is idempotent: running re-derive twice on the same window produces the same result",
+      "ReDerivationService.reDerive > re-derives a window after a projection row has been corrupted, restoring correct data",
+      "operations > concurrent updates to one company's totals: two simultaneous writes leave total = sum of both",
+      "operations > read-your-own-writes: approve an order, next getDashboard includes it with new status"
+    ]
+  }
 }

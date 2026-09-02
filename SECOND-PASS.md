@@ -38,8 +38,16 @@ constructor signatures, and never listed `src/prisma/prisma.service.ts` in the
 manifest. No phase was asked to write it. Every phase imported it.
 
 Mechanical: **every type named in a constructor signature must resolve to a file the
-manifest declares.** Same shape as check 1 — the plan is where a code failure was
-already visible.
+manifest declares.**
+
+Problem 03 shows that is too narrow. Its failures are method-level: the repository file
+exists, is declared, is imported — and simply does not have `reDeriveWindow` on it. The
+services were written in later phases against methods the earlier phase never wrote,
+and `tsc` never caught it because the imports did not resolve.
+
+So the check is: **every method a later phase calls on an earlier phase's class must
+exist in the interface the plan gave that class.** The plan carries those signatures.
+Same document, same mechanical reading, as §1 and this section already argue for.
 
 ## 3. Feed the suite back, and record which way it goes
 

@@ -161,3 +161,110 @@ test/re-derivation.spec.ts(2,37): error TS2307: Cannot find module '../src/re-de
 test/re-derivation.spec.ts(3,50): error TS2307: Cannot find module '../src/operations/operations.types' or its corresponding type declarations.
 test/re-derivation.spec.ts(4,43): error TS2307: Cannot find module '../src/operations/operations.repository' or its corresponding type declarations.
 
+
+$ vitest run -> 1
+
+ RUN  v2.1.9 /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace
+
+ ❯ test/drift-repair.spec.ts (3 tests | 2 failed) 4ms
+   × DriftRepairService > detects and repairs a stale projection row 3ms
+     → expected 0 to be greater than 0
+   × DriftRepairService > recomputes company totals after repairing stale rows 0ms
+     → expected 0 to be greater than 0
+ ❯ test/re-derivation.spec.ts (2 tests | 2 failed) 3ms
+   × ReDerivationService.reDerive > re-derives a window after a projection row has been corrupted, restoring correct data 2ms
+     → this.repo.reDeriveWindow is not a function
+   × ReDerivationService.reDerive > is idempotent: running re-derive twice on the same window produces the same result 0ms
+     → this.repo.reDeriveWindow is not a function
+ ❯ test/operations.spec.ts (4 tests | 2 failed) 4ms
+   × operations > read-your-own-writes: approve an order, next getDashboard includes it with new status 2ms
+     → this.repo.simulateWrite is not a function
+   × operations > concurrent updates to one company's totals: two simultaneous writes leave total = sum of both 0ms
+     → this.repo.simulateWrite is not a function
+
+ Test Files  3 failed (3)
+      Tests  6 failed | 3 passed (9)
+   Start at  10:54:27
+   Duration  728ms (transform 1.43s, setup 0ms, collect 1.71s, tests 11ms, environment 0ms, prepare 99ms)
+
+[31m[Nest] 27793  - [39m09/02/2026, 10:54:28 AM [31m  ERROR[39m [38;5;3m[DriftRepairService] [39m[31mDrift repair: failed to process order order-1: this.repo.repairProjectionRow is not a function[39m
+[31m[Nest] 27793  - [39m09/02/2026, 10:54:28 AM [31m  ERROR[39m [38;5;3m[DriftRepairService] [39m[31mDrift repair: failed to process order order-1: this.repo.repairProjectionRow is not a function[39m
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/drift-repair.spec.ts > DriftRepairService > detects and repairs a stale projection row
+AssertionError: expected 0 to be greater than 0
+ ❯ test/drift-repair.spec.ts:72:34
+     70| 
+     71|     expect(report.rows_checked).toBe(1);
+     72|     expect(report.rows_repaired).toBeGreaterThan(0);
+       |                                  ^
+     73|     expect(repo.upsertOperation).toHaveBeenCalledTimes(1);
+     74|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  test/drift-repair.spec.ts > DriftRepairService > recomputes company totals after repairing stale rows
+AssertionError: expected 0 to be greater than 0
+ ❯ test/drift-repair.spec.ts:150:34
+    148|     const report = await service.run();
+    149| 
+    150|     expect(report.rows_repaired).toBeGreaterThan(0);
+       |                                  ^
+    151|     expect(repo.recomputeCompanyTotal).toHaveBeenCalledWith("company-1…
+    152|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  test/operations.spec.ts > operations > read-your-own-writes: approve an order, next getDashboard includes it with new status
+TypeError: this.repo.simulateWrite is not a function
+ ❯ OperationsService.simulateWrite src/operations/operations.service.ts:42:22
+     40|   // entire transaction to a single repository method.
+     41|   async simulateWrite(input: SimulateWriteInput): Promise<OperationRow…
+     42|     return this.repo.simulateWrite(input);
+       |                      ^
+     43|   }
+     44| 
+ ❯ test/operations.spec.ts:134:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  test/operations.spec.ts > operations > concurrent updates to one company's totals: two simultaneous writes leave total = sum of both
+TypeError: this.repo.simulateWrite is not a function
+ ❯ OperationsService.simulateWrite src/operations/operations.service.ts:42:22
+     40|   // entire transaction to a single repository method.
+     41|   async simulateWrite(input: SimulateWriteInput): Promise<OperationRow…
+     42|     return this.repo.simulateWrite(input);
+       |                      ^
+     43|   }
+     44| 
+ ❯ test/operations.spec.ts:165:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  test/re-derivation.spec.ts > ReDerivationService.reDerive > re-derives a window after a projection row has been corrupted, restoring correct data
+TypeError: this.repo.reDeriveWindow is not a function
+ ❯ ReDerivationService.reDerive src/re-derivation/re-derivation.service.ts:23:43
+     21|     // rows rewritten. This keeps all Prisma $transaction calls in the…
+     22|     // "service has zero Prisma client calls" rule.
+     23|     const rowsRewritten = await this.repo.reDeriveWindow(input.date_fr…
+       |                                           ^
+     24| 
+     25|     return { rows_rewritten: rowsRewritten };
+ ❯ test/re-derivation.spec.ts:57:34
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  test/re-derivation.spec.ts > ReDerivationService.reDerive > is idempotent: running re-derive twice on the same window produces the same result
+TypeError: this.repo.reDeriveWindow is not a function
+ ❯ ReDerivationService.reDerive src/re-derivation/re-derivation.service.ts:23:43
+     21|     // rows rewritten. This keeps all Prisma $transaction calls in the…
+     22|     // "service has zero Prisma client calls" rule.
+     23|     const rowsRewritten = await this.repo.reDeriveWindow(input.date_fr…
+       |                                           ^
+     24| 
+     25|     return { rows_rewritten: rowsRewritten };
+ ❯ test/re-derivation.spec.ts:106:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+

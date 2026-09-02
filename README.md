@@ -112,7 +112,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 |---|---|:-:|:-:|:-:|:-:|---|
 | 01 | payout outbox | ✗ | – | – | – | Satisfies every must-have, including both it failed at low effort, and imports a file its own plan forgot to commission. |
 | 02 | reconciliation resend | ✗<br><sub>M1</sub> | – | – | – | Writes the test that catches its own bug, and ships the bug. |
-| 03 | read model projection | – | – | – | – | *not yet run* |
+| 03 | read model projection | ✗<br><sub>M1, M2, M3, M5</sub> | – | – | – | Its compile errors hid its real ones, and thirty repairs fixed neither. |
 | 04 | grounded llm product | – | – | – | – | *not yet run* |
 | 05 | onchain anchoring | – | – | – | – | *not yet run* |
 | 06 | multi tenant isolation | – | – | – | – | *not yet run* |

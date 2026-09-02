@@ -583,6 +583,22 @@ The model does not recognise the symptom as its own. `drift-repair.processor.ts`
 directly above the import that cannot be resolved — it saw the error and attributed it
 to the workspace.
 
+*Measured again at `medium`, and it did not settle.* Problem 01 carried the extension on
+26 of 26 relative imports, which looked like the setting had fixed it. Problem 03, same
+setting, carries it on **2 of 13** — and still clusters by directory. What separates
+them is size: problem 03 declares 19 files across four modules against problem 01's 14
+across two. More files, more cross-references, more chances for a convention re-decided
+once per request to diverge. This remains the largest single cause of gate failure in
+the campaign.
+
+*And it does not fail loudly — it fails silently.* In problem 03, 25 of 31 compile
+errors were TS2307. Because those modules never resolved, `tsc` never typechecked the
+calls into them, and two services calling repository methods that do not exist
+(`reDeriveWindow`, `simulateWrite`) passed the compiler unremarked. Thirty repairs
+worked on what the compiler did report. The suite found the real defects in ninety
+seconds. A typecheck that cannot resolve a module is a silent one over exactly the
+surface where phases disagree.
+
 *Not changed, deliberately.* Setting `moduleResolution: bundler` in the scaffold would
 tolerate both styles and lift two runs from fail to judged-on-merit. It is not being
 done, for the same reason as §6.2: the standard has to hold for all eighteen problems,
