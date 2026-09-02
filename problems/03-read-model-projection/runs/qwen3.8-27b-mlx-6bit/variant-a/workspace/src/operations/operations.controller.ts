@@ -1,45 +1,61 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
-import { OperationsService } from './operations.service';
+// ASSUMPTION: The first compiler error for this file was truncated in the provided output.
+// It appears to reference a property access on PrismaClient (suggesting 'event' as a close match).
+// The rewrite below eliminates any PrismaClient usage from the controller entirely, which is
+// consistent with the layer rules (controller must not touch the database).
+
+import { Controller, Get, Post, Body, Param, Query } from "@nestjs/common";
+import { OperationsService } from "./operations.service";
 import {
   DashboardQuery,
   DashboardResult,
   SimulateWriteInput,
   OperationRow,
   CompanyTotals,
-  OrderStatus,
-} from './operations.types';
+  ValidationError,
+} from "./operations.types";
 
-@Controller('operations')
+@Controller()
 export class OperationsController {
   constructor(private readonly service: OperationsService) {}
 
-  @Get()
-  getDashboard(
-    @Query('company_id') companyId: string,
-    @Query('status') status?: string,
-    @Query('date_from') dateFrom?: string,
-    @Query('date_to') dateTo?: string,
-    @Query('page') page?: string,
-    @Query('page_size') pageSize?: string,
-  ): Promise<DashboardResult> {
-    const query: DashboardQuery = {
+  @Get("operations")
+  async getDashboard(@Query() query: Record<string, string>): Promise<DashboardResult> {
+    const companyId = query.company_id;
+    if (!companyId) {
+      throw new ValidationError("company_id is required", {});
+    }
+
+    const page = parseInt(query.page ?? "1", 10);
+    if (Number.isNaN(page) || page < 1) {
+      throw new ValidationError("page must be a positive integer", {});
+    }
+
+    const pageSize = parseInt(query.page_size ?? "20", 10);
+    if (Number.isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
+      throw new ValidationError("page_size must be between 1 and 100", {});
+    }
+
+    const status = query.status as DashboardQuery["status"] | undefined;
+    const dateFrom = query.date_from ? new Date(query.date_from) : undefined;
+    const dateTo = query.date_to ? new Date(query.date_to) : undefined;
+
+    return this.service.getDashboard({
       company_id: companyId,
-      page: parseInt(page ?? '1', 10),
-      page_size: parseInt(pageSize ?? '20', 10),
-    };
-    if (status) query.status = status as OrderStatus;
-    if (dateFrom) query.date_from = new Date(dateFrom);
-    if (dateTo) query.date_to = new Date(dateTo);
-    return this.service.getDashboard(query);
+      status,
+      date_from: dateFrom,
+      date_to: dateTo,
+      page,
+      page_size: pageSize,
+    });
   }
 
-  @Post('simulate-write')
-  simulateWrite(@Body() input: SimulateWriteInput): Promise<OperationRow> {
+  @Post("operations/simulate-write")
+  async simulateWrite(@Body() input: SimulateWriteInput): Promise<OperationRow> {
     return this.service.simulateWrite(input);
   }
 
-  @Get('totals/:companyId')
-  getTotals(@Param('companyId') companyId: string): Promise<CompanyTotals> {
+  @Get("operations/totals/:companyId")
+  async getTotals(@Param("companyId") companyId: string): Promise<CompanyTotals> {
     return this.service.getCompanyTotals(companyId);
   }
 }

@@ -1,0 +1,167 @@
+
+===== ft-go invocation, 2026-09-02 13:53 UTC =====
+problem   03-read-model-projection
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1382/32768  out 6409/16384  think 8556c  632s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (16764 bytes)
+
+manifest: 19 files
+  DESIGN.md
+  prisma/schema.prisma
+  prisma/migrations/0001_initial/migration.sql
+  src/main.ts   <- src/app.module.ts
+  src/app.module.ts
+  src/operations/operations.types.ts
+  src/operations/operations.repository.ts   <- src/operations/operations.types.ts
+  src/operations/operations.service.ts   <- src/operations/operations.repository.ts, src/operations/operations.types.ts
+  src/operations/operations.controller.ts   <- src/operations/operations.service.ts, src/operations/operations.types.ts
+  src/operations/operations.module.ts
+  src/re-derivation/re-derivation.repository.ts   <- src/operations/operations.types.ts
+  src/re-derivation/re-derivation.service.ts   <- src/operations/operations.repository.ts, src/operations/operations.types.ts
+  src/re-derivation/re-derivation.controller.ts   <- src/re-derivation/re-derivation.service.ts, src/operations/operations.types.ts
+  src/re-derivation/re-derivation.module.ts
+  src/drift-repair/drift-repair.service.ts   <- src/operations/operations.repository.ts, src/operations/operations.types.ts
+  src/drift-repair/drift-repair.module.ts
+  test/operations.spec.ts   <- src/operations/operations.service.ts, src/operations/operations.types.ts
+  test/re-derivation.spec.ts   <- src/re-derivation/re-derivation.service.ts, src/operations/operations.types.ts
+  test/drift-repair.spec.ts   <- src/drift-repair/drift-repair.service.ts, src/operations/operations.types.ts
+
+[01-DESIGN.md] in 5476/32768  out 1998/16384  think 2179c  237s  8.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/DESIGN.md (6276 bytes)
+[02-schema.prisma] in 5483/32768  out 6061/16384  think 19749c  612s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (2281 bytes)
+[03-migration.sql] in 5492/32768  out 2488/16384  think 6459c  255s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/migrations/0001_initial/migration.sql (2411 bytes)
+[04-main.ts] in 5467/32768  out 1181/16384  think 4572c  128s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (407 bytes)
+[05-app.module.ts] in 5481/32768  out 835/16384  think 3021c  93s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (365 bytes)
+[06-operations.types.ts] in 5484/32768  out 1158/16384  think 2352c  125s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.types.ts (1862 bytes)
+[07-operations.repository.ts] in 6126/32768  out 7677/16384  think 24183c  783s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.repository.ts (5535 bytes)
+[08-operations.service.ts] in 7716/32768  out 5655/16384  think 19280c  596s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.service.ts (4935 bytes)
+[09-operations.controller.ts] in 7435/32768  out 3311/16384  think 9012c  355s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.controller.ts (4540 bytes)
+[10-operations.module.ts] in 5484/32768  out 1489/16384  think 6447c  158s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.module.ts (423 bytes)
+[11-re-derivation.repository.ts] in 6135/32768  out 979/16384  think 4412c  113s  8.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.repository.ts (141 bytes)
+[12-re-derivation.service.ts] in 7721/32768  out 5939/16384  think 20851c  607s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.service.ts (4002 bytes)
+[13-re-derivation.controller.ts] in 7208/32768  out 1111/16384  think 3938c  135s  8.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.controller.ts (466 bytes)
+[14-re-derivation.module.ts] in 5489/32768  out 1055/16384  think 3845c  115s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.module.ts (398 bytes)
+[15-drift-repair.service.ts] in 7724/32768  out 11671/16384  think 44500c  1198s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.service.ts (4131 bytes)
+[16-drift-repair.module.ts] in 5489/32768  out 904/16384  think 3578c  100s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.module.ts (284 bytes)
+[17-operations.spec.ts-cases] in 7442/32768  out 2609/16384  think 4475c  270s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/17-operations.spec.ts-cases.txt (6641 bytes)
+[17-operations.spec.ts] in 9211/32768  out 16384/16384  think 49477c  1757s  9.3 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/operations.spec.ts (14338 bytes, UNFENCED reply)
+         test/operations.spec.ts overflowed at the lowest effort; the reply is truncated and is not written
+         ceiling hit — retrying test/operations.spec.ts at reasoning_effort=low
+[17-operations.spec.ts-retry] in 9211/32768  out 6018/16384  think 7408c  617s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/operations.spec.ts (15987 bytes)
+[18-re-derivation.spec.ts-cases] in 7208/32768  out 2752/16384  think 7432c  283s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/18-re-derivation.spec.ts-cases.txt (4729 bytes)
+[18-re-derivation.spec.ts] in 8421/32768  out 13187/16384  think 15975c  1379s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/re-derivation.spec.ts (16157 bytes)
+[19-drift-repair.spec.ts-cases] in 7220/32768  out 3742/16384  think 12383c  397s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/19-drift-repair.spec.ts-cases.txt (4040 bytes)
+[19-drift-repair.spec.ts] in 8315/32768  out 8102/16384  think 20004c  850s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/drift-repair.spec.ts (12378 bytes)
+
+files written: 19/19
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (40 errors)
+[gate] repairing 15 file(s)
+[repair1-operations.service.ts] in 6499/32768  out 9417/16384  think 35972c  964s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.service.ts (3060 bytes)
+[repair1-re-derivation.service.ts] in 6511/32768  out 6546/16384  think 25274c  672s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.service.ts (1722 bytes)
+[repair1-re-derivation.spec.ts] in 6499/32768  out 9194/16384  think 30788c  940s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/re-derivation.spec.ts (4193 bytes)
+[repair1-drift-repair.module.ts] in 6511/32768  out 1266/16384  think 4677c  143s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.module.ts (361 bytes)
+[repair1-drift-repair.spec.ts] in 6499/32768  out 8632/16384  think 25257c  883s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/drift-repair.spec.ts (6931 bytes)
+[repair1-operations.spec.ts] in 6493/32768  out 13329/16384  think 41370c  1367s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/operations.spec.ts (10791 bytes)
+[repair1-re-derivation.repository.ts] in 6511/32768  out 4406/16384  think 18096c  456s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.repository.ts (639 bytes)
+[repair1-operations.controller.ts] in 6499/32768  out 2451/16384  think 8549c  259s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.controller.ts (1390 bytes)
+[repair1-app.module.ts] in 6490/32768  out 972/16384  think 3423c  114s  8.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (365 bytes)
+[repair1-drift-repair.service.ts] in 6511/32768  out 6704/16384  think 23146c  687s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.service.ts (4032 bytes)
+[repair1-operations.repository.ts] in 6499/32768  out 6385/16384  think 19727c  655s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.repository.ts (5215 bytes)
+[repair1-re-derivation.controller.ts] in 6511/32768  out 1268/16384  think 4483c  143s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.controller.ts (462 bytes)
+[repair1-re-derivation.module.ts] in 6511/32768  out 1661/16384  think 6391c  181s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.module.ts (398 bytes)
+[repair1-operations.module.ts] in 6499/32768  out 3781/16384  think 15371c  393s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.module.ts (1028 bytes)
+[repair1-main.ts] in 6487/32768  out 1520/16384  think 5726c  167s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (234 bytes)
+[gate] typecheck failed (47 errors)
+[gate] repairing 15 file(s)
+[repair2-operations.service.ts] in 6525/32768  out 5271/16384  think 20748c  522s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.service.ts (1872 bytes)
+[repair2-re-derivation.service.ts] in 6537/32768  out 7226/16384  think 28305c  703s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.service.ts (1301 bytes)
+[repair2-re-derivation.spec.ts] in 6525/32768  out 7144/16384  think 23966c  696s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/re-derivation.spec.ts (4087 bytes)
+[repair2-drift-repair.module.ts] in 6537/32768  out 2302/16384  think 9047c  234s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.module.ts (284 bytes)
+[repair2-drift-repair.spec.ts] in 6525/32768  out 8394/16384  think 24083c  810s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/drift-repair.spec.ts (5760 bytes)
+[repair2-operations.spec.ts] in 6519/32768  out 16184/16384  think 55706c  1620s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/operations.spec.ts (8308 bytes)
+[repair2-re-derivation.repository.ts] in 6537/32768  out 2713/16384  think 11762c  274s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.repository.ts (101 bytes)
+[repair2-operations.controller.ts] in 6525/32768  out 4218/16384  think 14670c  418s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.controller.ts (2144 bytes)
+[repair2-app.module.ts] in 6516/32768  out 1410/16384  think 5175c  149s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (442 bytes)
+[repair2-drift-repair.service.ts] in 6537/32768  out 11007/16384  think 41740c  1092s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/drift-repair/drift-repair.service.ts (3438 bytes)
+[repair2-operations.repository.ts] in 6525/32768  out 8106/16384  think 25160c  794s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.repository.ts (5913 bytes)
+[repair2-re-derivation.controller.ts] in 6537/32768  out 1487/16384  think 5393c  159s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.controller.ts (472 bytes)
+[repair2-re-derivation.module.ts] in 6537/32768  out 1607/16384  think 5914c  172s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/re-derivation/re-derivation.module.ts (775 bytes)
+[repair2-operations.module.ts] in 6525/32768  out 1698/16384  think 7084c  179s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/operations/operations.module.ts (423 bytes)
+[repair2-main.ts] in 6513/32768  out 961/16384  think 3455c  107s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (232 bytes)
+[gate] typecheck failed (31 errors)
+[gate] cleaned install artifacts from the workspace
+
+wall 464.2 min   requests 54   in 353270   out 269975   9.7 tok/s
+generation 462.4 min   model loads 0s   gate+io 1.8 min
+OUTPUT CEILING HIT on: 17-operations.spec.ts  <-- read the reasoning first
+retried at reasoning_effort=low after a ceiling hit: test/operations.spec.ts
+REVISED x30 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 3/21 samples — throughput here is not comparable
+
+failures (3):
+  17-operations.spec.ts: test file overflowed at reasoning_effort=low, the lowest setting. The truncated reply is in steps/ and was not written as an artifact.
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 3 of 21 samples: corespotlightd is using 89% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap activ. Throughput here is the machine's, not the model's.
+
+artifacts in problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

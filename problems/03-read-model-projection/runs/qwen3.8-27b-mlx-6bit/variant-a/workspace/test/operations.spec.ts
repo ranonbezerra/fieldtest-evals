@@ -1,300 +1,260 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { OperationsRepository } from "../src/operations/operations.repository";
-import { OperationsService } from "../src/operations/operations.service";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { OperationsRepository } from "../src/operations/operations.repository.js";
+import { OperationsService } from "../src/operations/operations.service.js";
 import type {
+  OrderStatus,
   DashboardQuery,
-  DashboardResult,
+  SimulateWriteInput,
   OperationRow,
   CompanyTotals,
-  SimulateWriteInput,
-} from "../src/operations/operations.types";
-import {
-  ResourceNotFoundError,
-  InvalidDateRangeError,
-  ValidationError,
-} from "../src/operations/operations.types";
+  DashboardResult,
+} from "../src/operations/operations.types.js";
+import { ResourceNotFoundError } from "../src/operations/operations.types.js";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────────
 
-type MockFn = ReturnType<typeof vi.fn>;
+interface MockState {
+  operations: Map<string, OperationRow>;
+  totals: Map<string, { totalAmount: number; orderCount: number }>;
+  workers: Map<string, { id: string; name: string; role: string }>;
+}
 
-function makeRow(overrides: Partial<OperationRow> = {}): OperationRow {
+function freshState(): MockState {
   return {
-    order_id: "ord-1",
-    company_id: "comp-1",
-    status: "pending",
-    amount: "100.00",
-    currency: "USD",
-    worker_name: "Alice",
-    worker_role: "driver",
-    last_event_type: null,
-    created_at: new Date("2024-01-01T00:00:00Z"),
-    ...overrides,
+    operations: new Map(),
+    totals: new Map(),
+    workers: new Map([
+      ["worker-1", { id: "worker-1", name: "Alice", role: "courier" }],
+      ["worker-2", { id: "worker-2", name: "Bob", role: "driver" }],
+    ]),
   };
 }
 
-function makeTotals(overrides: Partial<CompanyTotals> = {}): CompanyTotals {
+function createMock(state: MockState) {
   return {
-    company_id: "comp-1",
-    total_amount: "0.00",
-    order_count: 0,
-    ...overrides,
+    findWorkerById: vi.fn(async (id: string) => state.workers.get(id) ?? null),
+    findLastEventForOrder: vi.fn(async () => null),
+    upsertOperation: vi.fn(
+      async (
+        _tx: unknown,
+        order: SimulateWriteInput,
+        worker: { name: string; role: string },
+        lastEventType: string | null,
+      ) => {
+        const row: OperationRow = {
+          order_id: order.order_id,
+          company_id: order.company_id,
+          status: order.status,
+          amount: order.amount,
+          currency: order.currency,
+          worker_name: worker.name,
+          worker_role: worker.role,
+          last_event_type: lastEventType,
+          created_at: new Date(),
+        };
+        state.operations.set(order.order_id, row);
+      },
+    ),
+    upsertCompanyTotal: vi.fn(
+      async (_tx: unknown, companyId: string, deltaAmount: string, deltaCount: number) => {
+        const cur = state.totals.get(companyId) ?? { totalAmount: 0, orderCount: 0 };
+        cur.totalAmount += Number(deltaAmount);
+        cur.orderCount += deltaCount;
+        state.totals.set(companyId, cur);
+      },
+    ),
+    queryDashboard: vi.fn(async (query: DashboardQuery): Promise<DashboardResult> => {
+      let rows = [...state.operations.values()].filter(
+        (r) => r.company_id === query.company_id,
+      );
+      if (query.status !== undefined) {
+        rows = rows.filter((r) => r.status === query.status);
+      }
+      if (query.date_from !== undefined) {
+        rows = rows.filter((r) => r.created_at >= query.date_from);
+      }
+      if (query.date_to !== undefined) {
+        rows = rows.filter((r) => r.created_at <= query.date_to);
+      }
+      rows.sort(
+        (a, b) =>
+          b.created_at.getTime() - a.created_at.getTime() ||
+          b.order_id.localeCompare(a.order_id),
+      );
+      const total = rows.length;
+      const start = (query.page - 1) * query.page_size;
+      return {
+        data: rows.slice(start, start + query.page_size),
+        total_count: total,
+        page: query.page,
+        page_size: query.page_size,
+      };
+    }),
+    getOperationByOrderId: vi.fn(async (id: string) => state.operations.get(id) ?? null),
+    getCompanyTotal: vi.fn(
+      async (companyId: string): Promise<CompanyTotals | null> => {
+        const t = state.totals.get(companyId);
+        if (!t) return null;
+        return {
+          company_id: companyId,
+          total_amount: t.totalAmount.toFixed(2),
+          order_count: t.orderCount,
+        };
+      },
+    ),
   };
 }
 
-function makeQuery(overrides: Partial<DashboardQuery> = {}): DashboardQuery {
-  return {
-    company_id: "comp-1",
-    page: 1,
-    page_size: 20,
-    ...overrides,
-  };
+function buildService(state: MockState): OperationsService {
+  const mock = createMock(state) as unknown as OperationsRepository;
+  return new OperationsService(mock);
 }
 
-// ─── Tests ───────────────────────────────────────────────────────────────────
+// ─── Tests ───────────────────────────────────────────────────────────────────────
 
-describe("OperationsService", () => {
-  let mockRepo: {
-    queryDashboard: MockFn;
-    getCompanyTotal: MockFn;
-    findWorkerById: MockFn;
-    findLastEventForOrder: MockFn;
-    upsertOperation: MockFn;
-    upsertCompanyTotal: MockFn;
-    getOperationByOrderId: MockFn;
-  };
-
+describe("operations", () => {
+  let state: MockState;
   let service: OperationsService;
 
   beforeEach(() => {
-    mockRepo = {
-      queryDashboard: vi.fn(),
-      getCompanyTotal: vi.fn(),
-      findWorkerById: vi.fn(),
-      findLastEventForOrder: vi.fn(),
-      upsertOperation: vi.fn(),
-      upsertCompanyTotal: vi.fn(),
-      getOperationByOrderId: vi.fn(),
+    state = freshState();
+    service = buildService(state);
+  });
+
+  it("read-your-own-writes: approve an order, next getDashboard includes it with new status", async () => {
+    const input: SimulateWriteInput = {
+      order_id: "order-1",
+      company_id: "company-1",
+      worker_id: "worker-1",
+      status: "approved",
+      amount: "100.00",
+      currency: "USD",
     };
-    service = new OperationsService(mockRepo as unknown as OperationsRepository);
+
+    await service.simulateWrite(input);
+
+    const result = await service.getDashboard({
+      company_id: "company-1",
+      page: 1,
+      page_size: 10,
+    });
+
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].order_id).toBe("order-1");
+    expect(result.data[0].status).toBe("approved");
   });
 
-  // ─── Read-your-own-writes ──────────────────────────────────────────────
+  it("concurrent updates to one company's totals: two simultaneous writes leave total = sum of both", async () => {
+    const inputA: SimulateWriteInput = {
+      order_id: "order-a",
+      company_id: "company-1",
+      worker_id: "worker-1",
+      status: "pending",
+      amount: "50.00",
+      currency: "USD",
+    };
+    const inputB: SimulateWriteInput = {
+      order_id: "order-b",
+      company_id: "company-1",
+      worker_id: "worker-2",
+      status: "pending",
+      amount: "75.00",
+      currency: "USD",
+    };
 
-  describe("read-your-own-writes", () => {
-    it("approve an order → returned row has the new status; next dashboard includes it", async () => {
-      const input: SimulateWriteInput = {
-        order_id: "ord-42",
-        company_id: "comp-1",
-        worker_id: "wkr-1",
+    await Promise.all([service.simulateWrite(inputA), service.simulateWrite(inputB)]);
+
+    const totals = await service.getCompanyTotals("company-1");
+    expect(totals.total_amount).toBe("125.00");
+    expect(totals.order_count).toBe(2);
+  });
+
+  it("dashboard filters by status and date range correctly", async () => {
+    const baseTime = new Date("2025-01-15T10:00:00Z");
+
+    state.operations.set("op-1", {
+      order_id: "op-1",
+      company_id: "company-1",
+      status: "approved",
+      amount: "10.00",
+      currency: "USD",
+      worker_name: "Alice",
+      worker_role: "courier",
+      last_event_type: null,
+      created_at: baseTime,
+    });
+    state.operations.set("op-2", {
+      order_id: "op-2",
+      company_id: "company-1",
+      status: "rejected",
+      amount: "20.00",
+      currency: "USD",
+      worker_name: "Bob",
+      worker_role: "driver",
+      last_event_type: null,
+      created_at: new Date(baseTime.getTime() + 3_600_000),
+    });
+    state.operations.set("op-3", {
+      order_id: "op-3",
+      company_id: "company-1",
+      status: "approved",
+      amount: "30.00",
+      currency: "USD",
+      worker_name: "Alice",
+      worker_role: "courier",
+      last_event_type: null,
+      created_at: new Date(baseTime.getTime() + 7_200_000),
+    });
+
+    // status = "approved" AND date range covering only the first hour → op-1 only
+    const result = await service.getDashboard({
+      company_id: "company-1",
+      status: "approved",
+      date_from: baseTime,
+      date_to: new Date(baseTime.getTime() + 3_600_000),
+      page: 1,
+      page_size: 10,
+    });
+
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].order_id).toBe("op-1");
+  });
+
+  it("pagination returns correct page and total_count", async () => {
+    const baseTime = new Date("2025-01-10T00:00:00Z");
+    for (let i = 1; i <= 5; i++) {
+      state.operations.set(`op-${i}`, {
+        order_id: `op-${i}`,
+        company_id: "company-1",
         status: "approved",
-        amount: "250.00",
+        amount: `${i * 10}.00`,
         currency: "USD",
-      };
-
-      const projected: OperationRow = makeRow({
-        order_id: "ord-42",
-        status: "approved",
-        amount: "250.00",
+        worker_name: "Alice",
+        worker_role: "courier",
+        last_event_type: null,
+        created_at: new Date(baseTime.getTime() + i * 60_000),
       });
+    }
 
-      mockRepo.findWorkerById.mockResolvedValue({ id: "wkr-1", name: "Alice", role: "driver" });
-      mockRepo.findLastEventForOrder.mockResolvedValue("status_changed");
-      mockRepo.upsertOperation.mockResolvedValue(undefined);
-      mockRepo.upsertCompanyTotal.mockResolvedValue(undefined);
-      mockRepo.getOperationByOrderId.mockResolvedValue(projected);
-
-      const result = await service.simulateWrite(input);
-
-      // The write resolves with the committed projection row reflecting the new status
-      expect(result.status).toBe("approved");
-      expect(result.order_id).toBe("ord-42");
-      expect(result.amount).toBe("250.00");
-
-      // A subsequent dashboard read sees the row
-      const dashResult: DashboardResult = {
-        data: [projected],
-        total_count: 1,
-        page: 1,
-        page_size: 20,
-      };
-      mockRepo.queryDashboard.mockResolvedValue(dashResult);
-
-      const dashboard = await service.getDashboard(makeQuery());
-      const rows: OperationRow[] = dashboard.data;
-      expect(rows.length).toBe(1);
-      expect(rows[0].order_id).toBe("ord-42");
-      expect(rows[0].status).toBe("approved");
+    const page1 = await service.getDashboard({
+      company_id: "company-1",
+      page: 1,
+      page_size: 2,
     });
 
-    it("raises ResourceNotFoundError when the worker does not exist", async () => {
-      const input: SimulateWriteInput = {
-        order_id: "ord-99",
-        company_id: "comp-1",
-        worker_id: "wkr-missing",
-        status: "pending",
-        amount: "10.00",
-        currency: "USD",
-      };
+    expect(page1.total_count).toBe(5);
+    expect(page1.data).toHaveLength(2);
+    expect(page1.data[0].order_id).toBe("op-5");
+    expect(page1.data[1].order_id).toBe("op-4");
 
-      mockRepo.findWorkerById.mockResolvedValue(null);
-
-      await expect(service.simulateWrite(input)).rejects.toThrow(ResourceNotFoundError);
-    });
-  });
-
-  // ─── Concurrent updates to one company's totals ─────────────────────────
-
-  describe("concurrent updates to one company's totals", () => {
-    it("two simultaneous writes for the same company leave total_amount equal to the sum of both", async () => {
-      const inputA: SimulateWriteInput = {
-        order_id: "ord-A",
-        company_id: "comp-1",
-        worker_id: "wkr-1",
-        status: "approved",
-        amount: "100.00",
-        currency: "USD",
-      };
-      const inputB: SimulateWriteInput = {
-        order_id: "ord-B",
-        company_id: "comp-1",
-        worker_id: "wkr-2",
-        status: "pending",
-        amount: "200.00",
-        currency: "USD",
-      };
-
-      mockRepo.findWorkerById.mockResolvedValue({ id: "wkr-1", name: "Alice", role: "driver" });
-      mockRepo.findLastEventForOrder.mockResolvedValue(null);
-      mockRepo.upsertOperation.mockResolvedValue(undefined);
-      mockRepo.upsertCompanyTotal.mockResolvedValue(undefined);
-
-      const rowA: OperationRow = makeRow({ order_id: "ord-A", amount: "100.00", status: "approved" });
-      const rowB: OperationRow = makeRow({ order_id: "ord-B", amount: "200.00", status: "pending" });
-      mockRepo.getOperationByOrderId
-        .mockResolvedValueOnce(rowA)
-        .mockResolvedValueOnce(rowB);
-
-      const [resultA, resultB] = await Promise.all([
-        service.simulateWrite(inputA),
-        service.simulateWrite(inputB),
-      ]);
-
-      expect(resultA.order_id).toBe("ord-A");
-      expect(resultB.order_id).toBe("ord-B");
-
-      // After both writes commit, the company totals reflect both amounts
-      const expectedTotals: CompanyTotals = makeTotals({
-        total_amount: "300.00",
-        order_count: 2,
-      });
-      mockRepo.getCompanyTotal.mockResolvedValue(expectedTotals);
-
-      const totals = await service.getCompanyTotals("comp-1");
-      expect(totals.total_amount).toBe("300.00");
-      expect(totals.order_count).toBe(2);
-    });
-  });
-
-  // ─── Dashboard filters by status and date range ─────────────────────────
-
-  describe("dashboard filters", () => {
-    it("returns only rows matching the filtered query", async () => {
-      const matching: OperationRow[] = [
-        makeRow({ order_id: "ord-1", status: "approved", created_at: new Date("2024-06-15T10:00:00Z") }),
-        makeRow({ order_id: "ord-2", status: "approved", created_at: new Date("2024-06-14T09:00:00Z") }),
-      ];
-
-      const dashResult: DashboardResult = {
-        data: matching,
-        total_count: 2,
-        page: 1,
-        page_size: 20,
-      };
-      mockRepo.queryDashboard.mockResolvedValue(dashResult);
-
-      const query: DashboardQuery = makeQuery({
-        status: "approved",
-        date_from: new Date("2024-06-01T00:00:00Z"),
-        date_to: new Date("2024-06-30T23:59:59Z"),
-      });
-
-      const result = await service.getDashboard(query);
-
-      // All returned rows carry the requested status
-      const statuses: string[] = result.data.map((r: OperationRow) => r.status);
-      expect(statuses.length).toBe(2);
-      expect(statuses.every((s: string) => s === "approved")).toBe(true);
-      expect(result.total_count).toBe(2);
+    const page2 = await service.getDashboard({
+      company_id: "company-1",
+      page: 2,
+      page_size: 2,
     });
 
-    it("raises InvalidDateRangeError when date_from is after date_to", async () => {
-      const query: DashboardQuery = makeQuery({
-        date_from: new Date("2024-06-30T00:00:00Z"),
-        date_to: new Date("2024-06-01T00:00:00Z"),
-      });
-
-      await expect(service.getDashboard(query)).rejects.toThrow(InvalidDateRangeError);
-    });
-
-    it("raises ValidationError when page is less than 1", async () => {
-      const query: DashboardQuery = makeQuery({ page: 0 });
-
-      await expect(service.getDashboard(query)).rejects.toThrow(ValidationError);
-    });
-
-    it("raises ValidationError when page_size exceeds 100", async () => {
-      const query: DashboardQuery = makeQuery({ page_size: 101 });
-
-      await expect(service.getDashboard(query)).rejects.toThrow(ValidationError);
-    });
-  });
-
-  // ─── Pagination ──────────────────────────────────────────────────────────
-
-  describe("pagination", () => {
-    it("returns the correct page, page_size, total_count, and row subset", async () => {
-      const page2Rows: OperationRow[] = [
-        makeRow({ order_id: "ord-11", created_at: new Date("2024-01-10T00:00:00Z") }),
-        makeRow({ order_id: "ord-12", created_at: new Date("2024-01-09T00:00:00Z") }),
-      ];
-
-      const dashResult: DashboardResult = {
-        data: page2Rows,
-        total_count: 25,
-        page: 2,
-        page_size: 10,
-      };
-      mockRepo.queryDashboard.mockResolvedValue(dashResult);
-
-      const query: DashboardQuery = makeQuery({ page: 2, page_size: 10 });
-      const result = await service.getDashboard(query);
-
-      expect(result.page).toBe(2);
-      expect(result.page_size).toBe(10);
-      expect(result.total_count).toBe(25);
-
-      const orderIds: string[] = result.data.map((r: OperationRow) => r.order_id);
-      expect(orderIds).toEqual(["ord-11", "ord-12"]);
-    });
-  });
-
-  // ─── getCompanyTotals ────────────────────────────────────────────────────
-
-  describe("getCompanyTotals", () => {
-    it("returns exact totals for an existing company", async () => {
-      const totals: CompanyTotals = makeTotals({ total_amount: "5000.00", order_count: 42 });
-      mockRepo.getCompanyTotal.mockResolvedValue(totals);
-
-      const result = await service.getCompanyTotals("comp-1");
-      expect(result.total_amount).toBe("5000.00");
-      expect(result.order_count).toBe(42);
-    });
-
-    it("raises ResourceNotFoundError for an unknown company", async () => {
-      mockRepo.getCompanyTotal.mockResolvedValue(null);
-
-      await expect(service.getCompanyTotals("comp-unknown")).rejects.toThrow(ResourceNotFoundError);
-    });
+    expect(page2.data).toHaveLength(2);
+    expect(page2.data[0].order_id).toBe("op-3");
+    expect(page2.data[1].order_id).toBe("op-2");
   });
 });

@@ -1,169 +1,183 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, Decimal } from "@prisma/client";
 import {
+  OperationRow,
   DashboardQuery,
   DashboardResult,
-  OperationRow,
   CompanyTotals,
   SimulateWriteInput,
 } from "./operations.types";
 
-// ASSUMPTION: The plan specifies the transaction parameter type as `PrismaPromise`,
-// which is not a type exported by @prisma/client. The correct type for an interactive
-// transaction client is `Prisma.TransactionClient`, used here instead.
-
 export class OperationsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  /** Projection maintenance — called inside a transaction. */
   async upsertOperation(
     tx: Prisma.TransactionClient,
     order: SimulateWriteInput,
     worker: { name: string; role: string },
     lastEventType: string | null,
   ): Promise<void> {
-    await tx.operations.upsert({
-      where: { order_id: order.order_id },
+    await tx.operation.upsert({
+      where: { orderId: order.order_id },
       create: {
-        order_id: order.order_id,
-        company_id: order.company_id,
+        orderId: order.order_id,
+        companyId: order.company_id,
         status: order.status,
-        amount: order.amount,
+        amount: new Decimal(order.amount),
         currency: order.currency,
-        worker_name: worker.name,
-        worker_role: worker.role,
-        last_event_type: lastEventType,
+        workerName: worker.name,
+        workerRole: worker.role,
+        lastEventType: lastEventType,
+        createdAt: new Date(),
       },
       update: {
+        companyId: order.company_id,
         status: order.status,
-        amount: order.amount,
+        amount: new Decimal(order.amount),
         currency: order.currency,
-        worker_name: worker.name,
-        worker_role: worker.role,
-        last_event_type: lastEventType,
+        workerName: worker.name,
+        workerRole: worker.role,
+        lastEventType: lastEventType,
       },
     });
   }
 
+  /** Dashboard read — single query against the projection. */
   async queryDashboard(query: DashboardQuery): Promise<DashboardResult> {
-    const where: Prisma.OperationsWhereInput = {
-      company_id: query.company_id,
+    const where: Prisma.OperationWhereInput = {
+      companyId: query.company_id,
     };
     if (query.status) {
       where.status = query.status;
     }
-    if (query.date_from || query.date_to) {
-      where.created_at = {};
-      if (query.date_from) where.created_at.gte = query.date_from;
-      if (query.date_to) where.created_at.lte = query.date_to;
+    const dateFilter: Record<string, Date> = {};
+    if (query.date_from) dateFilter.gte = query.date_from;
+    if (query.date_to) dateFilter.lte = query.date_to;
+    if (Object.keys(dateFilter).length > 0) {
+      where.createdAt = dateFilter as Prisma.OperationWhereInput["createdAt"];
     }
 
-    const [data, total_count] = await Promise.all([
-      this.prisma.operations.findMany({
+    const [rows, totalCount] = await Promise.all([
+      this.prisma.operation.findMany({
         where,
-        orderBy: [{ created_at: "desc" }, { order_id: "desc" }],
+        orderBy: [{ createdAt: "desc" }, { orderId: "desc" }],
         skip: (query.page - 1) * query.page_size,
         take: query.page_size,
       }),
-      this.prisma.operations.count({ where }),
+      this.prisma.operation.count({ where }),
     ]);
 
-    return {
-      data: data.map((row) => this.toOperationRow(row)),
-      total_count,
-      page: query.page,
-      page_size: query.page_size,
-    };
+    const data: OperationRow[] = rows.map((row) => ({
+      order_id: row.orderId,
+      company_id: row.companyId,
+      status: row.status as OperationRow["status"],
+      amount: row.amount.toString(),
+      currency: row.currency,
+      worker_name: row.workerName,
+      worker_role: row.workerRole,
+      last_event_type: row.lastEventType,
+      created_at: row.createdAt,
+    }));
+
+    return { data, total_count: totalCount, page: query.page, page_size: query.page_size };
   }
 
+  /** Aggregate maintenance (delta-based) — called inside a transaction. */
   async upsertCompanyTotal(
     tx: Prisma.TransactionClient,
     companyId: string,
     deltaAmount: string,
     deltaCount: number,
   ): Promise<void> {
-    await tx.$executeRaw`
-      INSERT INTO company_financial_totals (company_id, total_amount, order_count, updated_at)
-      VALUES (${companyId}, ${deltaAmount}::numeric, ${deltaCount}, now())
-      ON CONFLICT (company_id) DO UPDATE SET
-        total_amount = company_financial_totals.total_amount + EXCLUDED.total_amount,
-        order_count  = company_financial_totals.order_count  + EXCLUDED.order_count,
-        updated_at   = now()
-    `;
-  }
-
-  async findOrdersByWindow(from: Date, to: Date): Promise<Record<string, unknown>[]> {
-    return this.prisma.$queryRaw`
-      SELECT * FROM payment_orders
-      WHERE created_at >= ${from} AND created_at <= ${to}
-      ORDER BY created_at ASC
-    ` as Promise<Record<string, unknown>[]>;
-  }
-
-  async findWorkerById(workerId: string): Promise<{ id: string; name: string; role: string } | null> {
-    return this.prisma.workers.findUnique({
-      where: { id: workerId },
-      select: { id: true, name: true, role: true },
-    });
-  }
-
-  async findLastEventForOrder(orderId: string): Promise<string | null> {
-    const event = await this.prisma.events.findFirst({
-      where: { order_id: orderId },
-      orderBy: { created_at: "desc" },
-      select: { event_type: true },
-    });
-    return event?.event_type ?? null;
-  }
-
-  async findProjectionByWindow(from: Date, to: Date): Promise<OperationRow[]> {
-    const rows = await this.prisma.operations.findMany({
-      where: {
-        updated_at: { gte: from, lte: to },
+    await tx.companyFinancialTotal.upsert({
+      where: { companyId },
+      create: {
+        companyId,
+        totalAmount: new Decimal(deltaAmount),
+        orderCount: deltaCount,
+      },
+      update: {
+        totalAmount: { increment: new Decimal(deltaAmount) },
+        orderCount: { increment: deltaCount },
       },
     });
-    return rows.map((row) => this.toOperationRow(row));
   }
 
-  async getOperationByOrderId(orderId: string): Promise<OperationRow | null> {
-    const row = await this.prisma.operations.findUnique({
-      where: { order_id: orderId },
+  /** Source read for re-derivation and drift-repair. */
+  async findOrdersByWindow(from: Date, to: Date): Promise<Record<string, unknown>[]> {
+    const rows = await this.prisma.paymentOrder.findMany({
+      where: {
+        createdAt: { gte: from, lte: to },
+      },
+      orderBy: { createdAt: "asc" },
     });
-    return row ? this.toOperationRow(row) : null;
+    return rows.map((row) => ({ ...row }) as Record<string, unknown>);
   }
 
-  async getCompanyTotal(companyId: string): Promise<CompanyTotals | null> {
-    const row = await this.prisma.companyFinancialTotals.findUnique({
-      where: { company_id: companyId },
+  /** Look up a worker by id. */
+  async findWorkerById(
+    workerId: string,
+  ): Promise<{ id: string; name: string; role: string } | null> {
+    const worker = await this.prisma.worker.findUnique({ where: { id: workerId } });
+    if (!worker) return null;
+    return { id: worker.id, name: worker.name, role: worker.role };
+  }
+
+  /** Most recent event type for an order, or null. */
+  async findLastEventForOrder(orderId: string): Promise<string | null> {
+    const event = await this.prisma.event.findFirst({
+      where: { orderId },
+      orderBy: { createdAt: "desc" },
+      select: { eventType: true },
     });
-    return row
-      ? {
-          company_id: row.company_id,
-          total_amount: row.total_amount.toString(),
-          order_count: row.order_count,
-        }
-      : null;
+    return event ? event.eventType : null;
   }
 
-  private toOperationRow(row: {
-    order_id: string;
-    company_id: string;
-    status: string;
-    amount: { toString(): string };
-    currency: string;
-    worker_name: string;
-    worker_role: string;
-    last_event_type: string | null;
-    created_at: Date;
-  }): OperationRow {
-    return {
-      order_id: row.order_id,
-      company_id: row.company_id,
+  /** Projection rows whose updated_at falls within [from, to]. */
+  async findProjectionByWindow(from: Date, to: Date): Promise<OperationRow[]> {
+    const rows = await this.prisma.operation.findMany({
+      where: {
+        updatedAt: { gte: from, lte: to },
+      },
+    });
+    return rows.map((row) => ({
+      order_id: row.orderId,
+      company_id: row.companyId,
       status: row.status as OperationRow["status"],
       amount: row.amount.toString(),
       currency: row.currency,
-      worker_name: row.worker_name,
-      worker_role: row.worker_role,
-      last_event_type: row.last_event_type,
-      created_at: row.created_at,
+      worker_name: row.workerName,
+      worker_role: row.workerRole,
+      last_event_type: row.lastEventType,
+      created_at: row.createdAt,
+    }));
+  }
+
+  /** Single-order fetch from the projection (read-your-own-writes). */
+  async getOperationByOrderId(orderId: string): Promise<OperationRow | null> {
+    const row = await this.prisma.operation.findUnique({ where: { orderId } });
+    if (!row) return null;
+    return {
+      order_id: row.orderId,
+      company_id: row.companyId,
+      status: row.status as OperationRow["status"],
+      amount: row.amount.toString(),
+      currency: row.currency,
+      worker_name: row.workerName,
+      worker_role: row.workerRole,
+      last_event_type: row.lastEventType,
+      created_at: row.createdAt,
+    };
+  }
+
+  /** Read a company's exact financial totals. */
+  async getCompanyTotal(companyId: string): Promise<CompanyTotals | null> {
+    const row = await this.prisma.companyFinancialTotal.findUnique({ where: { companyId } });
+    if (!row) return null;
+    return {
+      company_id: row.companyId,
+      total_amount: row.totalAmount.toString(),
+      order_count: row.orderCount,
     };
   }
 }
