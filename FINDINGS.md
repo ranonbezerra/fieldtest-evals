@@ -473,6 +473,40 @@ and mechanical: **when a measurement comes back empty, the code must say which o
 did not happen" and "it happened and was fine" it is looking at.** Every defect in this
 section is a place where those two collapsed into one branch.
 
+### 3.7 The gate typechecked and did not execute, and the suite was already there
+
+Problem 02 passed `tsc` and is wrong about the one must-have its problem exists to
+test. Its own test suite says so: `amount mismatch: order is NOT settled and NOT
+treated as absent` — a case the model chose, named exactly, and violated twenty lines
+above. Thirteen of its fourteen tests pass and the fourteenth is the finding.
+
+The suite was in the workspace the whole time. `README.md` documented running it as a
+step for the human judge, which is a way of not doing it.
+
+Re-measured across both finished runs:
+
+| run | typecheck | its own suite |
+|---|---|---|
+| 01 payout outbox | failed, 6 errors | **4 of 10 fail** |
+| 02 reconciliation resend | passed after 5 repairs | **1 of 14 fails** |
+
+Problem 01's four are worth separating, because a failing suite is not automatically
+four defects. Two are one typo: `UneprocessableEntityException` is undefined at
+runtime, so both tests naming it throw a ReferenceError. One is a genuine contract
+violation — the repository throws `new Error('Account not found')` where the test
+expects `NotFoundException`, which reaches a caller as a 500 instead of a 404. The
+fourth is the P2002 branch escaping as "Unique constraint failed".
+
+*Changed:* `ft-go` runs the suite after the typecheck and records `tests` in
+`meta.yaml`; `harness/ft-test` applies the same step to runs already finished.
+
+*Recorded and never repaired.* Feeding a failing test back as a repair round would
+change the artifact the model produced, and the eighteen runs have to be comparable.
+Running the suite changes only what is *known* about a run — which is precisely why it
+could be applied backwards to two runs that were already judged, without touching the
+standard. The distinction the frozen configuration protects is generation, not
+observation, and conflating the two nearly cost a real finding.
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was

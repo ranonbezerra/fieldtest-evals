@@ -54,12 +54,18 @@ notes: |
   untouched" is its own test.
 ```
 
-## The gate typechecks and does not run
+## The gate typechecks and did not run — now it does
 
-This run is the case for changing that. `tsc` passed after five repairs and the
-deliverable is wrong about the one thing the problem exists to test. The evidence was
-sitting in the workspace the whole time, in a file the model wrote, and nothing in the
-harness executed it.
+This run is why that changed. `tsc` passed after five repairs and the deliverable is
+wrong about the one thing the problem exists to test. The evidence was sitting in the
+workspace, in a file the model wrote, and nothing in the harness executed it.
+
+`ft-go` now runs the suite after the typecheck, and `harness/ft-test` applies the same
+step to runs that already finished. The result is **recorded and never repaired**:
+feeding a failing test back to the model would change the artifact it produced, and
+the eighteen runs have to be comparable. Running the suite changes only what is known
+about a run, which is exactly why it could be applied backwards — problem 01 was
+re-measured the same way and turned out to fail 4 of its 10.
 
 The tests are not a formality here: they were scored 3 on their own merits before they
 were run, because they name the traps — timeout-but-settled, proven-absent with the

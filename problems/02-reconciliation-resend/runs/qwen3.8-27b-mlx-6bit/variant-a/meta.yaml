@@ -2,7 +2,7 @@
   "model": "Qwen3.8-27B-MLX-6bit",
   "model_repo": "Qwen/Qwen3.8-27B",
   "quantization": "6-bit MLX, group_size 64, affine",
-  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "architecture": "64 layers, hidden 5120 — 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
   "modality": "natively multimodal; text path only",
   "server": "oMLX",
   "harness": "fieldtest ft-go",
@@ -1003,5 +1003,15 @@
       "exit": 0,
       "runner": "api"
     }
-  ]
+  ],
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failed": 1,
+    "passed": 13,
+    "total": 14,
+    "failing": [
+      "reconcile > amount mismatch: order is NOT settled and NOT treated as absent"
+    ]
+  }
 }

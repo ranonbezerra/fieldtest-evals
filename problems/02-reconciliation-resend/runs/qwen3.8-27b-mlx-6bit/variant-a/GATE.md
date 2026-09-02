@@ -55,3 +55,60 @@ test/payouts.spec.ts(4,40): error TS2307: Cannot find module '../src/payouts/pay
 
 $ tsc --noEmit (attempt 1) -> 0
 
+
+$ vitest run -> 1
+
+ RUN  v2.1.9 /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace
+
+ ❯ test/payouts.spec.ts (14 tests | 1 failed) 7ms
+   × reconcile > amount mismatch: order is NOT settled and NOT treated as absent 2ms
+     → expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      "ord-1",
+      "IN_FLIGHT",
+      "PENDING",
+    ]
+
+
+Number of calls: 1
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 13 passed (14)
+   Start at  08:53:05
+   Duration  774ms (transform 492ms, setup 0ms, collect 580ms, tests 7ms, environment 0ms, prepare 44ms)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/payouts.spec.ts > reconcile > amount mismatch: order is NOT settled and NOT treated as absent
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      "ord-1",
+      "IN_FLIGHT",
+      "PENDING",
+    ]
+
+
+Number of calls: 1
+
+ ❯ test/payouts.spec.ts:283:33
+    281|     expect(result.settled).toBe(0);
+    282|     // Order must not be moved to PENDING or PARKED either
+    283|     expect(repo.transition).not.toHaveBeenCalled();
+       |                                 ^
+    284|   });
+    285| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+

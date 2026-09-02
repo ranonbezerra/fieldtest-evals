@@ -531,6 +531,7 @@ def main():
 
         # ---- gate: typecheck, then repair with the compiler's exact words ------
         gate = {"ran": False, "passed": None, "repairs": 0, "log": "", "scaffold": []}
+        tests = {"ran": False}
         if not a.no_gate:
             # The statements ask for a schema, a module, tests and a design note —
             # never for build configuration — and the phase-0 instruction tells the
@@ -619,6 +620,49 @@ def main():
                             ceiling_retries.append(f"repair:{rel}")
             else:
                 say("\n[gate] no tsconfig.json in the workspace; typecheck skipped")
+
+            # --- the suite the model wrote, run and recorded, never repaired ------
+            #
+            # The gate typechecked and did not execute, and problem 02 is why that
+            # changed: it passed `tsc` and failed its own test for the one must-have
+            # the problem exists to test. The model had written the case, named it
+            # exactly, and violated it twenty lines above. The evidence sat in the
+            # workspace and nothing ran it.
+            #
+            # Observed, not acted on. Feeding a failing test back as a repair round
+            # would change the artifact the model produced, and the eighteen runs
+            # have to be comparable. Running the suite changes only what is known
+            # about a run, which is why it can be applied to the ones already
+            # finished.
+            specs = [q for q in ws.rglob("*.spec.ts")] + [q for q in ws.rglob("*.test.ts")]
+            specs = [q for q in specs if "node_modules" not in q.parts]
+            if specs and (ws / "node_modules").is_dir():
+                rc, out = run(["npx", "--no-install", "vitest", "run"],
+                              cwd=ws, timeout=900)
+                gate["log"] += f"\n$ vitest run -> {rc}\n{out[-6000:]}\n"
+                m = re.search(r"Tests\s+(?:(\d+) failed)?\s*\|?\s*(?:(\d+) passed)?"
+                              r"(?:\s*\|\s*(\d+) skipped)?\s*\((\d+)\)", out)
+                tests["ran"] = True
+                tests["exit"] = rc
+                if m:
+                    tests["failed"] = int(m.group(1) or 0)
+                    tests["passed"] = int(m.group(2) or 0)
+                    tests["total"] = int(m.group(4) or 0)
+                tests["failing"] = sorted({
+                    ln.split(" > ", 1)[1].strip()
+                    for ln in out.splitlines()
+                    if ln.strip().startswith("FAIL ") and " > " in ln})[:20]
+                if tests.get("failed"):
+                    say(f"[tests] {tests['failed']} of {tests.get('total')} failing "
+                        f"— recorded, not repaired")
+                    for name in tests["failing"][:5]:
+                        say(f"         {name}")
+                else:
+                    say(f"[tests] {tests.get('passed')} of {tests.get('total')} passing")
+            elif specs:
+                say("[tests] a suite exists but dependencies were not installed; "
+                    "not run")
+
         # pnpm install leaves ~90 MB in the workspace. It is gitignored, so it never
         # reaches the repository, but the workspace is the artifact a judge reads and
         # 90 MB of someone else's dependencies is not part of what the model wrote.
@@ -753,6 +797,7 @@ def main():
             "gate": {"ran": gate["ran"], "passed": gate["passed"],
                      "repairs": gate["repairs"],
                      "gate_scaffold_added": gate["scaffold"]},
+            "tests": tests,
             "failures": failures,
             "phases": phases,
         }

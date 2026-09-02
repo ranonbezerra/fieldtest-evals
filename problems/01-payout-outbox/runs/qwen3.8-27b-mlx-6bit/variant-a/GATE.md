@@ -68,3 +68,136 @@ src/payout/payout.repository.ts(69,45): error TS7006: Parameter 'tx' implicitly 
 src/payout/payout.repository.ts(144,44): error TS7006: Parameter 'tx' implicitly has an 'any' type.
 test/payout.spec.ts(61,25): error TS2552: Cannot find name 'UneprocessableEntityException'. Did you mean 'UnprocessableEntityException'?
 
+
+$ vitest run -> 1
+
+ RUN  v2.1.9 /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace
+
+ ❯ test/payout.spec.ts (0 test)
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  08:53:02
+   Duration  776ms (transform 483ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 41ms)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/payout.spec.ts [ test/payout.spec.ts ]
+Error: Cannot find module '.prisma/client/default'
+Require stack:
+- /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/default.js
+ ❯ Object.<anonymous> node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/default.js:2:6
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+
+$ vitest run -> 1
+
+ RUN  v2.1.9 /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace
+
+ ❯ test/payout.spec.ts (10 tests | 4 failed) 7ms
+   × PayoutService > throws UnprocessableEntityException when funds are insufficient (concurrent overdraft guard) 2ms
+     → UneprocessableEntityException is not defined
+   × PayoutService > throws NotFoundException when the account does not exist 1ms
+     → expected error to be instance of NotFoundException
+   × PayoutService > returns the existing payout when the same idempotency key and body are retried 0ms
+     → Unique constraint failed
+   × PayoutService > throws ConflictException when the same idempotency key is reused with a different body 0ms
+     → expected error to be instance of ConflictException
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  4 failed | 6 passed (10)
+     Errors  1 error
+   Start at  08:53:36
+   Duration  773ms (transform 491ms, setup 0ms, collect 588ms, tests 7ms, environment 0ms, prepare 44ms)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/payout.spec.ts > PayoutService > throws UnprocessableEntityException when funds are insufficient (concurrent overdraft guard)
+ReferenceError: UneprocessableEntityException is not defined
+ ❯ test/payout.spec.ts:61:25
+     59|       destinationAddress: '0xabc',
+     60|       idempotencyKey: 'key-1',
+     61|     })).rejects.toThrow(UneprocessableEntityException);
+       |                         ^
+     62|   });
+     63| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/payout.spec.ts > PayoutService > throws NotFoundException when the account does not exist
+AssertionError: expected error to be instance of NotFoundException
+
+- Expected: 
+[Function NotFoundException]
+
++ Received: 
+[HttpException: Http Exception]
+
+ ❯ test/payout.spec.ts:67:5
+     65|     vi.mocked(repo.createPayoutWithReservation).mockRejectedValue(new …
+     66| 
+     67|     await expect(service.create({
+       |     ^
+     68|       accountId: 'nonexistent',
+     69|       amount: '100',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/payout.spec.ts > PayoutService > returns the existing payout when the same idempotency key and body are retried
+Error: Unique constraint failed
+ ❯ test/payout.spec.ts:76:33
+     74| 
+     75|   it('returns the existing payout when the same idempotency key and bo…
+     76|     const p2002 = Object.assign(new Error('Unique constraint failed'),…
+       |                                 ^
+     77|     vi.mocked(repo.createPayoutWithReservation).mockRejectedValueOnce(…
+     78| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/payout.spec.ts > PayoutService > throws ConflictException when the same idempotency key is reused with a different body
+AssertionError: expected error to be instance of ConflictException
+
+- Expected: 
+[Function ConflictException]
+
++ Received: 
+[Error: Unique constraint failed]
+
+ ❯ test/payout.spec.ts:119:5
+    117|     vi.mocked(repo.findByAccountIdAndIdempotencyKey).mockResolvedValue…
+    118| 
+    119|     await expect(service.create({
+       |     ^
+    120|       accountId: 'acct-1',
+    121|       amount: '300',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+HttpException: Http Exception
+ ❯ PayoutService.create src/payout/payout.service.ts:91:15
+     89| 
+     90|       if (err instanceof Error && err.message === 'INSUFFICIENT_FUNDS'…
+     91|         throw new HttpException(
+       |               ^
+     92|           { error: { code: ERROR_INSUFFICIENT_FUNDS, message: 'account…
+     93|           HttpStatus.UNPROCESSABLE_ENTITY,
+ ❯ processTicksAndRejections node:internal/process/task_queues:104:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { response: { error: { code: 'insufficient_funds', message: 'account does not have sufficient available funds', details: {} } }, status: 422, options: undefined, initCause: 'Function<initCause>', initMessage: 'Function<initMessage>', initName: 'Function<initName>', getResponse: 'Function<getResponse>', getStatus: 'Function<getStatus>' }
+This error originated in "test/payout.spec.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "test/payout.spec.ts". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+

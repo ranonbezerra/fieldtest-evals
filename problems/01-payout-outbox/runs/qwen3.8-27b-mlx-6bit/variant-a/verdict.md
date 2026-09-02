@@ -20,6 +20,9 @@ failure_mode: reference_gap
               # missing file, 3 untyped `tx` callback parameters, and one typo,
               # `UneprocessableEntityException`.
 
+typecheck:    failed after 9 repairs — 6 errors
+tests:        4 of 10 fail (run with harness/ft-test after the fact)
+
 revisions:    {self_repairs: 9, dropped_a_requirement: no}
 cost:         {wall_minutes: 190, output_tokens: 110036, tokens_per_second: 9.7,
                requests: 25, output_ceiling_hits: []}
@@ -52,7 +55,16 @@ notes: |
   sequential awaits rather than one transaction, so a crash between the first two
   leaves a payout marked completed with no ledger entry.
   Ten tests, and they name the traps: concurrent overdraft, at-least-once
-  redelivery, retry exhaustion to needs_review, recovery on a later tick.
+  redelivery, retry exhaustion to needs_review, recovery on a later tick. Four of
+  them fail against the implementation they were written for. Two trace to the same
+  typo — `UneprocessableEntityException` is undefined at runtime, so both tests that
+  reference it throw a ReferenceError. One is a real contract violation: the
+  repository throws `new Error('Account not found')` where the test expects
+  `NotFoundException`, which is a 500 to the client instead of a 404. The fourth is
+  the P2002 branch, where the conflict escapes as "Unique constraint failed" rather
+  than the ConflictException the test asserts.
+  The worker tests all pass. What fails is the service's error path — the half the
+  rubric does not gate on and the half a caller meets first.
 ```
 
 ## What changed against the discarded run, measured

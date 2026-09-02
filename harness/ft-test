@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Run the suite a run wrote, and record what it did.
+
+The gate typechecks. It does not execute, and problem 02 passed `tsc` while failing
+its own test for the one must-have that problem exists to test.
+
+Observed, never repaired. Feeding a failing test back to the model would change the
+artifact it produced; running the suite changes only what is known about a run, which
+is why this can be applied to runs that already finished.
+
+    ft-test <run-dir> [<run-dir> ...]
+
+Installs dependencies, runs vitest once, writes the result into the run's meta.yaml
+under `tests`, appends the output to GATE.md, and removes node_modules again.
+"""
+import json, re, subprocess, sys
+from pathlib import Path
+
+SUMMARY = re.compile(r"Tests\s+(?:(\d+) failed)?\s*\|?\s*(?:(\d+) passed)?"
+                     r"(?:\s*\|\s*(\d+) skipped)?\s*\((\d+)\)")
+
+
+def sh(cmd, cwd, timeout):
+    try:
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                           timeout=timeout)
+        return p.returncode, (p.stdout or "") + (p.stderr or "")
+    except subprocess.TimeoutExpired:
+        return 124, "timed out"
+    except FileNotFoundError:
+        return 127, f"{cmd[0]}: not found"
+
+
+def one(rundir):
+    rundir = Path(rundir).resolve()
+    ws = rundir / "workspace"
+    meta = rundir / "meta.yaml"
+    if not ws.is_dir():
+        print(f"  {rundir.name}: no workspace"); return
+    specs = [q for q in list(ws.rglob("*.spec.ts")) + list(ws.rglob("*.test.ts"))
+             if "node_modules" not in q.parts]
+    if not specs:
+        print(f"  {rundir.parent.parent.parent.name}: no suite"); return
+
+    name = rundir.parent.parent.parent.name
+    print(f"  {name}: {len(specs)} spec file(s) — installing")
+    rc, out = sh(["pnpm", "install", "--silent"], ws, 900)
+    if rc != 0:
+        print(f"    install failed ({rc}); not run")
+        return
+
+    # Mirror the gate's sequence. Skipping this made the first retroactive run
+    # fail with `Cannot find module '.prisma/client/default'`, which reads as a
+    # broken suite and is a missing build step.
+    if (ws / "prisma").is_dir():
+        grc, gout = sh(["npx", "--no-install", "prisma", "generate"], ws, 600)
+        if grc != 0:
+            print(f"    prisma generate failed ({grc}); running the suite anyway")
+
+    rc, out = sh(["npx", "--no-install", "vitest", "run"], ws, 900)
+    tests = {"ran": True, "exit": rc}
+    m = SUMMARY.search(out)
+    if m:
+        tests["failed"] = int(m.group(1) or 0)
+        tests["passed"] = int(m.group(2) or 0)
+        tests["total"] = int(m.group(4) or 0)
+    tests["failing"] = sorted({ln.split(" > ", 1)[1].strip()
+                               for ln in out.splitlines()
+                               if ln.strip().startswith("FAIL ") and " > " in ln})[:20]
+
+    if tests.get("failed"):
+        print(f"    {tests['failed']} of {tests.get('total')} failing")
+        for f in tests["failing"][:6]:
+            print(f"      {f}")
+    elif tests.get("total"):
+        print(f"    {tests.get('passed')} of {tests.get('total')} passing")
+    else:
+        print(f"    the suite did not run to a summary (exit {rc})")
+
+    if meta.is_file():
+        m2 = json.loads(meta.read_text())
+        m2["tests"] = tests
+        meta.write_text(json.dumps(m2, indent=2, ensure_ascii=False) + "\n")
+    g = rundir / "GATE.md"
+    g.write_text((g.read_text() if g.is_file() else "")
+                 + f"\n$ vitest run -> {rc}\n{out[-6000:]}\n")
+
+    # The workspace is what a judge reads; 90 MB of dependencies is not part of it.
+    for junk in ("node_modules", "pnpm-lock.yaml", ".prisma"):
+        t = ws / junk
+        if t.is_dir():
+            __import__("shutil").rmtree(t, ignore_errors=True)
+        elif t.exists():
+            t.unlink()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    for d in sys.argv[1:]:
+        one(d)
