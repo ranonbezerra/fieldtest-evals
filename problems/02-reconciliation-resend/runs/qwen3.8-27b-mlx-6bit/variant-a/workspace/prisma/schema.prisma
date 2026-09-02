@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  IN_FLIGHT
+  SETTLED
+  REJECTED
+  PARKED
+
+  @@map("order_status")
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  amountCents   Int         @map("amount_cents")
+  bankKey       String      @map("bank_key")
+  status        OrderStatus @default(PENDING)
+  attempts      Int         @default(0)
+  txid          String?     @unique @map("txid")
+  effectiveDate DateTime    @map("effective_date")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@index([status, effectiveDate])
+  @@map("orders")
+}

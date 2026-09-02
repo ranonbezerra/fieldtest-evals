@@ -1,0 +1,63 @@
+
+===== ft-go invocation, 2026-09-02 06:09 UTC =====
+problem   02-reconciliation-resend
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1455/32768  out 7088/16384  think 15094c  701s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (11779 bytes)
+
+manifest: 7 files
+  prisma/schema.prisma
+  src/payouts/bank-client.ts
+  src/payouts/payouts.repository.ts   <- prisma/schema.prisma
+  src/payouts/payouts.service.ts   <- src/payouts/bank-client.ts, src/payouts/payouts.repository.ts
+  src/payouts/payouts.controller.ts   <- src/payouts/payouts.service.ts
+  src/payouts/payouts.module.ts   <- src/payouts/payouts.controller.ts, src/payouts/payouts.service.ts, src/payouts/payouts.repository.ts
+  test/payouts.spec.ts   <- src/payouts/payouts.service.ts, src/payouts/bank-client.ts
+
+[01-schema.prisma] in 4548/32768  out 1664/16384  think 5175c  196s  8.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (751 bytes)
+[02-bank-client.ts] in 4558/32768  out 490/16384  think 1181c  52s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/bank-client.ts (568 bytes)
+[03-payouts.repository.ts] in 4892/32768  out 3102/16384  think 10179c  310s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.repository.ts (1357 bytes)
+[04-payouts.service.ts] in 5371/32768  out 4864/16384  think 13296c  491s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.service.ts (4775 bytes)
+[05-payouts.controller.ts] in 5938/32768  out 1642/16384  think 5403c  177s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.controller.ts (1049 bytes)
+[06-payouts.module.ts] in 6861/32768  out 1732/16384  think 6681c  192s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.module.ts (339 bytes)
+[07-payouts.spec.ts-cases] in 6216/32768  out 2706/16384  think 4255c  283s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/07-payouts.spec.ts-cases.txt (6485 bytes)
+[07-payouts.spec.ts] in 7906/32768  out 10417/16384  think 16010c  1113s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/payouts.spec.ts (22300 bytes)
+
+files written: 7/7
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (15 errors)
+[gate] repairing 5 file(s)
+[repair1-payouts.controller.ts] in 5442/32768  out 1971/16384  think 6620c  205s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.controller.ts (878 bytes)
+[repair1-payouts.service.ts] in 5442/32768  out 6113/16384  think 19027c  617s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.service.ts (3895 bytes)
+[repair1-payouts.spec.ts] in 5433/32768  out 14409/16384  think 40382c  1466s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/payouts.spec.ts (11109 bytes)
+[repair1-payouts.repository.ts] in 5442/32768  out 1580/16384  think 4698c  166s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.repository.ts (978 bytes)
+[repair1-payouts.module.ts] in 5442/32768  out 815/16384  think 2531c  91s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.module.ts (348 bytes)
+[gate] typecheck clean after repair
+[gate] cleaned install artifacts from the workspace
+
+wall 101.7 min   requests 14   in 74946   out 58593   9.7 tok/s
+generation 101.0 min   model loads 0s   gate+io 0.8 min
+REVISED x5 by the model itself — not a pass; read this run first
+
+artifacts in problems/02-reconciliation-resend/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

@@ -8,3 +8,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-01 12:03 | 02-reconciliation-resend | a | **no meta** (exit 124) | – | – | – | – | – | – |
 | 2026-09-01 18:04 | 03-read-model-projection | a | **no meta** (exit 124) | – | – | – | – | – | – |
 | 2026-09-02 04:27 | 01-payout-outbox | a | **1 failure(s)**: typecheck still failing after 2 repairs | 190.2 min | 110036 | 9.7 | 9 | 14/14 | yes |
+| 2026-09-02 06:09 | 02-reconciliation-resend | a | ok | 101.7 min | 58593 | 9.7 | 5 | 7/7 | yes |

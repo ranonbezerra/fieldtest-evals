@@ -1,0 +1,39 @@
+- `accepted response transitions PENDING → IN_FLIGHT, stores txid, increments attempts` — proves the happy-path send commits state; fails if `transition` is not called with `IN_FLIGHT`, or if `attempts` is not `order.attempts + 1`, or if `txid` is not persisted in the patch.
+
+- `duplicate response is handled identically to accepted (IN_FLIGHT, attempts + 1)` — proves the idempotency guarantee: a bank returning "duplicate" does not lose the order; fails if the `duplicate` branch falls through, skips the transition, or increments attempts by a different amount than `accepted`.
+
+- `transient error leaves order PENDING with unchanged attempts` — proves a transient blip does not consume send budget or move state; fails if the code transitions to any other status, or if `attempts` is incremented, making the order eligible for parking sooner than it should.
+
+- `permanent rejection transitions PENDING → REJECTED (terminal)` — proves a definitive bank refusal parks the order out of both send and reconcile pipelines; fails if the status is anything other than `REJECTED`, or if a subsequent `findPending` / `findInFlight` call would still return the row.
+
+- `bank.send network throw is treated as committed timeout (IN_FLIGHT, attempts + 1)` — proves the catch-path counts as a real send because the request may have landed; fails if the throw is swallowed without transitioning, or if `attempts` is not incremented, allowing an unbounded number of blind retries.
+
+- `timeout-but-settled: reconcile finds txid in statement → SETTLED, no resend` — the core task-statement case; proves a timed-out send that actually arrived is not re-sent; fails if the match phase does not transition to `SETTLED`, or if the absence phase subsequently re-enters the row (e.g., because it does not re-fetch `findInFlight` after settling), causing a spurious PENDING or PARKED transition.
+
+- `proven-absent with attempts < 5: IN_FLIGHT → PENDING, same txid retained` — proves a genuinely lost send is retried with the identical txid (idempotent at the bank); fails if the txid is re-derived (different hash), if `attempts` is incremented here instead of at send time, or if the transition target is anything other than `PENDING`.
+
+- `proven-absent with attempts ≥ 5: IN_FLIGHT → PARKED (terminal, never auto-reverted)` — proves the cap is enforced and the order is removed from all automated paths; fails if the threshold check uses `>` instead of `>=` (allowing a 6th send), or if `PARKED` is not excluded by both `findPending` and `findInFlight`.
+
+- `not-yet-past-publishing-lag: order stays IN_FLIGHT, no transition` — proves the 30-min grace window is respected so we do not declare absence before the bank has published; fails if `isPastPublishingLag` uses `>` instead of `>=` at the boundary, or if the absence phase runs without checking the lag condition.
+
+- `boundary: now exactly at effectiveDate + 24h + 30min is past lag; one millisecond before is not` — proves the off-by-one at the threshold; fails if the comparison is strict `>` (excluding the exact instant) or if the 30-minute component is omitted (making it 24h flat).
+
+- `amount mismatch in statement: order is NOT settled, remains IN_FLIGHT` — proves a corrupted or mis-routed settlement does not silently mark the order done; fails if the code settles despite a mismatch, or if it parks/rejects the order (it should simply skip and leave it for the next cycle or manual intervention).
+
+- `reconcile idempotency: second run on same date yields zero settlements, zero parks, zero proven-absent` — proves overlapping 15-minute windows do not double-act; fails if the match or absence phase does not guard on `status = IN_FLIGHT` in the `WHERE` clause, so a second run re-processes already-SETTLED or already-PENDING rows.
+
+- `concurrent reconcile: two runs on same date — the transition `WHERE status = $from` guard means only one wins, the other gets 0 rows and skips` — proves the CAS-style guard prevents double-settle under race; fails if `transition` does a bare `UPDATE … SET status = $to WHERE id = ?` without the `AND status = $from` predicate.
+
+- `txid determinism: same (orderId, effectiveDate) always yields the same 32-char hex string` — proves resend uses an identical identifier so the bank deduplicates; fails if the derivation is non-deterministic (e.g., includes a timestamp or random salt), or if the output length is not 32 hex characters.
+
+- `txid reuse on resend: an order that went IN_FLIGHT → PENDING (proven-absent) keeps its original txid on the next executePayments` — proves the `order.txid ?? deriveTxid(...)` short-circuit works; fails if the code always calls `deriveTxid`, producing a new txid that the bank sees as a fresh payment (double-pay).
+
+- `executePayments processes multiple PENDING orders independently: one bank.send throw does not abort the loop` — proves fault isolation per order; fails if the `try/catch` wraps the entire for-loop instead of each iteration, so a single network error skips remaining orders.
+
+- `reconcile with empty statement (no settlements for the date) still runs the absence phase correctly` — proves the match phase is a no-op without crashing on an empty map, and that all IN_FLIGHT orders past lag are evaluated for absence; fails if the code early-returns when `settlements.length === 0`, skipping the absence phase.
+
+- `bank.getStatement throws: reconcile surfaces bank_unavailable, no state mutations` — proves the error path does not silently park or settle; fails if the exception is caught and treated as an empty statement (which would trigger mass "proven-absent" transitions), or if it is not re-thrown in the standard error envelope.
+
+- `attempts counter after 5 committed sends + 5 proven-absent cycles is exactly 5, and the 6th absence parks` — proves the counter is only incremented at send time (accepted/duplicate/timeout) and never at reconcile time; fails if `reconcile` also increments `attempts`, causing premature parking at attempt 3 or 4.
+
+Deliberately not testing: the controller layer (thin date-validation + delegation, no business logic to break), actual Postgres query correctness or migration integrity (covered by Prisma's own test suite and a separate integration harness), the cryptographic strength of SHA-256 (only determinism and format are relevant here), and real bank HTTP transport (the `BankClient` interface is the seam; its mock is the unit under observation).
