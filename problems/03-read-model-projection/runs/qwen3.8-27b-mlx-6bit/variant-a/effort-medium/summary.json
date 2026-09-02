@@ -1,0 +1,60 @@
+{
+  "effort": "medium",
+  "run": "problems/03-read-model-projection/runs/qwen3.8-27b-mlx-6bit/variant-a",
+  "phases": [
+    {
+      "phase": "00-plan",
+      "path": "PLAN.md",
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      },
+      "medium": {
+        "tokens": 5706,
+        "ceiling": false
+      },
+      "ran": true
+    },
+    {
+      "phase": "04-projections.service.ts",
+      "path": "src/projections/projections.service.ts",
+      "ran": false,
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      }
+    },
+    {
+      "phase": "06-operations.repository.ts",
+      "path": "src/operations/operations.repository.ts",
+      "ran": false,
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      }
+    },
+    {
+      "phase": "15-operations.spec.ts-cases",
+      "path": "test/operations.spec.ts",
+      "ran": false,
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      }
+    },
+    {
+      "phase": "15-operations.spec.ts",
+      "path": "test/operations.spec.ts",
+      "ran": false,
+      "baseline": {
+        "effort": "low",
+        "tokens": 16384,
+        "ceiling": true
+      }
+    }
+  ]
+}

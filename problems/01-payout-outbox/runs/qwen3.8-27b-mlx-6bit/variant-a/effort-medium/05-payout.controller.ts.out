@@ -1,0 +1,77 @@
+import { Body, Controller, HttpException, HttpStatus, Post } from '@nestjs/common';
+
+import type { CreatePayoutInput, PayoutResponse } from './payout.service.js';
+import { InsufficientFundsError, PayoutService } from './payout.service.js';
+
+@Controller('payouts')
+export class PayoutController {
+  constructor(private readonly payoutService: PayoutService) {}
+
+  @Post()
+  async create(@Body() body: Record<string, unknown>): Promise<PayoutResponse> {
+    const requiredFields = [
+      'accountId',
+      'amount',
+      'destinationAddress',
+      'idempotencyKey',
+    ] as const;
+
+    const missingFields = requiredFields.filter(
+      (field) => body[field] === undefined || body[field] === null,
+    );
+
+    if (missingFields.length > 0) {
+      throw new HttpException(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'Missing required fields in request body',
+            details: { missingFields },
+          },
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    let amount: bigint;
+    try {
+      amount = BigInt(body.amount as string | number);
+    } catch {
+      throw new HttpException(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'amount must be a valid integer in minor units',
+            details: {},
+          },
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const input: CreatePayoutInput = {
+      accountId: body.accountId as string,
+      amount,
+      destinationAddress: body.destinationAddress as string,
+      idempotencyKey: body.idempotencyKey as string,
+    };
+
+    try {
+      return await this.payoutService.createPayout(input);
+    } catch (error) {
+      if (error instanceof InsufficientFundsError) {
+        throw new HttpException(
+          {
+            error: {
+              code: 'insufficient_funds',
+              message: 'Account does not have sufficient available funds for this payout',
+              details: {},
+            },
+          },
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
+      throw error;
+    }
+  }
+}

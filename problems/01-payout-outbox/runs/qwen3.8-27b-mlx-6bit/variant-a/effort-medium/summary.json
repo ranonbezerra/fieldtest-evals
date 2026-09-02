@@ -1,0 +1,76 @@
+{
+  "effort": "medium",
+  "run": "problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a",
+  "phases": [
+    {
+      "phase": "00-plan",
+      "path": "PLAN.md",
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      },
+      "medium": {
+        "tokens": 5380,
+        "ceiling": false
+      },
+      "ran": true
+    },
+    {
+      "phase": "02-payout.repository.ts",
+      "path": "src/payout/payout.repository.ts",
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      },
+      "medium": {
+        "tokens": 10694,
+        "ceiling": false
+      },
+      "ran": true
+    },
+    {
+      "phase": "04-payout-worker.service.ts",
+      "path": "src/payout/payout-worker.service.ts",
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      },
+      "medium": {
+        "tokens": 6210,
+        "ceiling": false
+      },
+      "ran": true
+    },
+    {
+      "phase": "05-payout.controller.ts",
+      "path": "src/payout/payout.controller.ts",
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      },
+      "medium": {
+        "tokens": 4362,
+        "ceiling": false
+      },
+      "ran": true
+    },
+    {
+      "phase": "09-payout.spec.ts-cases",
+      "path": "test/payout.spec.ts",
+      "baseline": {
+        "effort": "model default",
+        "tokens": 16384,
+        "ceiling": true
+      },
+      "medium": {
+        "tokens": 3737,
+        "ceiling": false
+      },
+      "ran": true
+    }
+  ]
+}

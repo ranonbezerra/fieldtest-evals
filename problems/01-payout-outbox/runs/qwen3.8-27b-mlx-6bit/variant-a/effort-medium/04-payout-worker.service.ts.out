@@ -1,0 +1,105 @@
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { PayoutStatus, Prisma } from '@prisma/client';
+import { PayoutRepository } from './payout.repository';
+import type { TransferProvider } from './payout.service';
+
+type OutboxMessageRow = Prisma.OutboxMessageGetPayload<{}>;
+
+@Injectable()
+export class PayoutWorkerService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(PayoutWorkerService.name);
+  private timer: ReturnType<typeof setInterval> | null = null;
+
+  private readonly pollMs: number;
+  private readonly staleTimeoutMs = 30_000;
+  private readonly batchSize = 10;
+
+  constructor(
+    private readonly provider: TransferProvider,
+    private readonly repo: PayoutRepository,
+  ) {
+    this.pollMs = Number(process.env.WORKER_POLL_MS) || 5_000;
+  }
+
+  onModuleInit(): void {
+    this.timer = setInterval(() => {
+      this.processMessages().catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`processMessages failed: ${msg}`);
+      });
+    }, this.pollMs);
+  }
+
+  onModuleDestroy(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  async processMessages(): Promise<void> {
+    const pending = await this.repo.nextPendingMessage(this.batchSize);
+    const stale = await this.repo.claimStaleMessages(this.staleTimeoutMs, this.batchSize);
+
+    const candidates: OutboxMessageRow[] = [...pending, ...stale];
+
+    for (const message of candidates) {
+      const claimed = await this.repo.claimMessage(message.id);
+      if (!claimed) {
+        continue;
+      }
+
+      await this.processSingleMessage(message);
+    }
+  }
+
+  private async processSingleMessage(message: OutboxMessageRow): Promise<void> {
+    const payout = await this.repo.findPayoutById(message.payoutId);
+    if (!payout) {
+      this.logger.warn(
+        `Payout ${message.payoutId} not found for message ${message.id}; skipping`,
+      );
+      return;
+    }
+
+    await this.repo.updatePayoutStatus(payout.id, PayoutStatus.PROCESSING);
+
+    const amount = BigInt(payout.amount);
+
+    try {
+      const { txHash } = await this.provider.transfer(
+        payout.destinationAddress,
+        amount,
+      );
+
+      await this.repo.withTransaction(async (tx) => {
+        await this.repo.settleLedger(payout.id, payout.accountId, amount, tx);
+        await this.repo.updatePayoutStatus(payout.id, PayoutStatus.COMPLETED, txHash, tx);
+        await this.repo.markMessageDone(message.id, tx);
+      });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      if (message.attempts < message.maxAttempts) {
+        await this.repo.incrementAttempts(message.id, errorMessage);
+        this.logger.warn(
+          `Message ${message.id} attempt failed (${errorMessage}); will retry`,
+        );
+      } else {
+        await this.repo.withTransaction(async (tx) => {
+          await this.repo.releaseHold(payout.id, payout.accountId, amount, tx);
+          await this.repo.updatePayoutStatus(
+            payout.id,
+            PayoutStatus.NEEDS_REVIEW,
+            undefined,
+            tx,
+          );
+          await this.repo.markMessageFailed(message.id, errorMessage, tx);
+        });
+        this.logger.error(
+          `Message ${message.id} exhausted retries; payout marked needs_review`,
+        );
+      }
+    }
+  }
+}

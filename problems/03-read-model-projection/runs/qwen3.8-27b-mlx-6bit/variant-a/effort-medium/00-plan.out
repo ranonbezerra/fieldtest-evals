@@ -1,0 +1,336 @@
+## 1. Assumptions
+
+- The source tables (`companies`, `workers`, `payment_orders`, `events`) are pre-existing and modeled in the same Prisma schema; this task adds only the projection tables and the read/write services around them.
+- The "write path" is a minimal simulation: `POST /orders` (create) and `PATCH /orders/:id/approve` (status change). No full CRUD.
+- The dashboard endpoint is `GET /operations` with query params `company_id`, `status`, `from`, `to`, `page`, `per_page`.
+- "Scheduled" drift-repair uses NestJS's `@nestjs/schedule` `@Cron` decorator, not an external scheduler.
+- One currency per company; the totals table stores a single `total_amount` per company (no multi-currency aggregation).
+- Per-page defaults to 50, max 200. Page is 1-based.
+- The re-derivation endpoint is `POST /operations/re-derive` accepting `{ from, to }`; drift-repair is an internal cron (no HTTP endpoint).
+- Worker assignment on an order is a single `worker_id` FK. The denormalized columns in the projection are `worker_name` and `worker_role`.
+- Migration files are out of scope for this plan (Prisma generates them); only the schema DDL is specified.
+
+## 2. Data model
+
+### Prisma schema additions (projection tables)
+
+**`operations_dashboard`** (mapped to `operations_dashboard`)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | `BigInt @id @default(autoincrement())` | surrogate key |
+| `order_id` | `BigInt @unique` | FK → `payment_orders.id` |
+| `company_id` | `BigInt` | FK → `companies.id`, indexed |
+| `worker_id` | `BigInt?` | FK → `workers.id` |
+| `worker_name` | `String?` | denormalized |
+| `worker_role` | `String?` | denormalized |
+| `status` | `String` | mirrors `payment_orders.status` |
+| `amount` | `Decimal @db.Decimal(18,4)` | mirrors `payment_orders.amount` |
+| `currency` | `String` | mirrors |
+| `event_count` | `Int @default(0)` | count of linked events |
+| `last_event_at` | `DateTime?` | max event `created_at` |
+| `created_at` | `DateTime @default(now())` | mirrors order |
+| `updated_at` | `DateTime @updatedAt` | mirrors order |
+
+Indexes:
+- `(company_id, status, created_at DESC)` — primary dashboard query path
+- `(company_id, amount)` — totals verification
+- `(order_id)` — unique, upsert target
+
+**`company_totals`** (mapped to `company_totals`)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `company_id` | `BigInt @id` | PK, FK → `companies.id` |
+| `total_amount` | `Decimal @default(0) @db.Decimal(18,4)` | exact sum of non-cancelled orders |
+| `order_count` | `Int @default(0)` | count of non-cancelled orders |
+| `last_updated_at` | `DateTime @updatedAt` | |
+
+Index: PK on `company_id`.
+
+### Source tables (assumed pre-existing, listed for reference)
+
+- `companies`: id, name, created_at
+- `workers`: id, company_id, name, role, created_at
+- `payment_orders`: id, company_id, worker_id?, status, amount (Decimal(18,4)), currency, created_at, updated_at
+- `events`: id, order_id (FK), type, payload (Json), created_at
+
+## 3. Types and signatures
+
+```typescript
+// --- enums / constants ---
+
+type OrderStatus = "pending" | "approved" | "rejected" | "cancelled";
+// Excluded from totals: "cancelled"
+
+type DashboardStatusFilter = OrderStatus | "all";
+
+// --- DTOs (controller input/output) ---
+
+interface CreateOrderDto {
+  company_id: string;   // BigInt as string for JSON
+  worker_id?: string;
+  amount: number;
+  currency: string;
+}
+
+interface ApproveOrderDto {
+  status: "approved" | "rejected";
+}
+
+interface OperationsQueryDto {
+  company_id: string;
+  status?: DashboardStatusFilter;  // default "all"
+  from?: string;                   // ISO-8601, default epoch
+  to?: string;                     // ISO-8601, default now
+  page?: number;                   // default 1, min 1
+  per_page?: number;               // default 50, max 200
+}
+
+interface OperationRowDto {
+  order_id: string;
+  company_id: string;
+  worker_name: string | null;
+  worker_role: string | null;
+  status: OrderStatus;
+  amount: string;   // Decimal serialized as string
+  currency: string;
+  event_count: number;
+  last_event_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CompanyTotalsDto {
+  total_amount: string;
+  order_count: number;
+}
+
+interface OperationsResponseDto {
+  rows: OperationRowDto[];
+  total_count: number;
+  page: number;
+  per_page: number;
+  totals: CompanyTotalsDto;
+}
+
+interface ReDeriveDto {
+  from: string;  // ISO-8601
+  to: string;    // ISO-8601
+}
+
+// --- error codes (raised as HttpException or NestJS exceptions) ---
+
+// "resource_not_found" — company_id does not exist, or order_id not found
+// "validation_error" — from > to, per_page > 200, page < 1
+
+// --- Service / Repository signatures ---
+
+class OperationsRepository {
+  findDashboard(query: OperationsQueryDto): Promise<{ rows: OperationRow[]; total_count: number }>;
+  findTotals(companyId: bigint): Promise<CompanyTotals | null>;
+  upsertRow(row: UpsertOperationRowInput): Promise<OperationRow>;
+  adjustTotals(companyId: bigint, deltaAmount: Decimal, deltaCount: number): Promise<CompanyTotals>;
+  deleteRowsByDateRange(from: Date, to: Date): Promise< number>;
+  bulkInsert(rows: UpsertOperationRowInput[]): Promise<void>;
+}
+
+interface UpsertOperationRowInput {
+  order_id: bigint;
+  company_id: bigint;
+  worker_id: bigint | null;
+  worker_name: string | null;
+  worker_role: string | null;
+  status: OrderStatus;
+  amount: Decimal;
+  currency: string;
+  event_count: number;
+  last_event_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+class OperationsService {
+  constructor(repo: OperationsRepository, totalsRepo: CompanyTotalsRepository);
+
+  getDashboard(query: OperationsQueryDto): Promise<OperationsResponseDto>;
+  reDerive(from: Date, to: Date): Promise<void>;
+  applyOrderCreated(order: PaymentOrder, worker: Worker | null): Promise<void>;
+  applyOrderStatusChange(order: PaymentOrder, prevStatus: OrderStatus): Promise<void>;
+  applyEventCreated(event: Event): Promise<void>;
+}
+
+class OperationsMaintenanceService {
+  // Called by write-path services AFTER their transaction commits (same tx in practice)
+  onOrderCreated(tx: Prisma.TransactionClient, order: PaymentOrder, worker: Worker | null): Promise<void>;
+  onOrderStatusChanged(tx: Prisma.TransactionClient, order: PaymentOrder, prevStatus: OrderStatus): Promise<void>;
+  onEventCreated(tx: Prisma.TransactionClient, event: Event): Promise<void>;
+}
+
+class ReDeriveService {
+  reDeriveWindow(from: Date, to: Date): Promise<void>;
+}
+
+class DriftRepairProcessor {
+  @Cron("*/5 * * * * *")   // every 5 min
+  repair(): Promise<void>;
+}
+
+class OrdersService {
+  create(dto: CreateOrderDto): Promise<{ id: string }>;
+  approve(id: string, dto: ApproveOrderDto): Promise<{ id: string; status: OrderStatus }>;
+}
+
+class EventsService {
+  record(orderId: string, type: string, payload: object): Promise<{ id: string }>;
+}
+
+class OperationsController {
+  @Get("operations") getDashboard(query: OperationsQueryDto): Promise<OperationsResponseDto>;
+  @Post("operations/re-derive") reDerive(body: ReDeriveDto): Promise<{ processed: number }>;
+}
+
+class OrdersController {
+  @Post("orders") create(dto: CreateOrderDto): Promise<{ id: string }>;
+  @Patch("orders/:id/approve") approve(@Param("id") id: string, body: ApproveOrderDto): Promise<{ id: string; status: OrderStatus }>;
+}
+
+class EventsController {
+  @Post("events") record(body: RecordEventDto): Promise<{ id: string }>;
+}
+
+interface RecordEventDto {
+  order_id: string;
+  type: string;
+  payload?: Record<string, unknown>;
+}
+
+class CompanyTotalsRepository {
+  upsert(companyId: bigint): Promise<CompanyTotals>;
+  findById(companyId: bigint): Promise<CompanyTotals | null>;
+  adjust(companyId: bigint, deltaAmount: Decimal, deltaCount: number): Promise<CompanyTotals>;
+  recalcForWindow(companyId: bigint, from: Date, to: Date): Promise<CompanyTotals>;
+}
+
+class SourceRepository {
+  // Reads from source tables for re-derivation and drift check
+  findOrdersInWindow(from: Date, to: Date): Promise<PaymentOrder[]>;
+  findWorkerById(id: bigint): Promise<Worker | null>;
+  countEventsForOrder(orderId: bigint): Promise<number>;
+  lastEventTimeForOrder(orderId: bigint): Promise<Date | null>;
+  findCompany(id: string): Promise<Company | null>;
+}
+```
+
+**Ordering rules between operations:**
+
+- `applyOrderStatusChange` must subtract the old status's contribution from totals only if the old status was non-cancelled, and add the new status's contribution only if the new status is non-cancelled. Both adjustments happen in the same transaction as the projection row upsert.
+- `reDeriveWindow` is destructive for its window: it deletes projection rows in `[from, to)` and re-inserts. It must complete atomically (one transaction) so a reader never sees a partial window.
+- `DriftRepairProcessor.repair` reads source and projection for a 1-hour window ending at `now - 30s` (safety margin). If it finds discrepancies it applies the same upsert/adjust as the hooks. It must be idempotent.
+
+## 4. Control flow
+
+### Write path (create order)
+
+1. `OrdersController.create` validates input, calls `OrdersService.create`.
+2. `OrdersService.create` opens a Prisma `$transaction`:
+   - Insert into `payment_orders` (source).
+   - Call `OperationsMaintenanceService.onOrderCreated(tx, order, worker)`.
+     - Upsert row in `operations_dashboard` (event_count=0, last_event_at=null).
+     - `CompanyTotalsRepository.adjust(companyId, +amount, +1)` (since status is "pending", which is non-cancelled).
+   - Commit.
+3. Return `{ id }`.
+
+**Read-your-own-writes guarantee:** the projection row and totals are written in the same transaction as the source row. The next `GET /operations` reads the committed projection.
+
+### Write path (approve/reject)
+
+1. `OrdersController.approve` → `OrdersService.approve`.
+2. `$transaction`:
+   - Read current order (prevStatus).
+   - Update `payment_orders.status` + `updated_at`.
+   - Call `OperationsMaintenanceService.onOrderStatusChanged(tx, order, prevStatus)`.
+     - Upsert `operations_dashboard` row (status, updated_at).
+     - If prevStatus was non-cancelled → `adjust(companyId, -amount, -1)`.
+     - If newStatus is non-cancelled → `adjust(companyId, +amount, +1)`.
+   - Commit.
+
+### Write path (record event)
+
+1. `EventsController.record` → `EventsService.record`.
+2. `$transaction`:
+   - Insert into `events`.
+   - Call `OperationsMaintenanceService.onEventCreated(tx, event)`.
+     - Update `operations_dashboard` row: `event_count += 1`, `last_event_at = event.created_at`.
+   - Commit.
+
+### Dashboard read
+
+1. `OperationsController.getDashboard` validates params, calls `OperationsService.getDashboard`.
+2. `OperationsRepository.findDashboard` executes a single query against `operations_dashboard` with WHERE `(company_id) AND (status = ? OR all) AND (created_at >= from AND created_at < to)`, ORDER BY `created_at DESC`, LIMIT/OFFSET. Also `COUNT(*)` for pagination.
+3. `CompanyTotalsRepository.findById(companyId)` reads the pre-computed totals row.
+4. Assemble and return `OperationsResponseDto`.
+
+No joins at read time. The query touches one table + one totals row.
+
+### Re-derivation
+
+1. `POST /operations/re-derive` with `{ from, to }`.
+2. `ReDeriveService.reDeriveWindow` in one `$transaction`:
+   - Delete all `operations_dashboard` rows where `created_at` in `[from, to)`.
+   - Query source: all `payment_orders` in window + their workers + event counts.
+   - Bulk-insert reconstructed rows into `operations_dashboard`.
+   - For each affected company: `recalcForWindow` — recompute totals from source orders in window, write back.
+3. Return `{ processed: rowCount }`.
+
+### Drift repair (cron, every 5 min)
+
+1. Compute window: `[now - 60s, now - 30s]`.
+2. For each company with activity in window (source count > 0):
+   - Compare source-derived state to projection rows.
+   - For each mismatched/missing row: upsert (same logic as hook).
+   - If totals differ from source sum: write corrected totals.
+3. Log discrepancies count. No HTTP response (internal).
+
+**What must NOT be in a transaction:** logging, external calls. The drift-repair cron does its reads outside the write transaction; only the corrective writes are wrapped.
+
+## 5. Tests
+
+| Test | Proves |
+|------|--------|
+| `create order → GET /operations returns it with correct status/amount` | read-your-own-writes for create |
+| `approve order → GET /operations shows updated status, totals unchanged (pending→approved both count)` | read-your-own-writes for status change; totals arithmetic correct |
+| `create order → cancel → GET /operations totals decrease by amount` | cancelled orders excluded from exact totals |
+| `two concurrent PATCH approve on same company → totals reflect exactly two changes (no lost update)` | concurrent-update safety via atomic `adjust` in tx |
+| `re-derive a window that had 3 orders → projection rows match source exactly` | re-derivation produces correct state from scratch |
+| `mutate a projection row directly (simulate drift) → run drift-repair → row matches source again` | drift detection and correction |
+| `GET /operations with from > to → 400 validation_error` | input validation |
+| `GET /operations for non-existent company → 404 resource_not_found` | error envelope correctness |
+| `create order with event_count 0 → record event → GET shows event_count 1, last_event_at set` | event hook updates projection |
+| `re-derive window with zero orders → returns processed: 0, no errors` | idempotent/empty-window edge case |
+
+## 6. Manifest
+
+<!-- manifest
+prisma/schema.prisma | reads: - | all Prisma models including projection tables and indexes
+DESIGN.md | reads: - | justification of sync-hooks over triggers/messaging/async
+src/app.module.ts | reads: - | root module importing feature modules, schedule module
+src/operations/operations.module.ts | reads: - | module wiring controller, services, repositories, processor
+src/operations/operations.controller.ts | reads: src/operations/operations.service.ts | GET /operations, POST /operations/re-derive
+src/operations/operations.service.ts | reads: src/operations/operations.repository.ts, src/operations/company-totals.repository.ts | dashboard query logic, re-derive orchestration
+src/operations/operations.repository.ts | reads: - | all CRUD on operations_dashboard table
+src/operations/company-totals.repository.ts | reads: - | all CRUD on company_totals table
+src/operations/operations-maintenance.service.ts | reads: src/operations/operations.repository.ts, src/operations/company-totals.repository.ts | hook methods: onOrderCreated, onOrderStatusChanged, onEventCreated
+src/operations/re-derive.service.ts | reads: src/operations/operations.repository.ts, src/operations/company-totals.repository.ts, src/operations/source.repository.ts | window re-derivation
+src/operations/drift-repair.processor.ts | reads: src/operations/re-derive.service.ts, src/operations/source.repository.ts | @Cron drift detection + correction
+src/operations/source.repository.ts | reads: - | read-only access to source tables for re-derive/drift
+src/orders/orders.module.ts | reads: - | module wiring orders controller + service
+src/orders/orders.controller.ts | reads: src/orders/orders.service.ts | POST /orders, PATCH /orders/:id/approve
+src/orders/orders.service.ts | reads: src/orders/orders.repository.ts, src/operations/operations-maintenance.service.ts | write logic + hook invocation in tx
+src/orders/orders.repository.ts | reads: - | payment_orders CRUD
+src/events/events.module.ts | reads: - | module wiring events controller + service
+src/events/events.controller.ts | reads: src/events/events.service.ts | POST /events
+src/events/events.service.ts | reads: src/events/events.repository.ts, src/operations/operations-maintenance.service.ts | event insert + hook in tx
+src/events/events.repository.ts | reads: - | events CRUD
+test/operations.spec.ts | reads: src/operations/operations.service.ts, src/operations/operations.repository.ts, src/operations/company-totals.repository.ts, src/orders/orders.service.ts, src/events/events.service.ts, src/operations/re-derive.service.ts, src/operations/drift-repair.processor.ts | all behavioural tests listed in section 5
+-->

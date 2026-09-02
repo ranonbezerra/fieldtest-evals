@@ -538,34 +538,67 @@ lines of the files already written is the obvious repair and is not yet built.
 
 Written before the data, so they can be wrong rather than rationalised afterwards.
 
-### 6.2 `medium` may be the better setting, and the campaign will not use it
+### 6.2 `medium` fits, and the campaign has been running on plans written at `low`
 
-At the model's own default effort, **14 of 60 phases (23%) hit the output ceiling**.
-(An earlier draft said 40% of 30 phases. That was read from `meta.yaml`, which counts
-only the phases of the last invocation — see §4.7. Counted from the requests
-themselves: 5 of 11 in problem 01, 4 of 17 in 02, 5 of 32 in 03.)
-When the retry at `low` then succeeds, the work it actually needed was a median of
-**7,115 tokens, ranging 1,433–13,202** — much closer to the 16,384 ceiling than the
-early trivial-task measurements suggested. There is less room between `low` and the
-ceiling than expected, so `medium` producing more than `low` may simply overflow too.
+Measured, one axis, everything else held. Six phases ran; four were refused when
+`fileproviderd` took 130–143% CPU and are still pending.
 
-**This will be measured and not acted upon.** The test reruns phases that
-demonstrably overflowed at the default, at `medium`, with everything else held — the
-same one-axis shape used for the reasoning experiment. If they fit, `medium` becomes a
-serious candidate; if they overflow, it is dismissed for the cost of one afternoon
-rather than several days.
+| phase | at the default | at `medium` |
+|---|--:|--:|
+| 01 `00-plan` | 16,384 — ceiling | **5,380** |
+| 01 `payout.repository.ts` | 16,384 — ceiling | **10,694** |
+| 01 `payout-worker.service.ts` | 16,384 — ceiling | **6,210** |
+| 01 `payout.controller.ts` | 16,384 — ceiling | **4,362** |
+| 01 `payout.spec.ts-cases` | 16,384 — ceiling | **3,737** |
+| 03 `00-plan` | 16,384 — ceiling | **5,706** |
 
-**And the campaign keeps the current configuration regardless of the answer.** Not
-because the answer does not matter, but because eighteen problems measured under two
-settings are not a set — the first ones would be incomparable to the rest, exactly the
-mistake that cost the first campaign. A better setting found halfway through is an
-argument for a second pass, not for switching mid-flight.
+Six of six fit, none near the ceiling. The largest used 65% of it; the median used 36%.
+The earlier prediction here — that `medium` produces more than `low` and would overflow
+too — was wrong, and wrong in an interesting way. **The medium plan is shorter than the
+low plan**: 5,380 tokens against 7,140 for problem 01. More deliberation did not buy
+more output. It bought a tighter document.
 
-There is also a real question underneath, which the measurement alone will not settle:
-running at the model's default measures **the model as shipped**, while running at
-`medium` measures **the model as a competent user would configure it**. Both are
-legitimate and they answer different questions. The default is the standard here
-because it is the one that needs no justification.
+**The structural finding is what this experiment actually turned up.** Phase 0 overflows
+at the default in **3 of 3 runs**, so every plan in this campaign was produced by the
+harness's ceiling fallback and written at `reasoning_effort: low`:
+
+| run | plan at default | plan at `low` | governs the run |
+|---|---|---|:-:|
+| 01 | 16,384, cut off — never reached the interfaces | 7,140 | the `low` one |
+| 02 | 16,384, cut off | 9,676 | the `low` one |
+| 03 | 16,384, cut off | 6,912 | the `low` one |
+
+Problem 01's default-effort attempt does not contain the string `claimMessage` at all —
+it was cut off before it got to the interface section. The document that governs every
+downstream file phase is the `low` retry.
+
+And the `low` plans are where §1.3's contradictions live. At `medium`, on the same two
+must-haves that failed problem 01:
+
+- **M4** — §3 `claimMessages(limit) // FOR UPDATE SKIP LOCKED, PENDING only`, §4
+  *"selects up to 10 PENDING messages with FOR UPDATE SKIP LOCKED"*. The sections agree,
+  and the mechanism is stronger than the conditional update the `low` plan specified.
+  It also merged `claimMessage` and `claimStaleMessages` into one primitive, which is
+  where the `low` plan's ambiguity came from.
+- **M7** — stated three times and consistently: §1 *"keep funds reserved … releasing
+  would risk double-spend"*, §4 *"set payout → NEEDS_REVIEW … (funds stay reserved)"*,
+  and a test asserting *"funds remain reserved (not released back)"*.
+- **03's M1** — partially. The hook interface now takes `tx: Prisma.TransactionClient`,
+  so the transaction is carryable, which is exactly what the `low` plan made impossible.
+  The doc comment above it still reads *"AFTER their transaction commits (same tx in
+  practice)"*, which is the same muddle. The signature is what gets implemented (§1.3),
+  so this one is fixed in the half that decides.
+
+*What this does not establish.* One sample per phase, at temperature 1.0. A second
+`low` plan might not contradict itself and a second `medium` plan might. What is not a
+sampling question is the ceiling: 3 of 3 plan phases overflowed at the default, and 6 of
+6 phases fit at `medium` with a third of the budget unused.
+
+*What it does establish.* The campaign is not measuring "the model as shipped". At this
+output ceiling the model as shipped does not produce a plan — it produces 16,384 tokens
+of deliberation and stops. What the campaign measures is the model working from a
+specification the harness obtained by turning its reasoning down, and §1.3's three
+failed must-haves are all defects in that specification.
 
 ### 6.1 Test files may overflow, and the two-pass phase is already in place
 

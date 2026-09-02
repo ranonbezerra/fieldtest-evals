@@ -1,0 +1,199 @@
+## 1. Assumptions
+
+- Poll interval: 5 s, read from `PAYOUT_POLL_MS` env var (default 5000). Reasonable for a test/dev service.
+- Max retries: 3 (constant in the worker). Bounded, keeps latency low.
+- On retry exhaustion: mark payout `NEEDS_REVIEW`, keep funds reserved. Reason: we cannot know whether the transfer landed; releasing would risk double-spend, so a human verifies.
+- Available balance = `settled_balance − reserved`. Settlement (decrement of `settled_balance`) happens only on confirmed transfer.
+- Concurrency guard: `SELECT … FOR UPDATE` on the account row inside the creation transaction serialises racing writes.
+- Single worker instance. `processMessages` is idempotent: it skips messages whose payout is already past `PROCESSING`.
+- Provider interface injected via DI; tests supply a mock. No real SDK dependency in this repo.
+- Amounts are `BigInt` (Prisma `BigInt` → Postgres `bigint`). No floating point.
+- `src/payout/` is the feature folder. Worker lives at `src/payout/payout-worker.ts`.
+- Idempotency key is a client-supplied UUID string; unique index enforces it.
+
+## 2. Data model
+
+### Account
+| column | type | notes |
+|---|---|---|
+| id | `String` (uuid pk) | |
+| settled_balance | `BigInt` | default 0 |
+| reserved | `BigInt` | default 0 |
+| created_at | `DateTime` | auto |
+
+### Payout
+| column | type | notes |
+|---|---|---|
+| id | `String` (uuid pk) | |
+| account_id | `String` (fk → Account.id) | indexed |
+| amount | `BigInt` | minor units |
+| destination_address | `String` | |
+| idempotency_key | `String` | unique index |
+| status | `PayoutStatus` | enum, see below |
+| tx_hash | `String?` | set when provider confirms |
+| created_at | `DateTime` | auto |
+| updated_at | `DateTime` | on update |
+
+### Message (outbox)
+| column | type | notes |
+|---|---|---|
+| id | `String` (uuid pk) | |
+| payout_id | `String` (fk → Payout.id) | unique — 1 message per payout |
+| status | `MessageStatus` | enum |
+| attempts | `Int` | default 0 |
+| last_attempt_at | `DateTime?` | |
+| created_at | `DateTime` | auto |
+
+### LedgerEntry
+| column | type | notes |
+|---|---|---|
+| id | `String` (uuid pk) | |
+| account_id | `String` (fk → Account.id) | indexed |
+| payout_id | `String?` (fk → Payout.id) | null for non-payout entries |
+| entry_type | `LedgerEntryType` | enum |
+| amount | `BigInt` | always positive; sign implied by type |
+| created_at | `DateTime` | auto |
+
+### Enums (Prisma)
+- `PayoutStatus`: `CREATED`, `PROCESSING`, `SENT`, `COMPLETED`, `FAILED`, `NEEDS_REVIEW`
+- `MessageStatus`: `PENDING`, `PROCESSING`, `DONE`
+- `LedgerEntryType`: `RESERVE`, `RELEASE`, `SETTLE`
+
+## 3. Types and signatures
+
+```ts
+// src/payout/payout.repository.ts
+export class PayoutRepository {
+  constructor(prisma: PrismaClient);
+
+  createWithReservation(
+    accountRow: { id: string; reserved: bigint }, // row already locked
+    input: CreatePayoutInput,
+  ): Promise<{ payout: Payout; message: Message }>;
+
+  findByIdempotencyKey(key: string): Promise<Payout | null>;
+
+  lockAccount(id: string): Promise<Account | null>; // SELECT … FOR UPDATE (raw through $queryRaw)
+
+  completePayout(payoutId: string, txHash: string): Promise<void>;
+  markNeedsReview(payoutId: string): Promise<void>;
+  markFailed(payoutId: string): Promise<void>;
+
+  claimMessages(limit: number): Promise<Message[]>; // FOR UPDATE SKIP LOCKED, PENDING only
+  markMessageDone(messageId: string): Promise<void>;
+  incrementAttempts(messageId: string): Promise<Message>;
+
+  recordLedger(entry: Omit<LedgerEntry, "id" | "createdAt">): Promise<LedgerEntry>;
+}
+```
+
+```ts
+// src/payout/payout.service.ts
+export interface CreatePayoutInput {
+  accountId: string;
+  amount: bigint;
+  destinationAddress: string;
+  idempotencyKey: string;
+}
+
+export interface PayoutResponse {
+  id: string;
+  status: PayoutStatus;
+  amount: bigint;
+  txHash: string | null;
+}
+
+export class PayoutService {
+  constructor(repo: PayoutRepository);
+
+  createPayout(input: CreatePayoutInput): Promise<PayoutResponse>;
+}
+```
+
+```ts
+// src/payout/payout-worker.ts
+export class PayoutWorker {
+  constructor(repo: PayoutRepository, provider: TransferProvider);
+
+  processMessages(): Promise<void>;
+}
+```
+
+```ts
+// src/payout/transfer-provider.ts (interface)
+export interface TransferProvider {
+  transfer(args: { to: string; amount: bigint }): Promise<{ txHash: string }>;
+}
+```
+
+### Errors (thrown as `HttpException` with the standard envelope)
+
+| code | raised by | condition |
+|---|---|---|
+| `insufficient_funds` | `PayoutService.createPayout` | available < amount |
+| `account_not_found` | `PayoutService.createPayout` | accountId has no row |
+| `invalid_input` | Controller guard | missing/empty fields, amount ≤ 0, bad uuid |
+| `internal_error` | Any layer | unexpected exception (500) |
+
+### Ordering rules
+
+- In `createPayout`: the idempotency-key lookup **must** happen after acquiring the row lock (`lockAccount`), so a racing duplicate sees the first payout's reservation.
+- In `processMessages`: check payout status before calling the provider; if already past `PROCESSING`, skip (idempotent duplicate delivery).
+- In `processMessages`: the ledger `SETTLE` entry and the account balance update are in the **same** transaction as marking the message `DONE`.
+
+## 4. Control flow
+
+### POST /payouts
+
+1. Controller validates shape (non-empty strings, amount > 0). On failure → `invalid_input`.
+2. Service opens a Prisma interactive transaction:
+   - `lockAccount(accountId)` → if null, throw `account_not_found`.
+   - `findByIdempotencyKey(key)` → if a payout exists, return it (no side-effects).
+   - Check `account.settledBalance − account.reserved ≥ amount`. If not, throw `insufficient_funds`.
+   - `createWithReservation`: insert Payout (CREATED), Message (PENDING), LedgerEntry (RESERVE), increment `account.reserved` — all in this transaction.
+3. Return `{ id, status, amount, txHash }`.
+
+Transaction boundary: steps 2a–2d are one DB transaction. No provider call, no I/O beyond Postgres.
+
+### Worker — processMessages (invoked by a `setInterval` in the module's `onModuleInit`)
+
+1. `claimMessages(10)` — selects up to 10 PENDING messages with `FOR UPDATE SKIP LOCKED`, marks them PROCESSING.
+2. For each claimed message (sequential, one transaction per message):
+   a. Load payout. If `status` is already `SENT`/`COMPLETED`/`FAILED`/`NEEDS_REVIEW`, mark message DONE and continue (duplicate delivery guard).
+   b. Set payout status → `PROCESSING`.
+   c. Call `provider.transfer({ to, amount })`.
+   d. **Success:** set payout → `SENT` then immediately `COMPLETED`; record `SETTLE` ledger entry; decrement `account.settledBalance` and `account.reserved`; set `txHash`; mark message `DONE`.
+   e. **Throw (transient):** increment `message.attempts`. If `attempts ≥ MAX_RETRIES`, set payout → `NEEDS_REVIEW`, mark message `DONE` (funds stay reserved). Else revert message to `PENDING`.
+   f. Each sub-step (d or e) is its own transaction with the message lock held.
+
+Transaction boundaries: one per message. The provider call is **outside** the DB transaction (it is a network I/O; we commit the PROCESSING mark before calling, and open a second transaction for the outcome).
+
+### What must NOT be inside a transaction
+- The `provider.transfer` call.
+- Any HTTP response construction.
+
+## 5. Tests
+
+| test | what it proves |
+|---|---|
+| Two concurrent `createPayout` calls against an account with balance 100 and amount 60 each → exactly one succeeds, the other gets `insufficient_funds`; balance/reserved are consistent. | No overdraw under race. |
+| `createPayout` called twice with the same `idempotencyKey` → second call returns the first payout's id, no second row, reserved unchanged. | Idempotency prevents double-reservation. |
+| `processMessages` called twice; the provider mock succeeds both times → payout transitions to COMPLETED exactly once, `SETTLE` ledger entry has one row, balance decremented once. | At-least-once delivery is idempotent. |
+| Provider mock throws on every call; after `MAX_RETRIES` invocations the payout is `NEEDS_REVIEW`, message is `DONE`, funds remain reserved (not released back). | Retry exhaustion is safe: no silent fund release. |
+| Provider mock throws twice then succeeds on the third call → payout reaches COMPLETED, message DONE, attempts = 2. | Transient failures are retried and eventually succeed. |
+
+## 6. Manifest
+
+<!-- manifest
+prisma/schema.prisma | reads: - | Prisma models, enums, relations for Account, Payout, Message, LedgerEntry
+src/main.ts | reads: - | Nest bootstrap, JSON body parser, BigInt serialisation filter
+src/app.module.ts | reads: src/payout/payout.module.ts | Root module, imports PayoutModule
+src/payout/transfer-provider.ts | reads: - | TransferProvider interface + mock implementation for tests
+src/payout/payout.repository.ts | reads: - | All Prisma queries: lockAccount, createWithReservation, claimMessages, complete/needs-review/failed transitions, ledger writes
+src/payout/payout.service.ts | reads: src/payout/payout.repository.ts | createPayout business logic, idempotency check, balance check
+src/payout/payout.controller.ts | reads: src/payout/payout.service.ts | POST /payouts endpoint, input validation
+src/payout/payout-worker.ts | reads: src/payout/payout.repository.ts, src/payout/transfer-provider.ts | processMessages loop, provider call, retry/exhaustion logic
+src/payout/payout.module.ts | reads: src/payout/payout.controller.ts, src/payout/payout.service.ts, src/payout/payout.repository.ts, src/payout/payout-worker.ts, src/payout/transfer-provider.ts | Wiring: providers, exports, interval start in onModuleInit
+DESIGN.md | reads: - | 10-20 line explanation of funds-safety approach
+test/payout.spec.ts | reads: src/payout/payout.service.ts, src/payout/payout-worker.ts, src/payout/payout.repository.ts, src/payout/transfer-provider.ts | All five tests listed in section 5
+-->

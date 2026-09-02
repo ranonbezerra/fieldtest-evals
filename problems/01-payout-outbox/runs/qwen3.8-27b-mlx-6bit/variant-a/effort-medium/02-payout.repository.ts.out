@@ -1,0 +1,225 @@
+import { Injectable } from '@nestjs/common';
+import {
+  PrismaClient,
+  PayoutStatus,
+  MessageStatus,
+  LedgerEntryType,
+  OutboxMessage,
+} from '@prisma/client';
+
+export interface CreatePayoutInput {
+  accountId: string;
+  amount: bigint;
+  destinationAddress: string;
+  idempotencyKey: string;
+}
+
+export interface PayoutResponse {
+  id: string;
+  accountId: string;
+  amount: string;
+  destinationAddress: string;
+  status: PayoutStatus;
+  txHash: string | null;
+  createdAt: Date;
+}
+
+export type OutboxMessageRow = OutboxMessage;
+
+export class InsufficientFundsError extends Error {
+  code = 'insufficient_funds';
+}
+
+function toResponse(payout: {
+  id: string;
+  accountId: string;
+  amount: bigint;
+  destinationAddress: string;
+  status: PayoutStatus;
+  txHash: string | null;
+  createdAt: Date;
+}): PayoutResponse {
+  return {
+    id: payout.id,
+    accountId: payout.accountId,
+    amount: payout.amount.toString(),
+    destinationAddress: payout.destinationAddress,
+    status: payout.status,
+    txHash: payout.txHash,
+    createdAt: payout.createdAt,
+  };
+}
+
+@Injectable()
+export class PayoutRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async createPayoutWithHold(input: CreatePayoutInput): Promise<PayoutResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<
+        Array<{ id: string; settled_balance: bigint; held_amount: bigint }>
+      >`SELECT id, settled_balance, held_amount FROM accounts WHERE id = ${input.accountId}::uuid FOR UPDATE`;
+
+      if (rows.length === 0) {
+        throw new Error('Account not found');
+      }
+
+      const available = rows[0].settled_balance - rows[0].held_amount;
+      if (available < input.amount) {
+        throw new InsufficientFundsError();
+      }
+
+      await tx.account.update({
+        where: { id: input.accountId },
+        data: { heldAmount: { increment: input.amount } },
+      });
+
+      const payout = await tx.payout.create({
+        data: {
+          accountId: input.accountId,
+          amount: input.amount,
+          destinationAddress: input.destinationAddress,
+          idempotencyKey: input.idempotencyKey,
+          status: PayoutStatus.CREATED,
+        },
+      });
+
+      await tx.ledgerEntry.create({
+        data: {
+          accountId: input.accountId,
+          payoutId: payout.id,
+          amount: input.amount,
+          entryType: LedgerEntryType.HOLD,
+        },
+      });
+
+      await tx.outboxMessage.create({
+        data: {
+          payoutId: payout.id,
+          status: MessageStatus.PENDING,
+        },
+      });
+
+      return toResponse(payout);
+    });
+  }
+
+  async findPayoutByIdempotencyKey(key: string): Promise<PayoutResponse | null> {
+    const payout = await this.prisma.payout.findUnique({
+      where: { idempotencyKey: key },
+    });
+    return payout ? toResponse(payout) : null;
+  }
+
+  async findPayoutById(id: string): Promise<PayoutResponse | null> {
+    const payout = await this.prisma.payout.findUnique({
+      where: { id },
+    });
+    return payout ? toResponse(payout) : null;
+  }
+
+  async updatePayoutStatus(id: string, status: PayoutStatus, txHash?: string): Promise<void> {
+    const data: Record<string, unknown> = { status, updatedAt: new Date() };
+    if (txHash !== undefined) {
+      data.txHash = txHash;
+    }
+    await this.prisma.payout.update({ where: { id }, data });
+  }
+
+  async settleLedger(payoutId: string, accountId: string, amount: bigint): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.ledgerEntry.create({
+        data: {
+          accountId,
+          payoutId,
+          amount,
+          entryType: LedgerEntryType.SETTLE,
+        },
+      });
+      await tx.account.update({
+        where: { id: accountId },
+        data: { heldAmount: { decrement: amount } },
+      });
+    });
+  }
+
+  async releaseHold(payoutId: string, accountId: string, amount: bigint): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.ledgerEntry.create({
+        data: {
+          accountId,
+          payoutId,
+          amount,
+          entryType: LedgerEntryType.RELEASE,
+        },
+      });
+      await tx.account.update({
+        where: { id: accountId },
+        data: { heldAmount: { decrement: amount } },
+      });
+    });
+  }
+
+  async claimMessage(messageId: string): Promise<boolean> {
+    const result = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      UPDATE outbox_messages
+      SET status = 'processing', processing_started_at = NOW(), updated_at = NOW()
+      WHERE id = ${messageId}::uuid AND status IN ('pending', 'processing')
+      RETURNING id
+    `;
+    return result.length > 0;
+  }
+
+  async claimStaleMessages(timeoutMs: number, limit: number): Promise<OutboxMessageRow[]> {
+    const cutoff = new Date(Date.now() - timeoutMs);
+    return this.prisma.outboxMessage.findMany({
+      where: {
+        status: MessageStatus.PROCESSING,
+        processingStartedAt: { lt: cutoff },
+      },
+      take: limit,
+    });
+  }
+
+  async nextPendingMessage(limit: number): Promise<OutboxMessageRow[]> {
+    return this.prisma.outboxMessage.findMany({
+      where: { status: MessageStatus.PENDING },
+      take: limit,
+    });
+  }
+
+  async incrementAttempts(messageId: string): Promise<void> {
+    await this.prisma.outboxMessage.update({
+      where: { id: messageId },
+      data: {
+        attempts: { increment: 1 },
+        status: MessageStatus.PENDING,
+        processingStartedAt: null,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async markMessageDone(messageId: string): Promise<void> {
+    await this.prisma.outboxMessage.update({
+      where: { id: messageId },
+      data: {
+        status: MessageStatus.DONE,
+        processingStartedAt: null,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async markMessageFailed(messageId: string, error: string): Promise<void> {
+    await this.prisma.outboxMessage.update({
+      where: { id: messageId },
+      data: {
+        status: MessageStatus.FAILED,
+        lastError: error,
+        processingStartedAt: null,
+        updatedAt: new Date(),
+      },
+    });
+  }
+}
