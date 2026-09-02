@@ -1,0 +1,37 @@
+- **amount is zero → 400 validation_failed** — Proves the service rejects a payout of 0 minor units before it reaches the repository. Fails if the `amount <= 0n` guard is missing or uses `<` instead of `<=`.
+
+- **amount is a negative integer string → 400 validation_failed** — Proves that `BigInt("-5")` is caught by the same `<= 0n` check. Fails if only non-numeric strings are validated but negative numerics slip through.
+
+- **amount is a non-numeric string (e.g. "abc") → 400 validation_failed** — Proves the `BigInt()` throw is caught and mapped to the validation envelope. Fails if the try/catch around BigInt parsing is absent or re-throws.
+
+- **accountId (or destinationAddress / idempotencyKey) is empty string → 400 validation_failed** — Proves the `.trim()` check rejects whitespace-only or missing fields. Fails if the guard only checks for `undefined`/`null` but not empty string.
+
+- **accountId does not exist in accounts table → 404 resource_not_found** — Proves the `FOR UPDATE` SELECT returning zero rows is mapped to a 404 rather than propagating as a 500. Fails if the repository throws a bare `Error('Account not found')` that the service's string-match catch misses (e.g. message wording differs).
+
+- **amount exceeds available funds (balance − reserved < amount) → 422 insufficient_funds** — Proves the reservation arithmetic and the comparison are correct. Fails if the sum of non-terminal payouts is forgotten, or if the comparison is `<=` instead of `<` (allowing an overdraw by one unit).
+
+- **Two concurrent POSTs for the same account, each requesting more than half the balance → exactly one 201, one 422** — Proves the `SELECT … FOR UPDATE` serialises the two transactions so the second sees the first's reservation. Fails if the lock is missing, if it uses `FOR UPDATE` on the wrong table, or if the reservation SUM doesn't include status `'created'` (so both see the full balance).
+
+- **amount exactly equals available funds → 201, payout created** — Proves the boundary: `available < amount` is strictly less-than, so equal passes. Fails if the guard uses `<=`, rejecting a legitimate spend of the entire balance.
+
+- **Account already has a pending (status='created') payout; new request for the remaining balance → 201** — Proves that `'created'` is included in the reserved-sum filter. Fails if the WHERE clause omits `'created'` and only counts `'processing'`/`'sent'`, letting the second request see stale available funds.
+
+- **Retry of same (accountId, idempotencyKey) with identical amount and destinationAddress → 200, same payout id, exactly one row in payouts** — Proves the P2002 catch fetches the existing row, compares fields, and returns it without inserting a second payout or reserving funds twice. Fails if the unique index is missing, if the catch doesn't compare and always throws 409, or if it re-inserts instead of returning the existing row.
+
+- **Same (accountId, idempotencyKey) but different amount → 409 idempotency_conflict** — Proves the field comparison rejects a mismatched body. Fails if the service only checks key existence and returns 200 regardless of body, silently accepting a different amount.
+
+- **Same (accountId, idempotencyKey) but different destinationAddress → 409 idempotency_conflict** — Proves the comparison covers both amount and destination, not just amount. Fails if only `amount` is compared and a changed address is silently accepted.
+
+- **Worker: pending message, provider.transfer resolves with txHash → payout 'completed' with tx_hash set, one ledger entry (debit=amount), account balance decremented by amount, message 'done'** — Proves the full happy-path chain. Fails if any of the four side-effects (status update, txHash write, ledger insert, balance decrement) is missing or the message is not marked done.
+
+- **Worker: payout already 'completed', same message delivered again → no second ledger entry, balance unchanged, message remains 'done'** — Proves the terminal-state early-return prevents double-posting under at-least-once redelivery. Fails if the `payout.status === 'completed'` guard is missing, or if `markDone` is not idempotent and the second pass re-enters the provider call.
+
+- **Worker: provider throws once (attempts becomes 1), then succeeds on the next tick → payout eventually 'completed', balance decremented exactly once, one ledger entry** — Proves `recordAttempt` resets status to `'pending'` so the message is re-claimed, and that the success path runs exactly once. Fails if `recordAttempt` leaves status as `'processing'` (message never re-claimed), or if the retry path also posts a ledger entry.
+
+- **Worker: provider throws on all 3 attempts → payout 'needs_review', message 'done', zero ledger entries, balance unchanged** — Proves the exhaustion branch halts safely. Fails if `MAX_ATTEMPTS` is off-by-one (e.g. 4 instead of 3, or the check is `>` instead of `>=`), if the payout is left in 'processing' instead of 'needs_review', or if a ledger entry is posted on the last failed attempt.
+
+- **Worker: message.payoutId references a non-existent payout row → message marked 'done', no exception propagates** — Proves the `findById` null check is present. Fails if the code dereferences `payout.status` on `null`, crashing the tick and blocking subsequent messages in the batch.
+
+- **Worker: two pending messages are claimed in one tick; first succeeds, second causes provider to throw → both are processed independently (first 'completed', second retried or exhausted)** — Proves the per-message try/catch in `processMessages` isolates failures so one bad message doesn't abort the rest of the batch. Fails if a thrown error in `processMessage` propagates out of the for-loop and skips remaining messages.
+
+**Not testing:** the `setInterval`/timer mechanics (infrastructure; tests call `processMessages()` directly), Prisma migration/schema validity (build-time, not unit-testable here), the provider SDK's own timeout/retry behaviour (mocked; we test *our* handling of its resolved/rejected promises), and crash-recovery between the three non-atomic steps in the success path (`updatePayout` → `confirmPayoutLedger` → `markDone`) — that requires process-kill or connection-drop simulation, which is an integration/chaos test outside this spec's scope; the at-least-once + idempotent-redelivery design is the mitigation, proven by the duplicate-delivery case above.

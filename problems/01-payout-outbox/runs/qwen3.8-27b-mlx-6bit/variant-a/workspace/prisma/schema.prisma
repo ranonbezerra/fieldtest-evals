@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id        String   @id @default(uuid())
+  balance   BigInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payouts       Payout[]
+  ledgerEntries LedgerEntry[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String   @id @default(uuid())
+  accountId          String   @map("account_id")
+  amount             BigInt
+  destinationAddress String   @map("destination_address")
+  idempotencyKey     String   @map("idempotency_key")
+  status             String
+  txHash             String?  @map("tx_hash")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  account       Account         @relation(fields: [accountId], references: [id])
+  outboxMessage OutboxMessage?
+
+  @@unique([accountId, idempotencyKey])
+  @@map("payouts")
+}
+
+model OutboxMessage {
+  id            String    @id @default(uuid())
+  payoutId      String    @unique @map("payout_id")
+  payload       Json
+  status        String
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime? @map("next_attempt_at")
+  lastError     String?   @map("last_error")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@map("outbox_messages")
+}
+
+model LedgerEntry {
+  id            String   @id @default(uuid())
+  accountId     String   @map("account_id")
+  debit         BigInt   @default(0)
+  credit        BigInt   @default(0)
+  referenceType String   @map("reference_type")
+  referenceId   String?  @map("reference_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@map("ledger_entries")
+}

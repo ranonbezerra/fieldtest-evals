@@ -1,0 +1,97 @@
+
+===== ft-go invocation, 2026-09-02 04:27 UTC =====
+problem   01-payout-outbox
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1589/32768  out 5858/16384  think 7179c  555s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (15266 bytes)
+
+manifest: 14 files
+  prisma/schema.prisma
+  src/payout/provider.interface.ts   <- src/payout/payout.types.ts
+  src/payout/payout.types.ts
+  src/payout/payout.repository.ts   <- src/payout/payout.types.ts
+  src/payout/payout.service.ts   <- src/payout/payout.repository.ts, src/payout/payout.types.ts
+  src/payout/payout.controller.ts   <- src/payout/payout.service.ts, src/payout/payout.types.ts
+  src/payout/payout.module.ts   <- src/payout/payout.controller.ts, src/payout/payout.service.ts, src/payout/payout.repository.ts
+  src/outbox/outbox.repository.ts
+  src/outbox/outbox.service.ts   <- src/outbox/outbox.repository.ts, src/payout/payout.repository.ts, src/payout/payout.types.ts
+  src/outbox/outbox.module.ts   <- src/outbox/outbox.service.ts, src/outbox/outbox.repository.ts, src/payout/payout.module.ts
+  src/app.module.ts   <- src/payout/payout.module.ts, src/outbox/outbox.module.ts
+  src/main.ts   <- src/app.module.ts
+  test/payout.spec.ts   <- src/payout/payout.service.ts, src/payout/payout.repository.ts, src/outbox/outbox.service.ts, src/outbox/outbox.repository.ts, src/payout/payout.types.ts
+  DESIGN.md
+
+[01-schema.prisma] in 5514/32768  out 2860/16384  think 8314c  309s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (1953 bytes)
+[02-provider.interface.ts] in 5505/32768  out 339/16384  think 1345c  44s  7.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/provider.interface.ts (58 bytes)
+[03-payout.types.ts] in 5520/32768  out 749/16384  think 1671c  82s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.types.ts (1041 bytes)
+[04-payout.repository.ts] in 5926/32768  out 7791/16384  think 26102c  748s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts (4202 bytes)
+[05-payout.service.ts] in 7144/32768  out 4772/16384  think 15920c  473s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.service.ts (3178 bytes)
+[06-payout.controller.ts] in 6843/32768  out 930/16384  think 3288c  109s  8.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.controller.ts (418 bytes)
+[07-payout.module.ts] in 7877/32768  out 557/16384  think 1678c  83s  6.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.module.ts (384 bytes)
+[08-outbox.repository.ts] in 5510/32768  out 4344/16384  think 14806c  417s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/outbox/outbox.repository.ts (2170 bytes)
+[09-outbox.service.ts] in 7848/32768  out 5741/16384  think 19733c  573s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/outbox/outbox.service.ts (3319 bytes)
+[10-outbox.module.ts] in 7382/32768  out 1017/16384  think 3869c  122s  8.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/outbox/outbox.module.ts (330 bytes)
+[11-app.module.ts] in 5926/32768  out 354/16384  think 1055c  49s  7.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (238 bytes)
+[12-main.ts] in 5674/32768  out 425/16384  think 1406c  53s  8.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (211 bytes)
+[13-payout.spec.ts-cases] in 9725/32768  out 4231/16384  think 11312c  430s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/13-payout.spec.ts-cases.txt (6472 bytes)
+[13-payout.spec.ts] in 11427/32768  out 8715/16384  think 13919c  927s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/payout.spec.ts (19612 bytes)
+[14-DESIGN.md] in 5506/32768  out 739/16384  think 1042c  81s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/DESIGN.md (2158 bytes)
+
+files written: 14/14
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (10 errors)
+[gate] repairing 5 file(s), loading 2 definition(s) read-only
+[repair1-payout.repository.ts] in 6245/32768  out 6996/16384  think 22540c  708s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts (4509 bytes)
+[repair1-payout.service.ts] in 7575/32768  out 4255/16384  think 13499c  451s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.service.ts (3471 bytes)
+[repair1-outbox.repository.ts] in 7575/32768  out 4062/16384  think 11699c  417s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/outbox/outbox.repository.ts (3011 bytes)
+[repair1-provider.interface.ts] in 7572/32768  out 261/16384  think 934c  37s  7.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/provider.interface.ts (61 bytes)
+[repair1-payout.spec.ts] in 7569/32768  out 12289/16384  think 34012c  1259s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/payout.spec.ts (13153 bytes)
+[gate] typecheck failed (10 errors)
+[gate] repairing 4 file(s), loading 2 definition(s) read-only
+[repair2-outbox.service.ts] in 8416/32768  out 3037/16384  think 8729c  337s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/outbox/outbox.service.ts (3230 bytes)
+[repair2-payout.spec.ts] in 8410/32768  out 14931/16384  think 42237c  1547s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/payout.spec.ts (11860 bytes)
+[repair2-payout.repository.ts] in 7086/32768  out 10238/16384  think 33629c  1041s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payout/payout.repository.ts (6000 bytes)
+[repair2-outbox.repository.ts] in 7915/32768  out 4545/16384  think 14495c  485s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/outbox/outbox.repository.ts (2975 bytes)
+[gate] typecheck failed (6 errors)
+[gate] cleaned install artifacts from the workspace
+
+wall 190.2 min   requests 25   in 173279   out 110036   9.7 tok/s
+generation 188.9 min   model loads 0s   gate+io 1.4 min
+REVISED x9 by the model itself — not a pass; read this run first
+
+failures (1):
+  gate: typecheck still failing after 2 repairs
+
+artifacts in problems/01-payout-outbox/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

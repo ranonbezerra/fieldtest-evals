@@ -1,0 +1,70 @@
+$ pnpm install -> 0
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 9, reused 9, downloaded 0, added 0
+Packages: +85
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 132, reused 85, downloaded 0, added 84
+Progress: resolved 132, reused 85, downloaded 0, added 85, done
+
+dependencies:
++ @nestjs/common 10.4.22 (12.0.1 is available)
++ @nestjs/core 10.4.22 (12.0.1 is available)
++ @prisma/client 5.22.0 (7.10.0 is available)
++ reflect-metadata 0.2.2
++ rxjs 7.8.2
+
+devDependencies:
++ @types/node 22.20.1 (26.4.1 is available)
++ prisma 5.22.0 (8.0.0-rc.12 is available)
++ typescript 5.9.3 (7.0.2 is available)
++ vitest 2.1.9 (4.1.11 is available)
+
+Done in 2.7s using pnpm v10.28.2
+
+$ prisma generate -> 0
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client in 30ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+
+
+$ tsc --noEmit (attempt 0) -> 2
+src/outbox/outbox.repository.ts(2,31): error TS2307: Cannot find module '../prisma/prisma.service' or its corresponding type declarations.
+src/outbox/outbox.repository.ts(21,44): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/outbox/outbox.repository.ts(45,29): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/outbox/outbox.repository.ts(52,24): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/payout/payout.repository.ts(4,31): error TS2307: Cannot find module '../prisma/prisma.service.js' or its corresponding type declarations.
+src/payout/payout.repository.ts(38,44): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/payout/payout.repository.ts(117,43): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/payout/payout.service.ts(64,42): error TS2339: Property 'findByAccountIdAndIdempotencyKey' does not exist on type 'PayoutRepository'.
+src/payout/provider.interface.ts(1,41): error TS2307: Cannot find module './payout.types' or its corresponding type declarations.
+test/payout.spec.ts(191,61): error TS2304: Cannot find name 'PayoutResponse'.
+
+
+$ tsc --noEmit (attempt 1) -> 2
+src/outbox/outbox.repository.ts(4,31): error TS2307: Cannot find module '../prisma/prisma.service.js' or its corresponding type declarations.
+src/outbox/outbox.service.ts(2,28): error TS2459: Module '"./outbox.repository.js"' declares 'OutboxMessageRow' locally, but it is not exported.
+src/payout/payout.repository.ts(4,31): error TS2307: Cannot find module '../prisma/prisma.service.js' or its corresponding type declarations.
+test/payout.spec.ts(51,33): error TS2345: Argument of type '{ createPayoutWithReservation: Mock<Procedure>; updatePayout: Mock<Procedure>; findById: Mock<Procedure>; findByAccountIdAndIdempotencyKey: Mock<...>; confirmPayoutLedger: Mock<...>; }' is not assignable to parameter of type 'PayoutRepository'.
+  Property 'prisma' is missing in type '{ createPayoutWithReservation: Mock<Procedure>; updatePayout: Mock<Procedure>; findById: Mock<Procedure>; findByAccountIdAndIdempotencyKey: Mock<...>; confirmPayoutLedger: Mock<...>; }' but required in type 'PayoutRepository'.
+test/payout.spec.ts(266,32): error TS2345: Argument of type '{ claimPending: Mock<Procedure>; markDone: Mock<Procedure>; recordAttempt: Mock<Procedure>; }' is not assignable to parameter of type 'OutboxRepository'.
+  Property 'prisma' is missing in type '{ claimPending: Mock<Procedure>; markDone: Mock<Procedure>; recordAttempt: Mock<Procedure>; }' but required in type 'OutboxRepository'.
+test/payout.spec.ts(273,23): error TS2339: Property 'mockResolvedValue' does not exist on type '(params: { to: string; amount: bigint; }) => Promise<{ txHash: string; }>'.
+test/payout.spec.ts(294,23): error TS2339: Property 'mockResolvedValue' does not exist on type '(params: { to: string; amount: bigint; }) => Promise<{ txHash: string; }>'.
+test/payout.spec.ts(320,25): error TS2339: Property 'mockRejectedValueOnce' does not exist on type '(params: { to: string; amount: bigint; }) => Promise<{ txHash: string; }>'.
+test/payout.spec.ts(340,23): error TS2339: Property 'mockRejectedValueOnce' does not exist on type '(params: { to: string; amount: bigint; }) => Promise<{ txHash: string; }>'.
+test/payout.spec.ts(348,23): error TS2339: Property 'mockResolvedValueOnce' does not exist on type '(params: { to: string; amount: bigint; }) => Promise<{ txHash: string; }>'.
+
+
+$ tsc --noEmit (attempt 2) -> 2
+src/outbox/outbox.repository.ts(3,31): error TS2307: Cannot find module '../prisma/prisma.service.js' or its corresponding type declarations.
+src/outbox/outbox.repository.ts(56,45): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/payout/payout.repository.ts(3,31): error TS2307: Cannot find module '../prisma/prisma.service.js' or its corresponding type declarations.
+src/payout/payout.repository.ts(69,45): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/payout/payout.repository.ts(144,44): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+test/payout.spec.ts(61,25): error TS2552: Cannot find name 'UneprocessableEntityException'. Did you mean 'UnprocessableEntityException'?
+
