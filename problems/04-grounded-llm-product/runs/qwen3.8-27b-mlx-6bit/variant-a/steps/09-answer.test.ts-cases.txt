@@ -1,0 +1,25 @@
+- **refuses when no sentence is grounded** — Proves that when the LLM's every sentence fails the bigram-overlap gate against the provided sources, `answer()` returns `{ refused: true, text: "not covered by my sources" }`. Fails if the overlap threshold is 0 (everything passes), if the refusal branch is missing, or if the refusal string differs even slightly.
+
+- **refuses when sources array is empty** — Proves the same refusal path triggers with zero sources, not just "wrong" sources. Fails if the code short-circuits on empty input and returns an empty grounded list without setting `refused: true`, or if it throws instead of returning the refusal envelope.
+
+- **full mode returns grounded sentences verbatim** — Proves that in `"full"` mode the returned text is the concatenation of only the grounded sentences, with no redaction applied. Fails if the mode check is inverted (redacts in full mode), or if ungrounded sentences are included in the join.
+
+- **ungrounded sentences are dropped from output** — Proves that given a multi-sentence LLM reply where only a subset passes the gate, the output text contains only the passing sentences. Fails if the join step iterates over all sentences rather than `groundedOnly(...)`, or if the threshold is set so low that a wholly fabricated sentence still passes.
+
+- **hint mode redacts boss names from the grounded answer** — Proves that a boss name present in the grounded text is absent (replaced by `[REDACTED]`) in hint-mode output. Fails if `redactionConfig` is not threaded into `redactForHint`, if the replacement regex is case-sensitive and the answer uses different casing, or if redaction runs on the pre-gate text and the name was in a dropped sentence (making the test vacuously pass).
+
+- **hint mode clamps quantities to those in the question** — Proves that a number in the grounded answer that does NOT appear in the question is replaced with `[REDACTED]`, while a number that DOES appear in the question is preserved. Fails if the numeric comparison is inverted (redacts known quantities, keeps unknown ones), or if the question-number extraction regex misses multi-digit numbers.
+
+- **hint mode strips location prepositional phrases** — Proves that a phrase like `"in the Ember Sanctum"` in the grounded answer is redacted in hint mode. Fails if the location regex does not fire (e.g. it requires two or more capitalised words but the fixture has only one), or if it over-matches lowercase phrases like `"in the room"` and the test asserts those are untouched.
+
+- **hint mode does not call the LLM a second time** — Proves the ordering rule: hint redacts the already-grounded full answer. Fails if the code calls `llm.generate` again for hint mode; with a `ScriptedLLMClient` seeded with exactly one reply, a second call throws `"ScriptedLLMClient exhausted"`.
+
+- **groundedSentences field is populated even on refusal** — Proves the caller can inspect per-sentence grounding results in both success and refusal paths. Fails if the refusal branch returns `groundedSentences: []` instead of the classified list, or omits the field entirely.
+
+- **ScriptedLLMClient exhaustion propagates as an error** — Proves that when the LLM client has no replies left, `answer()` rejects rather than returning a silent fallback. Fails if the service catches the error and returns a grounded-looking default, or if it retries and masks the exhaustion.
+
+- **boundary: single sentence that is fully grounded passes** — Proves the gate accepts a one-sentence reply whose bigrams all appear in a source. Fails if the denominator in the overlap ratio is off-by-one (e.g. counting a trailing period token) causing the ratio to dip below 0.7 for short sentences.
+
+- **boundary: sentence at exactly the 0.7 threshold** — Proves a sentence whose bigram overlap is precisely 70 % is accepted (≥, not >). Fails if the comparison uses strict `>` instead of `>=`.
+
+Deliberately not testing: the specific bigram extraction algorithm (which words count as "content", stopword lists) because that is an internal detail of `gateSentences` and would couple the test to implementation; the eval harness scoring logic because that lives in `test/eval.test.ts`; and the prompt string format because it is invisible to any observable output without intercepting the LLM call, which `ScriptedLLMClient` deliberately ignores.

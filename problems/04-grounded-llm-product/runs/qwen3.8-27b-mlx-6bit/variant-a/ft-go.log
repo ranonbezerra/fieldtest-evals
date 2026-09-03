@@ -1,0 +1,87 @@
+
+===== ft-go invocation, 2026-09-03 03:12 UTC =====
+problem   04-grounded-llm-product
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1439/32768  out 4613/16384  think 8525c  468s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (8872 bytes)
+
+manifest: 10 files
+  src/sources.ts
+  src/llm-client.ts
+  src/grounding.ts   <- src/sources.ts
+  src/redaction.ts
+  src/answer.ts   <- src/sources.ts, src/llm-client.ts, src/grounding.ts, src/redaction.ts
+  src/eval/scenarios.ts   <- src/sources.ts
+  src/eval/judges.ts   <- src/sources.ts
+  src/eval/harness.ts   <- src/answer.ts, src/eval/scenarios.ts, src/eval/judges.ts
+  test/answer.test.ts   <- src/answer.ts, src/llm-client.ts, src/sources.ts, src/redaction.ts
+  test/eval.test.ts   <- src/eval/harness.ts, src/eval/scenarios.ts, src/eval/judges.ts, src/llm-client.ts
+
+[01-sources.ts] in 3660/32768  out 124/16384  think 352c  40s  3.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/sources.ts (75 bytes)
+[02-llm-client.ts] in 3674/32768  out 474/16384  think 1338c  59s  8.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts (491 bytes)
+[03-grounding.ts] in 3807/32768  out 2811/16384  think 6935c  286s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/grounding.ts (2506 bytes)
+[04-redaction.ts] in 3668/32768  out 3554/16384  think 10989c  358s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/redaction.ts (1837 bytes)
+[05-answer.ts] in 5674/32768  out 850/16384  think 1296c  112s  7.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/answer.ts (1611 bytes)
+[06-scenarios.ts] in 3812/32768  out 1983/16384  think 5875c  207s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval/scenarios.ts (1676 bytes)
+[07-judges.ts] in 3812/32768  out 4748/16384  think 14858c  478s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval/judges.ts (2450 bytes)
+[08-harness.ts] in 5707/32768  out 1573/16384  think 4582c  183s  8.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval/harness.ts (1349 bytes)
+[09-answer.test.ts-cases] in 5330/32768  out 2432/16384  think 6077c  264s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/09-answer.test.ts-cases.txt (4380 bytes)
+[09-answer.test.ts] in 6488/32768  out 11057/16384  think 30589c  1159s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/answer.test.ts (7919 bytes)
+[10-eval.test.ts-cases] in 5858/32768  out 4290/16384  think 11940c  454s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/10-eval.test.ts-cases.txt (5157 bytes)
+[10-eval.test.ts] in 7268/32768  out 16384/16384  think 56010c  1703s  9.6 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/eval.test.ts (2618 bytes, UNFENCED reply)
+         test/eval.test.ts overflowed at the lowest effort; the reply is truncated and is not written
+         ceiling hit — retrying test/eval.test.ts at reasoning_effort=low
+[10-eval.test.ts-retry] in 7268/32768  out 16384/16384  think 55886c  1684s  9.7 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/eval.test.ts (1416 bytes, UNFENCED reply)
+
+files written: 10/10
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (1 errors)
+[gate] repairing 1 file(s)
+[repair1-eval.test.ts] in 3661/32768  out 5098/16384  think 16951c  510s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/eval.test.ts (2284 bytes)
+[gate] typecheck failed (7 errors)
+[gate] repairing 3 file(s)
+[repair2-scenarios.ts] in 4039/32768  out 1688/16384  think 4844c  180s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval/scenarios.ts (1622 bytes)
+[repair2-judges.ts] in 4042/32768  out 3575/16384  think 10581c  364s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval/judges.ts (2192 bytes)
+[repair2-harness.ts] in 4039/32768  out 872/16384  think 1670c  100s  8.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/eval/harness.ts (1397 bytes)
+[gate] typecheck clean after repair
+[tests] 3 of 15 failing — recorded, not repaired
+         answer > hint mode clamps quantities to those in the question
+         answer > hint mode strips location prepositional phrases
+         eval harness > catches a quantity mismatch exactly
+[gate] cleaned install artifacts from the workspace
+
+wall 144.5 min   requests 18   in 83246   out 82510   9.6 tok/s
+generation 143.3 min   model loads 8s   gate+io 1.0 min
+OUTPUT CEILING HIT on: 10-eval.test.ts-retry, 10-eval.test.ts  <-- read the reasoning first
+retried at reasoning_effort=low after a ceiling hit: test/eval.test.ts
+REVISED x4 by the model itself — not a pass; read this run first
+
+failures (1):
+  10-eval.test.ts: test file overflowed at reasoning_effort=low, the lowest setting. The truncated reply is in steps/ and was not written as an artifact.
+
+artifacts in problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

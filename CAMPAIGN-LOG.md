@@ -10,3 +10,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-02 04:27 | 01-payout-outbox | a | **1 failure(s)**: typecheck still failing after 2 repairs | 190.2 min | 110036 | 9.7 | 9 | 14/14 | yes |
 | 2026-09-02 06:09 | 02-reconciliation-resend | a | ok | 101.7 min | 58593 | 9.7 | 5 | 7/7 | yes |
 | 2026-09-02 13:53 | 03-read-model-projection | a | **3 failure(s)**: test file overflowed at reasoning_effort=low, the lowest set | 464.2 min | 269975 | 9.7 | 30 | 19/19 | no |
+| 2026-09-03 03:12 | 04-grounded-llm-product | a | **1 failure(s)**: test file overflowed at reasoning_effort=low, the lowest set | 144.5 min | 82510 | 9.6 | 4 | 10/10 | yes |

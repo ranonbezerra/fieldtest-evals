@@ -1,0 +1,31 @@
+{
+  "label": "09-answer.test.ts-cases",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "medium",
+  "prompt_tokens": 5330,
+  "completion_tokens": 2432,
+  "reasoning_chars": 6077,
+  "content_chars": 4353,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 263.7,
+  "server_seconds": 263.6,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 9.2,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/answer.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/llm-client.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/sources.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/redaction.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}
