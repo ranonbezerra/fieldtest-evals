@@ -1,0 +1,31 @@
+{
+  "label": "17-plan.module.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "medium",
+  "prompt_tokens": 6985,
+  "completion_tokens": 578,
+  "reasoning_chars": 1927,
+  "content_chars": 435,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 80.1,
+  "server_seconds": 80.0,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 7.2,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/plan/plan.controller.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/plan/plan.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/plan/plan.repository.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/multi-tenant/multi-tenant.module.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

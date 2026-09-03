@@ -1,0 +1,321 @@
+## 1. Assumptions
+
+- **JWT verification**: Use `jsonwebtoken` with `JWT_SECRET` env var; the token carries an `org` (string UUID) claim. No user-subject validation beyond expiry/signature.
+- **Branding/flags shape**: Stored as JSONB columns; no fixed sub-schema enforced at the DB level (application reads them as `Record<string, unknown>`).
+- **CRUD scope**: Full CRUD (POST, GET list, GET by id, PATCH, DELETE) for customers, plans, and orders to support the isolation tests. Endpoints follow `kebab-case` plural convention: `/customers`, `/plans`, `/orders`.
+- **Request-scoped tenant context**: A NestJS `REQUEST`-scoped provider (`TenantContextService`) carries the resolved tenant ID for the lifetime of a single HTTP request. No header re-validation after middleware.
+- **Prisma extension strategy**: `$extends` query-level interceptor (not a custom middleware) that injects `tenantId` into every read `where` and write `data`. The extended client is REQUEST-scoped so each request sees only its own tenant.
+- **IDs**: All primary keys are UUID v4 generated at the Prisma level (`@default(uuid())`).
+- **No authentication endpoints**: Token is provided by the caller (test harness); no `/login`, `/register` in scope.
+- **Concurrent-request test**: Uses a Promise.all of two supertest calls with different hosts/tokens; verifies each sees only its own rows.
+
+## 2. Data model
+
+**tenants** (`@@map("tenants")`)
+
+| Column | Type | Notes |
+|---|---|---|
+| id | String (uuid) | PK, `@default(uuid())` |
+| name | String | |
+| domain | String | unique, e.g. `app.operator-x.com` |
+| branding | Json (JsonB) | `{ primary_color: string, logo_url: string, ... }` |
+| feature_flags | Json (JsonB) | `{ plan_management: boolean, ... }` |
+| created_at | DateTime | `@default(now())` |
+| updated_at | DateTime | `@updatedAt` |
+
+**customers** (`@@map("customers")`)
+
+| Column | Type | Notes |
+|---|---|---|
+| id | String (uuid) | PK |
+| tenant_id | String | FK → tenants.id, `@map("tenant_id")` |
+| email | String | `@map("email")` |
+| name | String | |
+| created_at | DateTime | |
+| updated_at | DateTime | |
+
+Unique: `[tenant_id, email]` (`@@unique([tenantId, email], name: "customer_tenant_email_unique")`)
+
+**plans** (`@@map("plans")`)
+
+| Column | Type | Notes |
+|---|---|---|
+| id | String (uuid) | PK |
+| tenant_id | String | FK → tenants.id |
+| name | String | |
+| price_cents | Int | `@map("price_cents")` |
+| created_at | DateTime | |
+| updated_at | DateTime | |
+
+**orders** (`@@map("orders")`)
+
+| Column | Type | Notes |
+|---|---|---|
+| id | String (uuid) | PK |
+| tenant_id | String | FK → tenants.id |
+| customer_id | String | FK → customers.id, `@map("customer_id")` |
+| plan_id | String | FK → plans.id, `@map("plan_id")` |
+| status | String | default `"pending"` |
+| total_cents | Int | `@map("total_cents")` |
+| created_at | DateTime | |
+| updated_at | DateTime | |
+
+## 3. Types and signatures
+
+### `src/multi-tenant/tenant-context.service.ts`
+
+```ts
+export const TENANT_CONTEXT = Symbol('TENANT_CONTEXT');
+
+export interface TenantContext {
+  readonly tenantId: string;
+  readonly domain: string;
+}
+
+export declare class TenantContextService {
+  constructor();
+  resolve(ctx: TenantContext): void;
+  get tenantId(): string;
+  get domain(): string;
+}
+```
+
+- `resolve` throws `TenantNotResolvedError` if called more than once per request (defensive).
+- Accessing `tenantId` before `resolve` throws `TenantNotResolvedError`.
+
+### `src/multi-tenant/tenant-resolution.middleware.ts`
+
+```ts
+export declare class TenantResolutionMiddleware implements NestMiddleware {
+  constructor(
+    private readonly tenantCtx: TenantContextService,
+    private readonly prisma: PrismaService,
+  );
+  use(req: Request, res: Response, next: NextFunction): void;
+}
+```
+
+- Reads `req.headers.host` and verifies the Bearer JWT → extracts `org` claim.
+- Looks up tenant by `domain` in the `tenants` table (via base Prisma, no scoping).
+- If tenant not found → 401 `{ error: { code: "unknown_tenant", ... } }`.
+- If `org` claim ≠ resolved `tenant.id` → 403 `{ error: { code: "tenant_mismatch", ... } }`.
+- On success calls `tenantCtx.resolve({ tenantId, domain })`.
+
+### `src/multi-tenant/tenant-prisma.service.ts`
+
+```ts
+export declare class TenantPrismaService {
+  constructor(
+    private readonly base: PrismaService,
+    private readonly ctx: TenantContextService,
+  );
+  // Exposes the same model delegates as PrismaClient but every call
+  // is transparently scoped to ctx.tenantId.
+  get customer(): TenantScopedModel<PrismaClient['customer']>;
+  get plan(): TenantScopedModel<PrismaClient['plan']>;
+  get order(): TenantScopedModel<PrismaClient['order']>;
+}
+
+export interface TenantScopedModel<T> {
+  // Every method present on the original delegate, with tenantId injected.
+  findMany(args?: Record<string, unknown>): Promise<unknown[]>;
+  findUnique(args: Record<string, unknown>): Promise<unknown | null>;
+  findFirst(args?: Record<string, unknown>): Promise<unknown | null>;
+  count(args?: Record<string, unknown>): Promise<number>;
+  create(args: Record<string, unknown>): Promise<unknown>;
+  update(args: Record<string, unknown>): Promise<unknown>;
+  delete(args: Record<string, unknown>): Promise<unknown>;
+  // …(same surface as Prisma delegate)
+}
+```
+
+- Internally wraps `base.$extends({ query: { $allModels: … } })`.
+- Read ops (`findMany`, `findFirst`, `findUnique`, `count`, `aggregate`): merge `{ tenantId }` into `args.where`.
+- Write ops (`create`, `createMany`): merge `{ tenantId }` into `args.data`.
+- Update/delete: merge `{ tenantId }` into `args.where`; if the resulting row count is 0, throw `ResourceNotFoundError`.
+
+### `src/multi-tenant/prisma.service.ts`
+
+```ts
+export declare class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  constructor();
+  onModuleInit(): Promise<void>;
+  onModuleDestroy(): Promise<void>;
+}
+```
+
+Standard NestJS Prisma lifecycle wrapper (singleton). No tenant logic.
+
+### `src/multi-tenant/errors.ts`
+
+```ts
+export declare class TenantMismatchError extends HttpException {
+  constructor();
+}
+// 403 { error: { code: "tenant_mismatch", message, details } }
+
+export declare class UnknownTenantError extends HttpException {
+  constructor();
+}
+// 401 { error: { code: "unknown_tenant", message, details } }
+
+export declare class ResourceNotFoundError extends HttpException {
+  constructor(resource: string);
+}
+// 404 { error: { code: "resource_not_found", message, details } }
+
+export declare class TenantNotResolvedError extends Error {
+  constructor();
+}
+// Internal invariant violation (500 if it leaks)
+```
+
+### `src/multi-tenant/multi-tenant.module.ts`
+
+```ts
+@Module({
+  providers: [PrismaService, TenantContextService, TenantResolutionMiddleware],
+  exports: [PrismaService, TenantContextService],
+})
+export declare class MultiTenantModule {}
+```
+
+`TenantContextService` is `@Scope(REQUEST)`. `PrismaService` is singleton. `TenantResolutionMiddleware` is `@Scope(REQUEST)`.
+
+### Repository pattern (applied to customer, plan, order)
+
+```ts
+// src/customer/customer.repository.ts
+export declare class CustomerRepository {
+  constructor(private readonly db: TenantPrismaService);
+  list(): Promise<Customer[]>;
+  findById(id: string): Promise<Customer | null>;
+  create(input: CreateCustomerInput): Promise<Customer>;
+  update(id: string, input: UpdateCustomerInput): Promise<Customer>;
+  delete(id: string): Promise<void>;
+}
+```
+
+Identical shape for `PlanRepository`, `OrderRepository`. Repositories never reference `tenantId` in their parameters or bodies.
+
+### DTO / Input types (per feature, e.g. `src/customer/dto.ts`)
+
+```ts
+export interface CreateCustomerInput {
+  email: string;
+  name: string;
+}
+export interface UpdateCustomerInput {
+  email?: string;
+  name?: string;
+}
+export interface Customer {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+Analogous `CreatePlanInput`, `UpdatePlanInput`, `Plan`, `CreateOrderInput`, `UpdateOrderInput`, `Order`.
+
+### `GET /tenant-config` — `src/tenant-config/tenant-config.controller.ts`
+
+```ts
+export declare class TenantConfigController {
+  constructor(private readonly svc: TenantConfigService);
+  @Get('tenant-config')
+  getConfig(): Promise<TenantConfigDto>;
+}
+
+export interface TenantConfigDto {
+  name: string;
+  domain: string;
+  branding: Record<string, unknown>;
+  featureFlags: Record<string, unknown>;
+}
+```
+
+### Ordering rules
+
+- **Tenant resolution** must complete before any repository call in the same request. Enforced by NestJS middleware pipeline (middleware runs before controller).
+- **TenantPrismaService** must not be instantiated as a singleton; it is REQUEST-scoped and reads `TenantContextService` (also REQUEST) at call time, not construction time.
+- **Unique constraint violations** (e.g., same email twice in one tenant): the repository lets Prisma throw `P2002`; the service catches it and rethrows a `ConflictError` → 409 `{ error: { code: "conflict", ... } }`.
+
+## 4. Control flow
+
+### Request lifecycle (single HTTP request)
+
+1. **Middleware** (`TenantResolutionMiddleware`): extract host + JWT `org`; query `tenants` table by domain (base Prisma, unscoped); verify match; call `TenantContextService.resolve`. On failure → immediate 401/403, short-circuit.
+2. **Controller**: validate request body params (class-validator or manual); delegate to service.
+3. **Service**: call repository method(s); map domain errors (not-found → 404, conflict → 409). No Prisma imports.
+4. **Repository**: call `TenantPrismaService` model methods. The extension transparently injects `tenantId`. If a write affects 0 rows → throw `ResourceNotFoundError`.
+5. **Response**: JSON envelope (success or error).
+
+### Transaction boundaries
+
+- No multi-step transactions in this scope. Each endpoint is a single atomic DB operation (one create, one update, one delete, or one read).
+- If a future endpoint requires multi-row consistency, the service wraps in `db.$transaction([…])` — but the tenant scoping extension applies inside `$transaction` as well (it intercepts at the query level, not the client level).
+
+### What must NOT be in a transaction / cross-cutting concern
+
+- The tenant resolution lookup uses the **base** Prisma client (singleton, unscoped). It must never go through `TenantPrismaService` (chicken-and-egg: context not yet set).
+- No service or repository may call `this.db.$transaction` with a callback that opens a nested query on a different tenant. The extension makes this impossible by scoping every inner query.
+
+## 5. Tests
+
+| Test file | Test name (abbreviated) | What it proves |
+|---|---|---|
+| `test/multi-tenant.spec.ts` | rejects when host and org claim disagree (403) | Mismatched tenant identity is blocked. |
+| `test/multi-tenant.spec.ts` | rejects unknown domain (401) | Unregistered host yields no access. |
+| `test/customer.spec.ts` | tenant B GET /customers returns only B's rows | List is scoped. |
+| `test/customer.spec.ts` | tenant B GET /customers/:id-of-A → 404 | Read-by-id cannot cross tenants. |
+| `test/customer.spec.ts` | tenant B PATCH /customers/:id-of-A → 404 | Update cannot cross tenants. |
+| `test/customer.spec.ts` | tenant B DELETE /customers/:id-of-A → 404 | Delete cannot cross tenants. |
+| `test/customer.spec.ts` | same email POST to both tenants succeeds in each | Tenant-scoped uniqueness allows duplicate emails across tenants. |
+| `test/customer.spec.ts` | same email POST twice to same tenant → 409 | Uniqueness enforced within a tenant. |
+| `test/plan.spec.ts` | tenant B cannot fetch/update/delete tenant A's plan (404) | Isolation extends to plans. |
+| `test/order.spec.ts` | tenant B cannot fetch/update/delete tenant A's order (404) | Isolation extends to orders. |
+| `test/tenant-config.spec.ts` | GET /tenant-config returns correct branding for the host | Endpoint resolves via middleware context. |
+| `test/concurrency.spec.ts` | two parallel requests (different tenants) each see only own data | No cross-context leakage under concurrency. |
+
+## 6. Manifest
+
+<!-- manifest
+prisma/schema.prisma | reads: - | Prisma schema for tenants, customers, plans, orders
+src/multi-tenant/errors.ts | reads: - | TenantMismatchError, UnknownTenantError, ResourceNotFoundError, TenantNotResolvedError, ConflictError
+src/multi-tenant/tenant-context.service.ts | reads: - | TenantContext interface, TenantContextService (REQUEST-scoped)
+src/multi-tenant/prisma.service.ts | reads: - | PrismaService extending PrismaClient (singleton)
+src/multi-tenant/tenant-resolution.middleware.ts | reads: src/multi-tenant/errors.ts, src/multi-tenant/tenant-context.service.ts, src/multi-tenant/prisma.service.ts | TenantResolutionMiddleware
+src/multi-tenant/tenant-prisma.service.ts | reads: src/multi-tenant/prisma.service.ts, src/multi-tenant/tenant-context.service.ts, src/multi-tenant/errors.ts | TenantPrismaService with $extends scoping
+src/multi-tenant/multi-tenant.module.ts | reads: src/multi-tenant/prisma.service.ts, src/multi-tenant/tenant-context.service.ts, src/multi-tenant/tenant-resolution.middleware.ts, src/multi-tenant/tenant-prisma.service.ts | MultiTenantModule wiring
+src/customer/dto.ts | reads: - | CreateCustomerInput, UpdateCustomerInput, Customer
+src/customer/customer.repository.ts | reads: src/multi-tenant/tenant-prisma.service.ts, src/customer/dto.ts | CustomerRepository
+src/customer/customer.service.ts | reads: src/customer/customer.repository.ts, src/customer/dto.ts, src/multi-tenant/errors.ts | CustomerService
+src/customer/customer.controller.ts | reads: src/customer/customer.service.ts, src/customer/dto.ts | CustomerController (CRUD endpoints)
+src/customer/customer.module.ts | reads: src/customer/customer.controller.ts, src/customer/customer.service.ts, src/customer/customer.repository.ts, src/multi-tenant/multi-tenant.module.ts | CustomerModule
+src/plan/dto.ts | reads: - | CreatePlanInput, UpdatePlanInput, Plan
+src/plan/plan.repository.ts | reads: src/multi-tenant/tenant-prisma.service.ts, src/plan/dto.ts | PlanRepository
+src/plan/plan.service.ts | reads: src/plan/plan.repository.ts, src/plan/dto.ts, src/multi-tenant/errors.ts | PlanService
+src/plan/plan.controller.ts | reads: src/plan/plan.service.ts, src/plan/dto.ts | PlanController
+src/plan/plan.module.ts | reads: src/plan/plan.controller.ts, src/plan/plan.service.ts, src/plan/plan.repository.ts, src/multi-tenant/multi-tenant.module.ts | PlanModule
+src/order/dto.ts | reads: - | CreateOrderInput, UpdateOrderInput, Order
+src/order/order.repository.ts | reads: src/multi-tenant/tenant-prisma.service.ts, src/order/dto.ts | OrderRepository
+src/order/order.service.ts | reads: src/order/order.repository.ts, src/order/dto.ts, src/multi-tenant/errors.ts | OrderService
+src/order/order.controller.ts | reads: src/order/order.service.ts, src/order/dto.ts | OrderController
+src/order/order.module.ts | reads: src/order/order.controller.ts, src/order/order.service.ts, src/order/order.repository.ts, src/multi-tenant/multi-tenant.module.ts | OrderModule
+src/tenant-config/dto.ts | reads: - | TenantConfigDto
+src/tenant-config/tenant-config.repository.ts | reads: src/multi-tenant/tenant-prisma.service.ts | TenantConfigRepository
+src/tenant-config/tenant-config.service.ts | reads: src/tenant-config/tenant-config.repository.ts, src/tenant-config/dto.ts | TenantConfigService
+src/tenant-config/tenant-config.controller.ts | reads: src/tenant-config/tenant-config.service.ts, src/tenant-config/dto.ts | TenantConfigController (GET /tenant-config)
+src/tenant-config/tenant-config.module.ts | reads: src/tenant-config/tenant-config.controller.ts, src/tenant-config/tenant-config.service.ts, src/tenant-config/tenant-config.repository.ts, src/multi-tenant/multi-tenant.module.ts | TenantConfigModule
+src/app.module.ts | reads: src/multi-tenant/multi-tenant.module.ts, src/customer/customer.module.ts, src/plan/plan.module.ts, src/order/order.module.ts, src/tenant-config/tenant-config.module.ts | Root AppModule
+src/main.ts | reads: src/app.module.ts | Bootstrap (CORS, middleware binding, listen)
+test/multi-tenant.spec.ts | reads: src/main.ts | Auth/mismatch rejection tests
+test/customer.spec.ts | reads: src/main.ts, test/multi-tenant.spec.ts | Customer CRUD isolation + uniqueness tests
+test/plan.spec.ts | reads: src/main.ts, test/multi-tenant.spec.ts | Plan isolation tests
+test/order.spec.ts | reads: src/main.ts, test/multi-tenant.spec.ts | Order isolation tests
+test/tenant-config.spec.ts | reads: src/main.ts, test/multi-tenant.spec.ts | GET /tenant-config correctness
+test/concurrency.spec.ts | reads: src/main.ts, test/multi-tenant.spec.ts | Parallel cross-tenant requests do not leak
+-->
