@@ -1,0 +1,32 @@
+{
+  "label": "10-anchoring.spec.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 9258,
+  "completion_tokens": 12916,
+  "reasoning_chars": 34026,
+  "content_chars": 17065,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 1387.9,
+  "server_seconds": 1387.9,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 9.3,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchor-worker.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.repository.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/chain-client.interface.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/10-anchoring.spec.ts-cases.txt"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

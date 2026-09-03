@@ -1,0 +1,97 @@
+
+===== ft-go invocation, 2026-09-03 06:07 UTC =====
+problem   05-onchain-anchoring
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1468/32768  out 5869/16384  think 10324c  579s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (13084 bytes)
+
+manifest: 10 files
+  prisma/schema.prisma
+  src/main.ts
+  src/app.module.ts   <- src/anchoring/anchoring.module.ts
+  src/anchoring/chain-client.interface.ts
+  src/anchoring/anchoring.repository.ts   <- src/anchoring/chain-client.interface.ts
+  src/anchoring/anchoring.service.ts   <- src/anchoring/chain-client.interface.ts, src/anchoring/anchoring.repository.ts
+  src/anchoring/anchor-worker.service.ts   <- src/anchoring/anchoring.service.ts, src/anchoring/anchoring.repository.ts
+  src/anchoring/anchoring.controller.ts   <- src/anchoring/anchoring.service.ts
+  src/anchoring/anchoring.module.ts   <- src/anchoring/anchoring.controller.ts, src/anchoring/anchoring.service.ts, src/anchoring/anchoring.repository.ts, src/anchoring/anchor-worker.service.ts, src/anchoring/chain-client.interface.ts
+  test/anchoring.spec.ts   <- src/anchoring/anchoring.service.ts, src/anchoring/anchor-worker.service.ts, src/anchoring/anchoring.repository.ts, src/anchoring/chain-client.interface.ts
+
+[01-schema.prisma] in 4663/32768  out 2085/16384  think 6365c  238s  8.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (893 bytes)
+[02-main.ts] in 4645/32768  out 621/16384  think 2168c  65s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (281 bytes)
+[03-app.module.ts] in 4650/32768  out 696/16384  think 2643c  73s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (175 bytes)
+[04-chain-client.interface.ts] in 4667/32768  out 387/16384  think 857c  43s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/chain-client.interface.ts (560 bytes)
+[05-anchoring.repository.ts] in 4936/32768  out 2625/16384  think 7569c  264s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.repository.ts (2197 bytes)
+[06-anchoring.service.ts] in 5689/32768  out 5141/16384  think 15210c  520s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.service.ts (4652 bytes)
+[07-anchor-worker.service.ts] in 6752/32768  out 1431/16384  think 4258c  162s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchor-worker.service.ts (1382 bytes)
+[08-anchoring.controller.ts] in 6004/32768  out 4367/16384  think 13559c  448s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.controller.ts (3251 bytes)
+[09-anchoring.module.ts] in 8479/32768  out 4321/16384  think 17743c  465s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.module.ts (780 bytes)
+[10-anchoring.spec.ts-cases] in 7500/32768  out 3610/16384  think 9037c  386s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/10-anchoring.spec.ts-cases.txt (7292 bytes)
+[10-anchoring.spec.ts] in 9258/32768  out 12916/16384  think 34026c  1388s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/anchoring.spec.ts (18012 bytes)
+
+files written: 10/10
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (28 errors)
+[gate] repairing 7 file(s), loading 2 definition(s) read-only
+[repair1-anchoring.spec.ts] in 7436/32768  out 13629/16384  think 39371c  1412s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/anchoring.spec.ts (12850 bytes)
+[repair1-anchoring.repository.ts] in 6699/32768  out 1250/16384  think 1466c  143s  8.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.repository.ts (3086 bytes)
+[repair1-anchoring.controller.ts] in 6719/32768  out 3477/16384  think 12245c  364s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.controller.ts (1630 bytes)
+[repair1-app.module.ts] in 7248/32768  out 1288/16384  think 4821c  151s  8.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (175 bytes)
+[repair1-anchor-worker.service.ts] in 7263/32768  out 2488/16384  think 8558c  271s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchor-worker.service.ts (1724 bytes)
+[repair1-anchoring.service.ts] in 7263/32768  out 5192/16384  think 15749c  542s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.service.ts (4784 bytes)
+[repair1-anchoring.module.ts] in 7263/32768  out 6547/16384  think 25876c  679s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.module.ts (1082 bytes)
+[gate] typecheck failed (15 errors)
+[gate] repairing 6 file(s)
+[repair2-anchoring.spec.ts] in 5186/32768  out 9203/16384  think 21481c  925s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/anchoring.spec.ts (12927 bytes)
+[repair2-anchoring.controller.ts] in 5195/32768  out 2068/16384  think 6742c  210s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.controller.ts (1833 bytes)
+[repair2-app.module.ts] in 5180/32768  out 1075/16384  think 4081c  114s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (175 bytes)
+[repair2-anchor-worker.service.ts] in 5195/32768  out 1915/16384  think 6017c  195s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchor-worker.service.ts (1613 bytes)
+[repair2-anchoring.service.ts] in 5195/32768  out 3709/16384  think 10147c  373s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.service.ts (4589 bytes)
+[repair2-anchoring.module.ts] in 5195/32768  out 4144/16384  think 16674c  416s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/anchoring/anchoring.module.ts (556 bytes)
+[gate] typecheck failed (17 errors)
+[tests] 1 of 13 failing — recorded, not repaired
+         anchorDocument > rejects a duplicate anchor with code duplicate_anchor
+[gate] cleaned install artifacts from the workspace
+
+wall 174.8 min   requests 25   in 149748   out 100054   9.6 tok/s
+generation 173.7 min   model loads 0s   gate+io 1.1 min
+REVISED x13 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 1/12 samples — throughput here is not comparable
+
+failures (2):
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 1 of 12 samples: corespotlightd is using 134% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap acti. Throughput here is the machine's, not the model's.
+
+artifacts in problems/05-onchain-anchoring/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md
