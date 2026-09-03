@@ -583,13 +583,35 @@ The model does not recognise the symptom as its own. `drift-repair.processor.ts`
 directly above the import that cannot be resolved — it saw the error and attributed it
 to the workspace.
 
-*Measured again at `medium`, and it did not settle.* Problem 01 carried the extension on
-26 of 26 relative imports, which looked like the setting had fixed it. Problem 03, same
-setting, carries it on **2 of 13** — and still clusters by directory. What separates
-them is size: problem 03 declares 19 files across four modules against problem 01's 14
-across two. More files, more cross-references, more chances for a convention re-decided
-once per request to diverge. This remains the largest single cause of gate failure in
-the campaign.
+*Measured across four runs at `medium`, and the shape is not what one run suggested.*
+
+| run | with `.js` | typecheck |
+|---|--:|---|
+| 01 payout outbox | **26 of 26** | failed on other grounds |
+| 03 read model projection | 2 of 13 | failed, 25 of 31 errors TS2307 |
+| 04 grounded llm product | **22 of 22** | passed |
+| 05 on-chain anchoring | 1 of 18 | failed, 17 of 17 errors TS2307 |
+
+Two runs committed to the extension and held it across 26 and 22 imports. Two omitted
+it and held that across 12 of 13 and 17 of 18. **The convention is chosen once per run
+and then kept**, which is the opposite of what problem 03 at `low` first suggested and
+of what this finding said after problem 01.
+
+Two corrections, both mine. After problem 01's 26 of 26 I wrote that `medium` had
+settled the convention; problem 03 disproved it. I then wrote that size explained the
+difference — more files, more chances to diverge; problem 04 has 22 imports and holds,
+problem 05 has 18 and does not. Neither the setting nor the size predicts it. What
+predicts it is nothing yet identified, and the run-level consistency is the fact that
+needs explaining.
+
+This is now the single largest determinant of whether a run compiles — **two of four
+gates lost to it** — and it is independent of the quality of the work underneath.
+Problem 05 has the best graded scores in the campaign and the worst extension rate.
+
+Thirteen repairs on problem 05 did not fix one import. The repair phase receives the
+compiler's exact output, naming every module it cannot find, and `Cannot find module
+'./anchoring.service'` does not read as *add an extension* to a model that has already
+decided this project does not use them.
 
 *And it does not fail loudly — it fails silently.* In problem 03, 25 of 31 compile
 errors were TS2307. Because those modules never resolved, `tsc` never typechecked the
