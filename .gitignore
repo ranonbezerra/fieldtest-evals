@@ -21,3 +21,4 @@ coverage/
 *.safetensors
 harness/selftest/runs/
 problems/*/judging/
+__pycache__/
