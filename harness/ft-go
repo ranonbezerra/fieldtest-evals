@@ -180,7 +180,11 @@ def main():
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--no-gate", action="store_true")
     ap.add_argument("--no-install", action="store_true")
-    ap.add_argument("--max-files", type=int, default=20)
+    # A runaway backstop, not a budget. At 20 it silently truncated problem 06's
+    # own plan from 35 files to 20 -- cutting app.module.ts, main.ts and all six
+    # test files -- and the run failed a gate it could not have passed. A cap that
+    # binds is a cap that measures itself.
+    ap.add_argument("--max-files", type=int, default=60)
     ap.add_argument("--ignore-pressure", action="store_true",
                     help="run even though the host is too loaded for a comparable "
                          "measurement. Recorded in meta.yaml either way.")
@@ -278,6 +282,8 @@ def main():
     LOCK.write_text(f"{prob.name} {vslug} pid {os.getpid()}\n")
     t_start = time.time()
     phases, failures, ceiling_retries, two_pass_tests = [], [], [], []
+    manifest_declared = 0  # set when the plan's manifest is parsed; the ladder
+                           # path never parses one, and meta reads it either way
     host_samples = [baseline] if baseline else []
 
     def flush():
@@ -403,6 +409,16 @@ def main():
             say("\nPLAN.md carries no readable manifest. Recorded as a plan-phase failure.")
             (rundir / "GATE.md").write_text("plan produced no machine-readable manifest\n")
             return 1
+        manifest_declared = len(manifest)
+        if manifest_declared > a.max_files:
+            say(f"\nPLAN.md declares {manifest_declared} files, above --max-files "
+                f"{a.max_files}. Truncating, and this run is not comparable: the "
+                f"model's own plan is being cut, not its work judged.")
+            failures.append({
+                "phase": "manifest", "exit": None,
+                "reason": f"the plan declared {manifest_declared} files and "
+                          f"--max-files is {a.max_files}; "
+                          f"{manifest_declared - a.max_files} were never written"})
         manifest = manifest[: a.max_files]
         say(f"\nmanifest: {len(manifest)} files"
             f"{'' if fenced else '  (recovered without a manifest block)'}")
@@ -749,6 +765,8 @@ def main():
                 },
             },
             "runner": a.runner, "spec_source": a.spec,
+            "manifest": {"declared": manifest_declared, "built": len(manifest),
+                         "truncated": manifest_declared > len(manifest)},
             "requests": len(on_disk),
             "resumed": resumed,
             "requests_this_invocation": len(phases),

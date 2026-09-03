@@ -512,6 +512,35 @@ could be applied backwards to two runs that were already judged, without touchin
 standard. The distinction the frozen configuration protects is generation, not
 observation, and conflating the two nearly cost a real finding.
 
+### 4.9 A runaway backstop became a budget, and cut a run's plan by fifteen files
+
+`ft-go --max-files` defaulted to 20. Problem 06's plan declared **35 files** and the
+harness silently kept the first 20, dropping `app.module.ts`, `main.ts`, both
+remaining feature modules and **all six test files**. The run then failed a gate it
+could not have passed: no entry point, no wiring, nothing to test.
+
+Nothing said so. The truncation was one slice with no message, `meta.yaml` recorded a
+manifest of 20 as though that were the plan, and the failure looked like the model's.
+
+*Scope:* one run. Problems 01–05 declared 7, 10, 10, 14 and 19 files, so the cap never
+bound them. That is also what makes the fix safe to apply mid-campaign — **a limit
+that never bound the earlier runs cannot have shaped them**, and raising it leaves
+them byte-identical. Keeping it would have been the incomparable choice: a cap that
+binds only the large problems is a size-correlated artifact, not a standard.
+
+*Changed:* the default is 60, a backstop again rather than a budget. Truncation now
+prints a line saying the run is not comparable, is recorded in `failures`, and
+`meta.yaml` carries `manifest: {declared, built, truncated}`.
+
+*Discarded:* run 06. Its plan is kept in `experiments/truncated-manifest/` — it is a
+good plan, and the only thing wrong with the run is that two thirds of it were built.
+
+This is the ninth instrument defect and the third of its exact kind: a limit set for
+one situation, left in place into another, silently changing what a run means. The
+six-hour campaign timeout did it, the two-repair ceiling has not been tested against
+a run that needed three, and now this. **A constant that was reasonable when written
+does not announce when it stops being reasonable.**
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was
