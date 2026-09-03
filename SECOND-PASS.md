@@ -78,11 +78,39 @@ At `medium` this stopped: problem 01 carried the extension on 26 of 26 relative
 imports. So the scaffold may already be fine and the convention drift may have been a
 symptom of the low-effort fallback rather than a property of the model.
 
-The second pass should decide deliberately rather than by inertia: either keep
-`NodeNext` because a real ESM project is the honest environment, or move to `bundler`
-because the extension is a detail of the harness's scaffold and not of the problem
-being posed. Both are defensible. What is not defensible is leaving it unexamined now
-that it is known to be load-bearing.
+**Measured, on all five valid runs.** One line of `tsconfig.json` —
+`moduleResolution: bundler` with `module: ESNext` — against the compiler, no model
+time:
+
+| run | NodeNext | bundler |
+|---|--:|--:|
+| 01 payout outbox | 6 | 6 |
+| 02 reconciliation resend | 0 | 0 |
+| 03 read model projection | 31 | **8** |
+| 04 grounded llm product | 0 | 0 |
+| 05 on-chain anchoring | 17 | **2** |
+
+It removes the entire error class and touches nothing that already compiled, because
+`bundler` accepts both conventions — it punishes neither the runs that wrote `.js` nor
+the ones that did not.
+
+What it leaves behind is worth judging. Problem 05's two remaining errors are
+`'ChainClient' only refers to a type, but is being used as a value` — the interface
+used as a NestJS injection token, which does not exist at runtime. That is a real
+misunderstanding of the framework, and it is what the run should have been failing on
+instead of seventeen complaints about file extensions.
+
+The decision is between two different measurements, and it should be made on purpose:
+
+- **Keep `NodeNext`** and add the consequence to the cheatsheet — it already says
+  `ESM, "type": "module"` and the model still omits the extension in half the runs, so
+  this measures whether it follows an explicit instruction about its environment.
+- **Move to `bundler`** and take the question off the test. Defensible because
+  `"type": "module"` was the harness's choice and an unusual one: an idiomatic NestJS
+  project is CommonJS, which is what the model writes.
+
+Not applied to this pass. Unlike the `--max-files` fix, this changes results already
+recorded — problems 03 and 05 would go from 31 and 17 errors to 8 and 2.
 
 ## 5. Measure the two-pass test phase at `medium`
 

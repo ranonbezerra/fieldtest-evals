@@ -21,7 +21,7 @@ before every request is what the pilot did; a run here is many small requests
 rather than one large one, so this flushes on a threshold instead -- same
 protection, a fraction of the reload cost. --if-above is how ft-go calls it.
 """
-import json, os, sys, urllib.error, urllib.request
+import json, os, re, sys, urllib.error, urllib.request
 
 BASE = os.environ.get("OMLX_BASE", "http://localhost:9050/v1").rstrip("/")
 ROOT = BASE[:-3] if BASE.endswith("/v1") else BASE
@@ -94,9 +94,34 @@ if "--force" not in args and os.path.exists(LOCK):
         holder = open(LOCK).read().strip()
     except OSError:
         holder = "unknown"
-    print(f"  a run holds {LOCK} ({holder}); refusing to unload the model out from under it")
-    print("  --force overrides, and the run will hang forever if you are wrong")
-    sys.exit(1)
+
+    # A killed run leaves its lock behind, and the lock outlives it forever: the
+    # machine can then never reclaim the model's 22 GiB, and every later flush
+    # refuses on behalf of a process that no longer exists. The lock names the pid;
+    # checking whether it is alive costs one syscall.
+    alive = None
+    m = re.search(r"pid\s+(\d+)", holder)
+    if m:
+        try:
+            os.kill(int(m.group(1)), 0)
+            alive = True
+        except ProcessLookupError:
+            alive = False
+        except PermissionError:
+            alive = True  # exists, owned by someone else
+
+    if alive is False:
+        print(f"  stale lock from a run that is gone ({holder}); clearing it")
+        try:
+            os.unlink(LOCK)
+        except OSError:
+            pass
+    else:
+        held = "" if alive else " (no pid recorded, assuming it is)"
+        print(f"  a run holds {LOCK} ({holder}){held}; refusing to unload the "
+              f"model out from under it")
+        print("  --force overrides, and the run will hang forever if you are wrong")
+        sys.exit(1)
 
 if not s["loaded"]:
     print("  already unloaded")

@@ -541,6 +541,25 @@ six-hour campaign timeout did it, the two-repair ceiling has not been tested aga
 a run that needed three, and now this. **A constant that was reasonable when written
 does not announce when it stops being reasonable.**
 
+### 4.10 A killed run's lock outlived it, and the machine could never reclaim the model
+
+`ft-flush` refuses to unload while `fieldtest-run.lock` exists, which is right: pulling
+the weights out from under a generating request leaves the client waiting on a socket
+nobody will answer.
+
+The lock records the pid and nothing checked whether that pid was alive. A run killed
+mid-flight leaves the file behind, and from then on every flush refuses on behalf of a
+process that no longer exists — permanently, since only a run's clean exit removes it.
+Found when a stale lock from problem 07 blocked reclaiming 22 GiB.
+
+*Changed:* `ft-flush` reads the pid out of the lock and probes it with `os.kill(pid, 0)`.
+A lock whose holder is gone is announced and cleared; a live one still refuses. A lock
+with no readable pid is treated as live, because the failure that matters is unloading
+under a real run.
+
+The flush then recovered **26 GiB of swap** — 29.4 GiB occupied down to 3.2 — which is
+the cost the stale lock had been quietly holding.
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was
