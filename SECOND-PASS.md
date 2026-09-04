@@ -131,3 +131,37 @@ Two repair rounds was set when a repair cost ~19 minutes at the default effort. 
 with six errors outstanding — four of which trace to one missing file. Whether a third
 round would have closed it is unknown, and the cap has never been tested against a run
 that needed one more.
+
+## 7. Supply the stack the cheatsheet declares
+
+**From:** problem 06, whose suite could not run at all, and problem 03.
+
+The cheatsheet tells the model the stack is NestJS with Vitest. The gate scaffold
+supplies `@nestjs/common`, `@nestjs/core`, `@prisma/client`, `reflect-metadata`,
+`rxjs`, and for development `@types/node`, `prisma`, `typescript`, `vitest`.
+
+Missing so far, each because a run reached for it:
+
+| run | package | what it was for |
+|---|---|---|
+| 03 | `@nestjs/schedule` | the `@Cron` drift-repair sweep the problem asks for |
+| 06 | `@nestjs/jwt` | resolving a tenant from a token, which M1 offers as an option |
+| 06 | `@nestjs/testing` | running any NestJS test at all |
+
+`@nestjs/testing` is the urgent one. `Test.createTestingModule` is how NestJS modules
+are tested, and without it the test-execution step from §3.7 — the only instrument
+that has caught a defect the typecheck could not see — cannot run on any submission
+that tests idiomatically.
+
+The model's workaround made it worse: `declare module '@nestjs/jwt'` and `declare
+module 'express'` stubs to satisfy the compiler, which produced two `TS2664` errors
+of their own.
+
+Deciding what belongs in the scaffold is a judgement, not a lookup. Supplying every
+package a run might want turns the scaffold into an answer key for "what should this
+design use"; supplying too few measures the harness. The defensible line is probably
+**whatever the declared stack implies** — `@nestjs/testing` for a NestJS project
+tested at all, `@nestjs/schedule` for a problem whose brief asks for a scheduled
+sweep — and nothing that resolves a design decision the problem is posing.
+
+Not applied in this pass: adding packages changes whether earlier runs compile.
