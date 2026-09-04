@@ -204,3 +204,28 @@ problem, not a worse one, and dependency budgets are real — but it should be a
 decision, not a side effect.
 
 Not applied in this pass: adding packages changes whether earlier runs compile.
+
+## 8. Give the test step a database
+
+**From:** problem 07, whose suite could not run at all.
+
+    PrismaClientInitializationError
+
+Its tests are integration tests against a live Prisma client — a legitimate choice for
+a rules engine backed by tables, and arguably the better one. Problems 01–06 mostly
+wrote mock-based suites, which ran.
+
+So the test-execution step from §3.7 lands or does not land depending on which testing
+style a run happens to pick. That is not a property of the model worth recording, and
+it means the instrument's coverage is silently partial: a run that writes the more
+thorough kind of test is the one that goes unmeasured.
+
+`README.md` already acknowledges this for the manual path — *"docker compose up -d db
+… else run Postgres yourself"*. The automated step needs the same: a disposable
+Postgres started before the suite and torn down after, with `DATABASE_URL` in the
+environment and `prisma migrate deploy` run against it.
+
+Cost: the container is already a dependency of the repository for problem 16, and the
+gate already knows how to be skipped when Docker is absent. The honest fallback is to
+record `tests: {ran: false, reason: "no database"}` rather than to leave the field
+looking like a suite that passed nothing.

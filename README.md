@@ -116,7 +116,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 04 | grounded llm product | ~ | – | – | – | Builds the eval architecture correctly and then evaluates the answer after its own filter has already removed the lie. |
 | 05 | onchain anchoring | ✗ | – | – | – | The strongest work in the campaign, held out of the build by a missing file extension. |
 | 06 | multi tenant isolation | ✗ | – | – | – | Enforces isolation structurally, in the one place that cannot be forgotten, and cannot prove it because the scaffold has no test runner for the framework it declares. |
-| 07 | ingredient classification | – | – | – | – | *not yet run* |
+| 07 | ingredient classification | ✗ | – | – | – | Six errors from a run of sixty-nine requests, and four of them are one file nobody was asked to write. |
 | 08 | infra debug | – | – | – | – | *not yet run* |
 | 09 | feature in conventions | – | – | – | – | *not yet run* |
 | 10 | adapt existing screen | – | – | – | – | *not yet run* |
