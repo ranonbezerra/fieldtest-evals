@@ -1,34 +1,29 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class MethodologyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  getActive() {
-    return this.prisma.methodologyVersion.findFirst({
-      where: { isActive: true },
-    });
+  async getActive() {
+    return this.prisma.methodologyVersion.findFirst({ where: { isActive: true } });
   }
 
-  getById(id: number) {
-    return this.prisma.methodologyVersion.findUnique({
-      where: { id },
-    });
+  async getById(id: number) {
+    return this.prisma.methodologyVersion.findUnique({ where: { id } });
   }
 
-  getRules(versionId: number) {
-    return this.prisma.rule.findMany({
-      where: { methodologyVersionId: versionId },
-    });
+  async getRules(versionId: number) {
+    return this.prisma.rule.findMany({ where: { methodologyVersionId: versionId } });
   }
 
-  create(data: { version: number; name: string }) {
+  async create(data: { version: number; name: string }) {
     return this.prisma.methodologyVersion.create({ data });
   }
 
   async publish(versionId: number): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.methodologyVersion.updateMany({
         where: { isActive: true },
         data: { isActive: false },

@@ -1,0 +1,201 @@
+
+===== ft-go invocation, 2026-09-04 11:13 UTC =====
+problem   07-ingredient-classification
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1467/32768  out 8225/16384  think 17815c  811s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (16469 bytes)
+
+manifest: 27 files
+  prisma/schema.prisma
+  prisma/seed.ts   <- prisma/schema.prisma
+  prisma/migrations/0001_init/migration.sql   <- prisma/schema.prisma
+  src/main.ts
+  src/app.module.ts
+  src/ingredient/ingredient.module.ts
+  src/ingredient/ingredient.controller.ts   <- src/ingredient/ingredient.service.ts
+  src/ingredient/ingredient.service.ts   <- src/ingredient/ingredient.repository.ts
+  src/ingredient/ingredient.repository.ts
+  src/product/product.module.ts
+  src/product/product.controller.ts   <- src/product/product.service.ts
+  src/product/product.service.ts   <- src/product/product.repository.ts
+  src/product/product.repository.ts
+  src/methodology/methodology.module.ts
+  src/methodology/methodology.controller.ts   <- src/methodology/methodology.service.ts
+  src/methodology/methodology.service.ts   <- src/methodology/methodology.repository.ts, src/classification/classification.service.ts
+  src/methodology/methodology.repository.ts
+  src/classification/classification.module.ts
+  src/classification/classification.controller.ts   <- src/classification/classification.service.ts
+  src/classification/classification.service.ts   <- src/classification/classification.repository.ts, src/product/product.repository.ts, src/ingredient/ingredient.repository.ts, src/methodology/methodology.repository.ts, src/profile/profile.repository.ts
+  src/classification/classification.repository.ts
+  src/classification/types.ts
+  src/profile/profile.module.ts
+  src/profile/profile.controller.ts   <- src/profile/profile.service.ts
+  src/profile/profile.service.ts   <- src/profile/profile.repository.ts
+  src/profile/profile.repository.ts
+  test/classification.spec.ts   <- src/classification/classification.service.ts, prisma/seed.ts
+
+[01-schema.prisma] in 5406/32768  out 4800/16384  think 14023c  512s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (4359 bytes)
+[02-seed.ts] in 6602/32768  out 8264/16384  think 20413c  847s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/seed.ts (7670 bytes)
+[03-migration.sql] in 6591/32768  out 3301/16384  think 7226c  330s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/migrations/0001_init/migration.sql (5652 bytes)
+[04-main.ts] in 5401/32768  out 1571/16384  think 4874c  165s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (1399 bytes)
+[05-app.module.ts] in 5394/32768  out 444/16384  think 1285c  55s  8.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (540 bytes)
+[06-ingredient.module.ts] in 5404/32768  out 460/16384  think 1642c  54s  8.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.module.ts (423 bytes)
+[07-ingredient.controller.ts] in 5397/32768  out 669/16384  think 2462c  75s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.controller.ts (313 bytes)
+[08-ingredient.service.ts] in 5399/32768  out 473/16384  think 1658c  57s  8.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.service.ts (346 bytes)
+[09-ingredient.repository.ts] in 5402/32768  out 2800/16384  think 10036c  285s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.repository.ts (1251 bytes)
+[10-product.module.ts] in 5400/32768  out 566/16384  think 2018c  66s  8.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.module.ts (387 bytes)
+[11-product.controller.ts] in 5408/32768  out 2810/16384  think 12130c  286s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.controller.ts (898 bytes)
+[12-product.service.ts] in 5399/32768  out 2308/16384  think 10221c  234s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.service.ts (436 bytes)
+[13-product.repository.ts] in 5399/32768  out 2405/16384  think 8606c  246s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.repository.ts (1085 bytes)
+[14-methodology.module.ts] in 5404/32768  out 310/16384  think 871c  40s  7.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.module.ts (435 bytes)
+[15-methodology.controller.ts] in 5407/32768  out 1416/16384  think 5189c  150s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.controller.ts (569 bytes)
+[16-methodology.service.ts] in 5402/32768  out 1951/16384  think 7403c  202s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.service.ts (949 bytes)
+[17-methodology.repository.ts] in 5400/32768  out 3847/16384  think 13716c  388s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.repository.ts (1608 bytes)
+[18-classification.module.ts] in 5404/32768  out 468/16384  think 1821c  57s  8.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.module.ts (471 bytes)
+[19-classification.controller.ts] in 5397/32768  out 2078/16384  think 8136c  214s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.controller.ts (857 bytes)
+[20-classification.service.ts] in 6785/32768  out 7139/16384  think 19605c  734s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.service.ts (8720 bytes)
+[21-classification.repository.ts] in 5405/32768  out 3661/16384  think 12567c  371s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.repository.ts (2506 bytes)
+[22-types.ts] in 5405/32768  out 729/16384  think 2146c  81s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/types.ts (908 bytes)
+[23-profile.module.ts] in 5400/32768  out 534/16384  think 2016c  63s  8.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.module.ts (387 bytes)
+[24-profile.controller.ts] in 5395/32768  out 1203/16384  think 4558c  129s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.controller.ts (565 bytes)
+[25-profile.service.ts] in 5395/32768  out 1254/16384  think 4835c  133s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.service.ts (567 bytes)
+[26-profile.repository.ts] in 5397/32768  out 1323/16384  think 4666c  141s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.repository.ts (494 bytes)
+[27-classification.spec.ts-cases] in 10117/32768  out 3368/16384  think 9207c  387s  8.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/27-classification.spec.ts-cases.txt (5412 bytes)
+[27-classification.spec.ts] in 11477/32768  out 11475/16384  think 18556c  1266s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/classification.spec.ts (24869 bytes)
+
+files written: 27/27
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (84 errors)
+[gate] repairing 22 file(s)
+[repair1-product.controller.ts] in 6528/32768  out 2491/16384  think 10137c  264s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.controller.ts (934 bytes)
+[repair1-classification.spec.ts] in 6528/32768  out 6810/16384  think 5743c  696s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/classification.spec.ts (19865 bytes)
+[repair1-methodology.controller.ts] in 6534/32768  out 3143/16384  think 12851c  329s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.controller.ts (579 bytes)
+[repair1-classification.controller.ts] in 6534/32768  out 3121/16384  think 13422c  326s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.controller.ts (444 bytes)
+[repair1-product.repository.ts] in 6528/32768  out 1169/16384  think 2745c  132s  8.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.repository.ts (1950 bytes)
+[repair1-ingredient.controller.ts] in 6534/32768  out 1701/16384  think 7159c  185s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.controller.ts (316 bytes)
+[repair1-profile.service.ts] in 6528/32768  out 3038/16384  think 12894c  318s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.service.ts (776 bytes)
+[repair1-methodology.repository.ts] in 6534/32768  out 4423/16384  think 17112c  457s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.repository.ts (1051 bytes)
+[repair1-ingredient.service.ts] in 6534/32768  out 3126/16384  think 12518c  327s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.service.ts (914 bytes)
+[repair1-profile.repository.ts] in 6528/32768  out 6908/16384  think 29795c  706s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.repository.ts (959 bytes)
+[repair1-app.module.ts] in 6525/32768  out 1117/16384  think 4043c  128s  8.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (716 bytes)
+[repair1-classification.repository.ts] in 6534/32768  out 4600/16384  think 16148c  474s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.repository.ts (3659 bytes)
+[repair1-ingredient.module.ts] in 6534/32768  out 1440/16384  think 5844c  160s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.module.ts (781 bytes)
+[repair1-product.module.ts] in 6528/32768  out 2080/16384  think 8705c  223s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.module.ts (525 bytes)
+[repair1-classification.service.ts] in 6534/32768  out 8236/16384  think 27272c  842s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.service.ts (7611 bytes)
+[repair1-profile.controller.ts] in 6528/32768  out 1645/16384  think 6714c  180s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.controller.ts (364 bytes)
+[repair1-profile.module.ts] in 6528/32768  out 2144/16384  think 8902c  230s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.module.ts (897 bytes)
+[repair1-methodology.module.ts] in 6534/32768  out 2587/16384  think 10953c  273s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.module.ts (816 bytes)
+[repair1-ingredient.repository.ts] in 6534/32768  out 5989/16384  think 24855c  615s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.repository.ts (1255 bytes)
+[repair1-methodology.service.ts] in 6534/32768  out 4717/16384  think 19042c  486s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.service.ts (1355 bytes)
+[repair1-classification.module.ts] in 6534/32768  out 2852/16384  think 11761c  300s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.module.ts (920 bytes)
+[repair1-product.service.ts] in 6528/32768  out 3525/16384  think 14081c  367s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.service.ts (1464 bytes)
+[gate] typecheck failed (55 errors)
+[gate] repairing 18 file(s), loading 1 definition(s) read-only
+[repair2-classification.service.ts] in 6697/32768  out 10810/16384  think 37540c  1110s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.service.ts (7530 bytes)
+[repair2-profile.controller.ts] in 6691/32768  out 1380/16384  think 4932c  155s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.controller.ts (374 bytes)
+[repair2-profile.module.ts] in 6691/32768  out 423/16384  think 1432c  62s  6.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.module.ts (396 bytes)
+[repair2-methodology.module.ts] in 6697/32768  out 3613/16384  think 14706c  378s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.module.ts (562 bytes)
+[repair2-methodology.service.ts] in 6697/32768  out 2269/16384  think 8732c  245s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.service.ts (924 bytes)
+[repair2-ingredient.service.ts] in 6697/32768  out 1782/16384  think 7293c  195s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.service.ts (301 bytes)
+[repair2-product.controller.ts] in 6691/32768  out 3252/16384  think 13377c  341s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.controller.ts (987 bytes)
+[repair2-product.repository.ts] in 6691/32768  out 3245/16384  think 11445c  341s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.repository.ts (1551 bytes)
+[repair2-classification.spec.ts] in 6691/32768  out 12233/16384  think 34436c  1254s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/classification.spec.ts (12836 bytes)
+[repair2-app.module.ts] in 6688/32768  out 1538/16384  think 6087c  171s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (555 bytes)
+[repair2-classification.repository.ts] in 6697/32768  out 4901/16384  think 17111c  507s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.repository.ts (2986 bytes)
+[repair2-profile.service.ts] in 6691/32768  out 2383/16384  think 9521c  255s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/profile/profile.service.ts (376 bytes)
+[repair2-methodology.controller.ts] in 6697/32768  out 1822/16384  think 6643c  199s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.controller.ts (755 bytes)
+[repair2-ingredient.module.ts] in 6697/32768  out 2419/16384  think 9171c  253s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/ingredient/ingredient.module.ts (432 bytes)
+[repair2-classification.module.ts] in 6697/32768  out 3070/16384  think 13466c  306s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/classification/classification.module.ts (880 bytes)
+[repair2-product.module.ts] in 6691/32768  out 1017/16384  think 3855c  118s  8.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.module.ts (396 bytes)
+[repair2-product.service.ts] in 6691/32768  out 2579/16384  think 10542c  271s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/product/product.service.ts (666 bytes)
+[repair2-methodology.repository.ts] in 6697/32768  out 2710/16384  think 9466c  274s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/methodology/methodology.repository.ts (1119 bytes)
+[gate] typecheck failed (6 errors)
+[tests] None of None passing
+[gate] cleaned install artifacts from the workspace
+
+wall 383.0 min   requests 69   in 431433   out 218160   9.6 tok/s
+generation 380.5 min   model loads 0s   gate+io 2.5 min
+REVISED x40 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 3/29 samples — throughput here is not comparable
+
+failures (2):
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 3 of 29 samples: AddressBookSourc is using 85% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap act. Throughput here is the machine's, not the model's.
+
+artifacts in problems/07-ingredient-classification/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

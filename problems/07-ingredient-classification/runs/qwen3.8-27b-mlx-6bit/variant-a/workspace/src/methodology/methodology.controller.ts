@@ -1,5 +1,7 @@
-import { Body, Controller, HttpCode, Param, ParseIntPipe, Post } from '@nestjs/common';
-import { MethodologyService } from './methodology.service';
+import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
+import { MethodologyService } from './methodology.service.js';
+
+// ASSUMPTION: MethodologyService exposes create(version: number, name: string) in addition to publish(versionId: number), matching the repository's create(data) signature.
 
 @Controller('methodologies')
 export class MethodologyController {
@@ -7,12 +9,12 @@ export class MethodologyController {
 
   @Post()
   create(@Body() body: { version: number; name: string }) {
-    return this.methodologyService.create(body);
+    return this.methodologyService.create(body.version, body.name);
   }
 
   @Post(':id/publish')
   @HttpCode(204)
-  async publish(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    await this.methodologyService.publish(id);
+  async publish(@Param('id') id: string): Promise<void> {
+    await this.methodologyService.publish(Number(id));
   }
 }

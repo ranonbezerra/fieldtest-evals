@@ -1,46 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient, Severity } from '@prisma/client';
+import { PrismaService } from '../prisma.service.js';
 
-export interface ProductIngredientData {
-  rawText: string;
-  position: number;
-}
-
-export interface ProductWithIngredients {
-  id: number;
-  name: string;
-  productIngredients: ProductIngredientData[];
-}
-
-export interface FindingData {
-  rawText: string;
-  resolvedName: string | null;
-  ingredientId: number | null;
-  isUnknown: boolean;
-  flag: string | null;
-  severity: Severity | null;
-  sourceCitation: string | null;
-}
-
-export interface ResultData {
-  productId: number;
-  methodologyVersionId: number;
-  overallConfidence: number;
-  disclaimer: string;
-}
+// ASSUMPTION: Prisma model names are `classificationResult` and `classificationFinding`
+// (camelCase accessors on the Prisma client, corresponding to PascalCase model names
+// mapped to snake_case tables via @@map).
+// ASSUMPTION: The composite unique key uses Prisma's default naming convention:
+// `productId_methodologyVersionId`.
 
 @Injectable()
 export class ClassificationRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async upsert(result: ResultData, findings: FindingData[]): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      const saved = await tx.classificationResult.upsert({
+  async upsert(
+    result: {
+      productId: number;
+      methodologyVersionId: number;
+      overallConfidence: number;
+      disclaimer: string;
+    },
+    findings: {
+      rawText: string;
+      resolvedName: string | null;
+      ingredientId: number | null;
+      isUnknown: boolean;
+      flag: string | null;
+      severity: string | null;
+      sourceCitation: string | null;
+    }[],
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const resultRow = await tx.classificationResult.upsert({
         where: {
           productId_methodologyVersionId: {
             productId: result.productId,
             methodologyVersionId: result.methodologyVersionId,
           },
+        },
+        update: {
+          overallConfidence: result.overallConfidence,
+          disclaimer: result.disclaimer,
         },
         create: {
           productId: result.productId,
@@ -48,57 +46,40 @@ export class ClassificationRepository {
           overallConfidence: result.overallConfidence,
           disclaimer: result.disclaimer,
         },
-        update: {
-          overallConfidence: result.overallConfidence,
-          disclaimer: result.disclaimer,
-          updatedAt: new Date(),
-        },
       });
 
       await tx.classificationFinding.deleteMany({
-        where: { classificationResultId: saved.id },
+        where: { classificationResultId: resultRow.id },
       });
 
       if (findings.length > 0) {
         await tx.classificationFinding.createMany({
           data: findings.map((f) => ({
-            classificationResultId: saved.id,
+            classificationResultId: resultRow.id,
             rawText: f.rawText,
             resolvedName: f.resolvedName,
             ingredientId: f.ingredientId,
             isUnknown: f.isUnknown,
             flag: f.flag,
-            severity: f.severity,
+            severity: f.severity as any,
             sourceCitation: f.sourceCitation,
           })),
         });
       }
+
+      return tx.classificationResult.findUniqueOrThrow({
+        where: { id: resultRow.id },
+        include: {
+          findings: { orderBy: { id: 'asc' } },
+        },
+      });
     });
   }
 
   async findByProductAndVersion(
     productId: number,
     versionId: number,
-  ): Promise<null | {
-    id: number;
-    productId: number;
-    methodologyVersionId: number;
-    overallConfidence: number;
-    disclaimer: string;
-    createdAt: Date;
-    updatedAt: Date | null;
-    findings: Array<{
-      id: number;
-      classificationResultId: number;
-      rawText: string;
-      resolvedName: string | null;
-      ingredientId: number | null;
-      isUnknown: boolean;
-      flag: string | null;
-      severity: Severity | null;
-      sourceCitation: string | null;
-    }>;
-  }> {
+  ) {
     return this.prisma.classificationResult.findUnique({
       where: {
         productId_methodologyVersionId: {
@@ -106,35 +87,18 @@ export class ClassificationRepository {
           methodologyVersionId: versionId,
         },
       },
-      include: { findings: true },
+      include: {
+        findings: { orderBy: { id: 'asc' } },
+      },
     });
   }
 
-  async findByProductId(
-    productId: number,
-  ): Promise<Array<{
-    id: number;
-    productId: number;
-    methodologyVersionId: number;
-    overallConfidence: number;
-    disclaimer: string;
-    createdAt: Date;
-    updatedAt: Date | null;
-    findings: Array<{
-      id: number;
-      classificationResultId: number;
-      rawText: string;
-      resolvedName: string | null;
-      ingredientId: number | null;
-      isUnknown: boolean;
-      flag: string | null;
-      severity: Severity | null;
-      sourceCitation: string | null;
-    }>;
-  }>> {
+  async findByProductId(productId: number) {
     return this.prisma.classificationResult.findMany({
       where: { productId },
-      include: { findings: true },
+      include: {
+        findings: { orderBy: { id: 'asc' } },
+      },
     });
   }
 }
