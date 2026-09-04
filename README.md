@@ -116,7 +116,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 04 | grounded llm product | ~ | – | – | – | Builds the eval architecture correctly and then evaluates the answer after its own filter has already removed the lie. |
 | 05 | onchain anchoring | ✗ | – | – | – | The strongest work in the campaign, held out of the build by a missing file extension. |
 | 06 | multi tenant isolation | ✗ | – | – | – | Enforces isolation structurally, in the one place that cannot be forgotten, and cannot prove it because the scaffold has no test runner for the framework it declares. |
-| 07 | ingredient classification | ✗ | – | – | – | Six errors from a run of sixty-nine requests, and four of them are one file nobody was asked to write. |
+| 07 | ingredient classification | ✗ | – | – | – | One file nobody was asked to write hid a wrong relation name in every query of a repository, and only a real database said so. |
 | 08 | infra debug | – | – | – | – | *not yet run* |
 | 09 | feature in conventions | – | – | – | – | *not yet run* |
 | 10 | adapt existing screen | – | – | – | – | *not yet run* |
@@ -177,52 +177,68 @@ then mapped back to model ids.
 
 ## What has been measured so far
 
-Full record with numbers and consequences in [`FINDINGS.md`](FINDINGS.md).
+Seven of eighteen problems, one variant each, one fixed configuration. Full record with
+numbers in [`FINDINGS.md`](FINDINGS.md); every claim below is from a `verdict.md` on
+disk.
 
-**About the model: nothing quotable yet, after two discards.** The first five runs used
-the wrong generation parameters — the model was identified from its `config.json` class
-name and run at temperature 0.6 instead of the 1.0 its card recommends. The next three
-ran at the correct parameters and were judged, and were discarded for a subtler reason:
-**the planning phase overflowed the 16,384-token output ceiling in 3 of 3 runs**, so the
-harness fell back to `reasoning_effort: low` and every run was governed by a plan written
-at low effort. Those runs measured a specification the harness had degraded to make it
-fit, which is a fact about the harness. The campaign now runs at `medium`, where 6 of 6
-replayed phases fit using a median of 36% of the ceiling.
+**Two of seven compile. None passes clean.** That is the headline and it needs its
+qualifier: the failures are rarely about the domain. Across seven runs, **39 of 42
+must-haves are satisfied in the source** — the model designs these systems correctly
+far more often than it delivers them buildable. Four of the five misses are one run,
+problem 03, and that run is §3.6b's case: its unresolved imports stopped the compiler
+from checking anything behind them.
 
-Both discards are documented in [`FINDINGS.md`](FINDINGS.md) §0 rather than deleted. A
+| | Finding | What it means for you |
+|---|---|---|
+| 1 | **Its plan contradicts itself, and the code implements the executable half** — the invariant in one section, the procedure that breaks it in another | Approving the plan does not protect you. Read its sections against each other |
+| 2 | **It designs against files and methods nobody commissioned.** A `PrismaService` named in three constructors and never written; controllers calling service methods that do not exist | The gap is between phases, not inside them. Cross-check the manifest against the interfaces |
+| 3 | **A module-resolution convention decides half the gates.** The two runs that compiled carry the `.js` extension on 100% of relative imports; every run below 98% failed on it | Tell it your module system's consequences, not just its name |
+| 4 | **An unresolved import hides everything behind it.** Six errors after forty repairs read as nearly-clean; the untyped Prisma client behind them hid a wrong relation name in every query of a repository | An error count means nothing until imports resolve |
+| 5 | **It reaches for raw SQL when the ORM runs out, and gets it right** — `SELECT … FOR UPDATE`, `FOR UPDATE SKIP LOCKED`, `ON CONFLICT … DO UPDATE SET col = col + n` | The hard concurrency primitives are within reach |
+| 6 | **Repairs converge on what they understand and never touch what they do not.** Forty rounds fixed type errors and never once added a file extension the compiler named in its own message | A repair loop that runs is not a repair loop that converges |
+| 7 | **It writes the test that catches its own bug, then ships the bug.** Problem 02 named `amount mismatch: order is NOT settled and NOT treated as absent` and violated it twenty lines above | Run its tests. They are better than its code |
+
+**What it is good at, concretely.** Structural enforcement it cannot forget later — a
+Prisma client extension that stamps `tenantId` on every write, `AsyncLocalStorage` for
+request context. Recovery paths that handle both directions of a crash. Canonical
+hashing with sorted keys, tested for insertion order. Idempotency with both guards —
+pre-check and unique-violation re-read. Error taxonomies with four buckets where the
+problem needs four.
+
+**What it is not good at.** Holding an agreement between two files it wrote at
+different times.
+
+**Cost:** 256 requests, 1,003,273 output tokens, 28.9 hours of generation for seven
+problems, at 9.5–9.6 tokens per second in every single run. A run costs 1.7 to 7.7
+hours depending on how much its gate has to repair.
+
+**Two discards** are documented in [`FINDINGS.md`](FINDINGS.md) §0 rather than deleted:
+five runs at the wrong temperature, and three more where the planning phase overflowed
+its output ceiling and the harness silently fell back to a lower reasoning effort. A
 results table is worth exactly what its worst row is worth.
 
-**About how this model works, which survives both discards:**
-
-| | Finding | Why it matters |
-|---|---|---|
-| 1 | **Its plan contradicts itself, and the code implements the executable half** — the invariant stated in one section, the procedure that breaks it written in another. All three failed must-haves were this | Reviewing the plan does not catch it. You have to read its sections against each other |
-| 2 | **It re-decides conventions between files.** Given one file per request, the `.js` import extension that ESM requires appeared in phases 06–09 and vanished in the rest of the same run | 23 of 32 remaining compile errors in one run. Nothing carries the previous file's style forward |
-| 3 | **It reaches for raw SQL when the ORM runs out, and gets it right** — a real `SELECT … FOR UPDATE`, a real `ON CONFLICT … DO UPDATE SET col = col + n` | The hard concurrency primitives are within reach |
-| 4 | **Repairs converge on what they understand and never touch what they do not.** Seven rounds fixed every type error and never once addressed the module-resolution error in the same output | A green repair loop is not a converging one |
-
-**About the machine and the instruments, which no parameter could affect:**
+**About the machine and the instruments:**
 
 | | Finding | What it changed |
 |---|---|---|
 | 1 | The output ceiling is **16,384 tokens with reasoning paid out of it** — a server setting, not a model limit | The whole phase design: one file per request |
-| 2 | A ceiling hit **mid-reasoning returns the deliberation as the answer**, with `reasoning_content` empty | A cut-off phase writes no artifact |
-| 3 | The server's memory ceiling **moves with host load** — 37.44 to 32.36 GiB in one session — and under swap pressure the server does not slow down, it dies | Runs are gated on a measured margin, not on free memory |
-| 4 | The model can be **"loaded" and paged out at once**: 22.27 GiB resident against 4.5 GiB wired | `ft-flush` recovers it; the run is refused until it does |
-| 5 | The cheatsheet was **leaking two rubric answers** in sentences that read as good advice | `ft-lint-cheatsheet`, validated against a planted leak |
-| 6 | **A resumed run reported the tail of itself as the whole run** — 57 minutes for a run that cost 340 | Totals now come from the requests, which survive a resume |
+| 2 | The server's memory ceiling **moves with host load**, and under swap pressure it does not slow down — it dies | Runs are gated on a measured margin, not on free memory |
+| 3 | The model can be **"loaded" and paged out at once** — 22 GiB resident against 4 GiB wired | `ft-flush` recovers it; a run is refused until it does |
+| 4 | A **resumed run reported the tail of itself as the whole run** — 57 minutes for a run that cost 340 | Totals come from the requests, which survive a resume |
+| 5 | A **silent file cap cut one run's plan by fifteen files**, including every test | Truncation is now loud, recorded, and marked not comparable |
+| 6 | A **killed run's lock outlived it**, so the machine could never reclaim the model again | The lock's pid is probed; a dead holder's lock is cleared |
 
-Changes the first pass has earned and does not get to use — a plan-consistency check,
-a manifest reference check, feeding the test suite back as a repair round — are
-collected in [`SECOND-PASS.md`](SECOND-PASS.md) rather than applied. One configuration
-for all eighteen, and the improvements found along the way are the argument for a
-second pass, not for switching mid-flight.
-
-Eight of the harness's own instruments were wrong before they were right, and seven
-failed in the same direction: reporting success, or refusing healthy work. The eighth was
-written *after* the other seven were catalogued, in the file that names the pattern.
+Ten of the harness's own instruments were wrong before they were right, and eight
+failed in the same direction: reporting success, or refusing healthy work. The tenth
+was written *after* the other nine were catalogued, in the file that names the pattern.
 [`FINDINGS.md`](FINDINGS.md) §4 has them all, because a repository about criteria that
 pass for the wrong reason does not get to exempt its own.
+
+Changes the first pass has earned and does not get to use — a plan-consistency check, a
+manifest reference check, feeding the test suite back as a repair round, a database for
+the test step — are collected in [`SECOND-PASS.md`](SECOND-PASS.md) rather than applied.
+One configuration for all eighteen; improvements found along the way are the argument
+for a second pass, not for switching mid-flight.
 
 ## How to use this repo
 

@@ -600,6 +600,197 @@ gate, and now fails it faster. That is the intended behaviour — `revisions.sel
 is recorded and a repaired run is the one to read first — but the ceiling on repairs has
 never been tested against a model that needs three.
 
+### 3.6 A module-resolution convention, chosen per run, decides half the gates
+
+The scaffold is a real ESM project — `"type": "module"` with `moduleResolution:
+NodeNext` — so relative imports must carry the `.js` extension. Omitting it produces
+`TS2307` on files that exist, and `TS2835` where the compiler names the fix in the
+message.
+
+Measured across seven runs at `medium`, counting every relative import in `src/` and
+`test/`:
+
+| run | with `.js` | | typecheck |
+|---|--:|--:|---|
+| 01 payout outbox | 26 / 26 | 100% | failed on other grounds |
+| 02 reconciliation resend | 9 / 9 | 100% | **passed** |
+| 04 grounded llm product | 22 / 22 | 100% | **passed** |
+| 07 ingredient classification | 54 / 55 | 98% | failed on other grounds |
+| 06 multi-tenant isolation | 23 / 36 | 64% | failed, 19 of 24 errors |
+| 03 read model projection | 10 / 34 | 29% | failed, 25 of 31 errors |
+| 05 on-chain anchoring | 1 / 18 | 6% | failed, 17 of 17 errors |
+
+**Three corrections, all mine, and they are the finding as much as the table is.**
+After problem 01 came in at 26 of 26 I wrote that `medium` had settled the convention;
+problem 03 disproved it. I then wrote that manifest size explained the split; problem
+04 has 22 imports and holds, problem 05 has 18 and does not. At n=4 the results looked
+bimodal — near-100% or near-0% — and I wrote that the convention was *chosen once per
+run and kept*. At n=7 it is a spectrum, and problem 06 sits at 64% in the middle of it.
+
+What survives all three revisions is the consequence, not the cause: **the two runs
+that compiled are both at 100%**, and every run below 98% failed its gate with the
+extension as the dominant error. Nothing yet predicts which a run will be.
+
+*Not changed, deliberately.* `moduleResolution: bundler` accepts both conventions and
+would take problem 03 from 31 errors to 8 and problem 05 from 17 to 2, touching
+nothing that already compiled — measured, in `SECOND-PASS.md` §4. It is not applied
+because it changes results already recorded.
+
+### 3.6b An unresolved import is not one error; it is a hole of unknown size
+
+Twice now the visible error count has understated a run, and by the same mechanism.
+
+When `tsc` cannot resolve a module, the symbols behind it have no type. Every call
+made through them is then unchecked — not reported and wrong, but never examined.
+
+**Problem 03.** 25 of 31 errors were `TS2307`. Behind them, two services called
+repository methods that did not exist (`reDeriveWindow`, `simulateWrite`). The
+compiler never compared them against an interface it could not resolve, thirty
+repairs worked on what it did report, and the defects surfaced only when the suite
+ran: `is not a function`, six times.
+
+**Problem 07.** Six errors, three of them a `prisma.service` the manifest never
+commissioned. That import failing left `this.prisma` untyped, so no query made
+through it was validated — and `product.repository.ts` asks for a relation named
+`productIngredients` in every query it makes, while the schema names it
+`ingredients`. TypeScript would have caught that on the first keystroke. It never
+looked. A live Postgres rejected all six tests.
+
+Problem 07 is the sharper case because its typecheck looked *nearly clean*. Six errors
+after forty repairs reads as a run that almost made it; it was a run whose errors were
+suppressing each other.
+
+*What this changes in how a run is read:* an error count is only meaningful once
+imports resolve. Until then the right summary is not "6 errors" but "6 errors and an
+unmeasured surface". The verdicts now say so.
+
+### 3.7 The gate typechecked and did not execute, and the suite was already there
+
+Problem 02 passed `tsc` and is wrong about the one must-have its problem exists to
+test. Its own test suite says so: `amount mismatch: order is NOT settled and NOT
+treated as absent` — a case the model chose, named exactly, and violated twenty lines
+above. Thirteen of its fourteen tests pass and the fourteenth is the finding.
+
+The suite was in the workspace the whole time. `README.md` documented running it as a
+step for the human judge, which is a way of not doing it.
+
+Re-measured across both finished runs:
+
+| run | typecheck | its own suite |
+|---|---|---|
+| 01 payout outbox | failed, 6 errors | **4 of 10 fail** |
+| 02 reconciliation resend | passed after 5 repairs | **1 of 14 fails** |
+
+Problem 01's four are worth separating, because a failing suite is not automatically
+four defects. Two are one typo: `UneprocessableEntityException` is undefined at
+runtime, so both tests naming it throw a ReferenceError. One is a genuine contract
+violation — the repository throws `new Error('Account not found')` where the test
+expects `NotFoundException`, which reaches a caller as a 500 instead of a 404. The
+fourth is the P2002 branch escaping as "Unique constraint failed".
+
+*Changed:* `ft-go` runs the suite after the typecheck and records `tests` in
+`meta.yaml`; `harness/ft-test` applies the same step to runs already finished.
+
+*The repair loop this argues for is in [`SECOND-PASS.md`](SECOND-PASS.md) §3, with the
+question that makes it worth running: handed a failing test it wrote itself, does the
+model fix the code or delete the assertion? Both turn the suite green, and they are not
+the same tool.*
+
+*Recorded and never repaired.* Feeding a failing test back as a repair round would
+change the artifact the model produced, and the eighteen runs have to be comparable.
+Running the suite changes only what is *known* about a run — which is precisely why it
+could be applied backwards to two runs that were already judged, without touching the
+standard. The distinction the frozen configuration protects is generation, not
+observation, and conflating the two nearly cost a real finding.
+
+### 4.9 A runaway backstop became a budget, and cut a run's plan by fifteen files
+
+`ft-go --max-files` defaulted to 20. Problem 06's plan declared **35 files** and the
+harness silently kept the first 20, dropping `app.module.ts`, `main.ts`, both
+remaining feature modules and **all six test files**. The run then failed a gate it
+could not have passed: no entry point, no wiring, nothing to test.
+
+Nothing said so. The truncation was one slice with no message, `meta.yaml` recorded a
+manifest of 20 as though that were the plan, and the failure looked like the model's.
+
+*Scope:* one run. Problems 01–05 declared 7, 10, 10, 14 and 19 files, so the cap never
+bound them. That is also what makes the fix safe to apply mid-campaign — **a limit
+that never bound the earlier runs cannot have shaped them**, and raising it leaves
+them byte-identical. Keeping it would have been the incomparable choice: a cap that
+binds only the large problems is a size-correlated artifact, not a standard.
+
+*Changed:* the default is 60, a backstop again rather than a budget. Truncation now
+prints a line saying the run is not comparable, is recorded in `failures`, and
+`meta.yaml` carries `manifest: {declared, built, truncated}`.
+
+*Discarded:* run 06. Its plan is kept in `experiments/truncated-manifest/` — it is a
+good plan, and the only thing wrong with the run is that two thirds of it were built.
+
+This is the ninth instrument defect and the third of its exact kind: a limit set for
+one situation, left in place into another, silently changing what a run means. The
+six-hour campaign timeout did it, the two-repair ceiling has not been tested against
+a run that needed three, and now this. **A constant that was reasonable when written
+does not announce when it stops being reasonable.**
+
+### 4.10 A killed run's lock outlived it, and the machine could never reclaim the model
+
+`ft-flush` refuses to unload while `fieldtest-run.lock` exists, which is right: pulling
+the weights out from under a generating request leaves the client waiting on a socket
+nobody will answer.
+
+The lock records the pid and nothing checked whether that pid was alive. A run killed
+mid-flight leaves the file behind, and from then on every flush refuses on behalf of a
+process that no longer exists — permanently, since only a run's clean exit removes it.
+Found when a stale lock from problem 07 blocked reclaiming 22 GiB.
+
+*Changed:* `ft-flush` reads the pid out of the lock and probes it with `os.kill(pid, 0)`.
+A lock whose holder is gone is announced and cleared; a live one still refuses. A lock
+with no readable pid is treated as live, because the failure that matters is unloading
+under a real run.
+
+The flush then recovered **26 GiB of swap** — 29.4 GiB occupied down to 3.2 — which is
+the cost the stale lock had been quietly holding.
+
+### 3.5 The gate roughly doubles a run, and the repair loop is why
+
+With the gate armed for the first time, problem 02 wrote all ten of its files and was
+then **killed at exactly six hours** by the campaign's own timeout, with no
+`meta.yaml`. Every file existed; the run did not.
+
+The repair loop is the cost. A repair rewrites the whole file — `whole` format, not a
+diff — and at the model's default effort it deliberates over the rewrite as if it were
+new work. **Roughly 19 minutes per repaired file**, against 6–7 minutes for the same
+phase in the self-test. Five repairs put the run past the limit.
+
+*Changed, two ways:*
+
+- **Repairs run at `reasoning_effort: low`.** Named as a harness choice rather than
+  slipped in: a repair is not design work. It is *"change exactly what these compiler
+  messages require"*, with the messages quoted in full — a constrained edit against an
+  exact specification, which is the one place lowering the dial costs least.
+- **The timeout goes from six hours to twelve.** Six was set when the gate could not
+  fire and runs took five. Eight was set next, and problem 03 then ran 7.6 hours —
+  twenty-four minutes of margin, which is not margin.
+
+*Now measured, on three complete runs:*
+
+| run | repair requests | share of output | time | gate |
+|---|--:|--:|--:|:-:|
+| 01 payout outbox | 0 of 15 | 0% | — | passed |
+| 02 reconciliation resend | 10 of 23 | **33%** | 1.9 h | failed |
+| 03 read model projection | 14 of 37 | **33%** | 2.5 h | failed |
+
+Both failing runs spent exactly a third of their output on repairs, and both still
+failed. The repair loop is not a rescue with a cost — on this evidence it is a cost
+that has not yet rescued anything. What it did buy is diagnosis: problem 02's three
+rounds fixed every type error they understood and never once touched the `TS2307`
+that was in the output all three times (§3.6), and that contrast is the finding.
+
+*What this does not fix:* a run that needs more than two repair rounds still fails the
+gate, and now fails it faster. That is the intended behaviour — `revisions.self_repairs`
+is recorded and a repaired run is the one to read first — but the ceiling on repairs has
+never been tested against a model that needs three.
+
 ### 3.6 One file per request holds a convention inside a run of phases and drops it between them
 
 The single largest cause of gate failure so far is not a domain error. It is the `.js`
@@ -705,69 +896,28 @@ lines of the files already written is the obvious repair and is not yet built.
 
 Written before the data, so they can be wrong rather than rationalised afterwards.
 
-### 6.2 `medium` fits, and the campaign has been running on plans written at `low`
+### 6.2 `medium` was the right setting, and seven runs say so
 
-Measured, one axis, everything else held. Six of ten phases ran. The other four were
-refused when `fileproviderd` took 130–143% CPU, and cannot be run now: they needed the
-run directories, which the discard removed. Six was enough to decide, and the campaign
-at `medium` will produce better evidence than a replay could.
+Chosen from a replay of the phases that overflowed at the model's own default, where
+6 of 6 fit. Seven complete runs since:
 
-| phase | at the default | at `medium` |
+| | at the default (discarded campaign) | at `medium` |
 |---|--:|--:|
-| 01 `00-plan` | 16,384 — ceiling | **5,380** |
-| 01 `payout.repository.ts` | 16,384 — ceiling | **10,694** |
-| 01 `payout-worker.service.ts` | 16,384 — ceiling | **6,210** |
-| 01 `payout.controller.ts` | 16,384 — ceiling | **4,362** |
-| 01 `payout.spec.ts-cases` | 16,384 — ceiling | **3,737** |
-| 03 `00-plan` | 16,384 — ceiling | **5,706** |
+| phases that hit the 16,384-token ceiling | **14 of 60** (23%) | **3 of 256** (1.2%) |
+| plan phases that overflowed | 3 of 3 | 0 of 7 |
 
-Six of six fit, none near the ceiling. The largest used 65% of it; the median used 36%.
-The earlier prediction here — that `medium` produces more than `low` and would overflow
-too — was wrong, and wrong in an interesting way. **The medium plan is shorter than the
-low plan**: 5,380 tokens against 7,140 for problem 01. More deliberation did not buy
-more output. It bought a tighter document.
+The plan phase is the one that mattered. At the default it overflowed in every run and
+the harness fell back to `low`, so every judged run was governed by a specification
+written at reduced effort — which is why that campaign was discarded (§0). At `medium`
+no plan has overflowed.
 
-**The structural finding is what this experiment actually turned up.** Phase 0 overflows
-at the default in **3 of 3 runs**, so every plan in this campaign was produced by the
-harness's ceiling fallback and written at `reasoning_effort: low`:
+The three remaining ceiling hits are worth naming: two in problem 04, one in problem
+03's test-writing pass, which the two-pass design deliberately runs at `low`. That last
+one is the only phase in the campaign still overflowing, and it overflows because the
+harness lowers it. See `SECOND-PASS.md` §5.
 
-| run | plan at default | plan at `low` | governs the run |
-|---|---|---|:-:|
-| 01 | 16,384, cut off — never reached the interfaces | 7,140 | the `low` one |
-| 02 | 16,384, cut off | 9,676 | the `low` one |
-| 03 | 16,384, cut off | 6,912 | the `low` one |
-
-Problem 01's default-effort attempt does not contain the string `claimMessage` at all —
-it was cut off before it got to the interface section. The document that governs every
-downstream file phase is the `low` retry.
-
-And the `low` plans are where §1.3's contradictions live. At `medium`, on the same two
-must-haves that failed problem 01:
-
-- **M4** — §3 `claimMessages(limit) // FOR UPDATE SKIP LOCKED, PENDING only`, §4
-  *"selects up to 10 PENDING messages with FOR UPDATE SKIP LOCKED"*. The sections agree,
-  and the mechanism is stronger than the conditional update the `low` plan specified.
-  It also merged `claimMessage` and `claimStaleMessages` into one primitive, which is
-  where the `low` plan's ambiguity came from.
-- **M7** — stated three times and consistently: §1 *"keep funds reserved … releasing
-  would risk double-spend"*, §4 *"set payout → NEEDS_REVIEW … (funds stay reserved)"*,
-  and a test asserting *"funds remain reserved (not released back)"*.
-- **03's M1** — partially. The hook interface now takes `tx: Prisma.TransactionClient`,
-  so the transaction is carryable, which is exactly what the `low` plan made impossible.
-  The doc comment above it still reads *"AFTER their transaction commits (same tx in
-  practice)"*, which is the same muddle. The signature is what gets implemented (§1.3),
-  so this one is fixed in the half that decides.
-
-*What this does not establish.* One sample per phase, at temperature 1.0. A second
-`low` plan might not contradict itself and a second `medium` plan might. What is not a
-sampling question is the ceiling: 3 of 3 plan phases overflowed at the default, and 6 of
-6 phases fit at `medium` with a third of the budget unused.
-
-*What it does establish.* The campaign is not measuring "the model as shipped". At this
-output ceiling the model as shipped does not produce a plan — it produces 16,384 tokens
-of deliberation and stops. What the campaign measures is the model working from a
-specification the harness obtained by turning its reasoning down, and §1.3's three
-failed must-haves are all defects in that specification.
+**Cost, measured over seven runs:** 256 requests, 1,003,273 output tokens, 28.9 hours
+of generation, at a throughput that never moved — 9.5 to 9.6 tok/s in every run.
 
 ### 6.1 Test files may overflow, and the two-pass phase is already in place
 

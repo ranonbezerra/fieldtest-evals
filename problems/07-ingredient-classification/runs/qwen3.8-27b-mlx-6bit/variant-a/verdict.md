@@ -12,7 +12,7 @@ graded:       {schema_design: 3, rule_semantics: 2, confidence_model: 2, tests: 
 
 manifest:     27 declared, 27 built, not truncated
 typecheck:    failed after 40 repairs — 6 errors
-tests:        could not run — the suite needs a live Postgres
+tests:        0 of 6 pass, run against a disposable Postgres
 
 failure_mode: reference_gap
               # Six errors, and four are two structural gaps. Three are
@@ -28,9 +28,9 @@ cost:         {wall_minutes: 380, output_tokens: 218160, tokens_per_second: 9.6,
 host:         {requests_under_pressure: 0 of 69, ceiling_gib: [37.44, 37.44],
                comparable: yes}
 
-would_merge:  after_changes
-headline:     Six errors from a run of sixty-nine requests, and four of them are one
-              file nobody was asked to write.
+would_merge:  no
+headline:     One file nobody was asked to write hid a wrong relation name in every
+              query of a repository, and only a real database said so.
 
 notes: |
   The cleanest compile in the campaign by error count, and it still fails.
@@ -48,7 +48,11 @@ notes: |
   Six tests, and they name the traps: profile flips a finding from watch to banned,
   unknown lowers confidence and stays visible, a typo resolves through synonyms,
   reruns are identical, shuffled ingredient order yields the same finding set, both
-  methodology versions coexist after publish. None ran.
+  methodology versions coexist after publish.
+  All six fail, in the same place, for the same reason. `product.repository.ts`
+  queries `include: { productIngredients: ... }`; the schema names that relation
+  `ingredients`. Every query in the file carries the wrong name, so nothing about
+  this domain logic was ever exercised.
   The confidence model is where it thins out. `1 - 0.1 × unknownCount` is explicit
   and crude — linear in an arbitrary constant, blind to how many ingredients were
   recognised, so a product with two unknowns of three scores the same as one with two
@@ -83,18 +87,44 @@ surfaces at compile time as `TS2339`.
 A typecheck that cannot resolve a module is silent over exactly the surface where
 phases disagree. This run is what it looks like when it can.
 
-## The suite needs a database the harness does not run
+## What the database found, and why nothing else could
 
-    PrismaClientInitializationError
+The suite is integration tests against a live Prisma client, so the harness's test step
+— which has no database — reported nothing. Run against a disposable Postgres, all six
+fail at the same line:
 
-The tests are integration tests against a live Prisma client. Problems 01–06 mostly
-wrote mock-based suites that ran; this one wrote the other kind, which is a legitimate
-choice and arguably the better one for a rules engine backed by tables.
+    PrismaClientValidationError
+    Invalid `this.prisma.product.findUnique()` invocation
+      include: { productIngredients: ... }
+                 ~~~~~~~~~~~~~~~~~~
 
-`README.md` already acknowledges this for the manual path — *"docker compose up -d db
-… else run Postgres yourself"* — but the automated test step added in §3.7 has no
-database. So the observation lands or not depending on which testing style a run
-happens to choose, which is not a property of the model worth recording.
+`prisma/schema.prisma`, written in phase 02, names the relation `ingredients`.
+`product.repository.ts`, written later, asks for `productIngredients` — in
+`findById`, in `listWithIngredients`, in its `where` clause. Every query in the file.
 
-Goes to `SECOND-PASS.md` beside the missing packages: the test step needs a disposable
-Postgres, or the runs that write integration tests are silently unmeasured.
+TypeScript would have caught this on the first keystroke. It did not, and the reason
+is the *other* defect:
+
+1. the plan never commissioned `prisma.service.ts`
+2. so `import { PrismaService } from '../prisma.service.js'` fails — `TS2307`
+3. so `this.prisma` has an error type
+4. so the compiler never validates the shape of a query made through it
+5. so a relation that does not exist passes the typecheck
+6. and only a live database refuses
+
+One uncommissioned file hid a wrong relation name in every query of a repository. The
+six-error typecheck was not a nearly-passing run; it was a run whose errors were
+suppressing each other.
+
+That is the same masking mechanism as problem 03 — where 25 unresolved imports stopped
+the compiler from checking the calls behind them — and it is the second time the visible
+error count has understated a run. **An error that prevents type information from being
+computed is not one error. It is a hole of unknown size.**
+
+## The database earned its place in the harness
+
+This is the argument for `SECOND-PASS.md` §8, and it is stronger than when it was
+written. The test step reported `ran: false` here, which reads as an absent measurement;
+the measurement, once taken, was six of six failing on a defect neither the typecheck nor
+a mock-based suite would have found. Runs that write the more thorough kind of test are
+exactly the ones currently going unmeasured.

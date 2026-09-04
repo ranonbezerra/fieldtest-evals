@@ -229,3 +229,18 @@ Cost: the container is already a dependency of the repository for problem 16, an
 gate already knows how to be skipped when Docker is absent. The honest fallback is to
 record `tests: {ran: false, reason: "no database"}` rather than to leave the field
 looking like a suite that passed nothing.
+
+**Validated after the fact, and it is stronger than when this was written.** Problem 07
+was re-run against a disposable Postgres:
+
+    docker run -d --name ft-pg -e POSTGRES_PASSWORD=... -p 55432:5432 postgres:16-alpine
+    DATABASE_URL=... npx prisma db push && npx vitest run
+
+All six tests fail, every one at `PrismaClientValidationError` on
+`include: { productIngredients: ... }` — a relation the schema names `ingredients`.
+Every query in that repository carries the wrong name, and neither the typecheck nor a
+mock-based suite would have found it: the missing `prisma.service` left the client
+untyped, so the compiler never validated a query made through it (§3.6b).
+
+The step that reported `ran: false` was hiding a run where nothing about the domain
+logic had ever executed.

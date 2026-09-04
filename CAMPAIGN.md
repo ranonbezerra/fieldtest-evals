@@ -16,38 +16,30 @@ are measured from the first three runs at the corrected parameters.
 
 ## The arithmetic
 
-**Measured on the three discarded runs, and now an upper bound.** These replace the
-first campaign's estimates, which were roughly a third of the truth. They were taken
-with every phase burning the full 16,384-token ceiling, because that is what the default
-effort did. At `medium` the same phases produced complete answers in a median of 36% of
-the ceiling, so the real figures will be lower — by how much is not yet measured.
+**Measured on seven runs at `reasoning_effort: medium`.** These replace the estimates
+from the discarded campaigns, which were built from phase timings taken before the gate
+could fire.
 
-| run | requests | output tokens | generation |
-|---|--:|--:|--:|
-| 01 payout outbox | 15 | 146,619 | **4.2 h** |
-| 02 reconciliation resend | 23 | 200,810 | **5.7 h** |
-| 03 read model projection | 37 | 272,380 | **7.6 h** |
+| run | requests | output tokens | generation | gate |
+|---|--:|--:|--:|:-:|
+| 02 reconciliation resend | 14 | 58,593 | **1.7 h** | passed |
+| 04 grounded llm product | 18 | 82,510 | **2.4 h** | passed |
+| 05 on-chain anchoring | 25 | 100,054 | **2.9 h** | failed |
+| 01 payout outbox | 25 | 110,036 | **3.1 h** | failed |
+| 06 multi-tenant isolation | 51 | 163,945 | **4.8 h** | failed |
+| 07 ingredient classification | 69 | 218,160 | **6.3 h** | failed |
+| 03 read model projection | 54 | 269,975 | **7.7 h** | failed |
+| **total** | **256** | **1,003,273** | **28.9 h** | 2 of 7 |
 
-Throughput is flat across all three — 9.8, 9.9, 10.0 tok/s — so a run's length is
-almost entirely a function of how many tokens it takes, and that ranges over 2× for
-problems of comparable size.
+Throughput is flat at **9.5–9.6 tok/s in every run**, so a run's length is entirely a
+function of how many tokens it takes. The spread is the repair loop, and the ordering
+above is almost exactly the ordering by repair count: 5, 4, 13, 9, 26, 40, 30.
 
-The repair loop is most of the spread. Problem 01 compiled on the first attempt and
-spent **nothing** on repairs. Problems 02 and 03 each spent **33% of their output** on
-them — 1.9 h and 2.5 h — and both still failed the gate. Budget a third of a run for
-repairs that may not repair anything.
-
-| scope | wall time, upper bound |
+| scope | wall time |
 |---|--:|
-| variant A of all 18 problems | **76 – 137 h** |
-| A and B | 152 – 274 h |
-| all 54 | **228 – 411 h** |
-
-Treat these as a ceiling on the ceiling. The first run at `medium` will replace them
-with something real; until then, plan against the larger number and be pleased.
-
-The earlier projection said 19–48 h for variant A. It was built from phase timings taken
-before the gate could fire, and the gate is what doubles a run.
+| variant A of all 18 problems | **~74 h** (range 31–139) |
+| A and B | ~148 h |
+| all 54 | **~223 h** |
 
 The whole acervo does not fit in one sitting, so the order has to earn its place.
 
