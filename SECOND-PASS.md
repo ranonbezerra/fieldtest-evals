@@ -157,11 +157,50 @@ The model's workaround made it worse: `declare module '@nestjs/jwt'` and `declar
 module 'express'` stubs to satisfy the compiler, which produced two `TS2664` errors
 of their own.
 
-Deciding what belongs in the scaffold is a judgement, not a lookup. Supplying every
-package a run might want turns the scaffold into an answer key for "what should this
-design use"; supplying too few measures the harness. The defensible line is probably
-**whatever the declared stack implies** — `@nestjs/testing` for a NestJS project
-tested at all, `@nestjs/schedule` for a problem whose brief asks for a scheduled
-sweep — and nothing that resolves a design decision the problem is posing.
+### The model is never told what exists
+
+The cheatsheet names the stack in prose — "NestJS for the API, Prisma as the ORM,
+Vitest for tests" — and lists no packages. The scaffold is copied in after the model's
+last phase, so it never sees it. Phase 0 tells it to stop deliberating about config:
+*"whether a config file is in scope — choose, write it in one line, and move on."*
+
+So it guesses, and when the guess is absent it improvises: `declare module
+'@nestjs/jwt'` and `declare module 'express'` in problem 06, stubs written to satisfy
+a compiler complaining about packages that were never installed.
+
+### Two ways to fix it, and only one is safe
+
+**Hand the model the whole stack** — let it write `package.json` and `tsconfig.json`
+itself. Realistic, and it removes the mismatch completely. It also makes the gate
+self-scoring: a repair round handed twenty-four errors can set `"strict": false` or
+`moduleResolution: "bundler"` and every one of them disappears without a line of
+logic changing. That is §3's question — does it fix the code or weaken the test —
+in its worst form, because nobody diffs a tsconfig, and the run reports a clean
+typecheck. The scaffold's own note says it exists because without it the gate was
+decorative; handing it back makes the gate decorative in a way that looks green.
+
+Problem 06 already shows the instinct: cornered by a missing package, the model wrote
+type declarations to make the compiler stop objecting rather than dropping the
+dependency. Give it the compiler settings and it has a much larger lever.
+
+**Let it declare dependencies only.** The plan already carries a machine-readable
+manifest; a `dependencies` block beside it costs nothing to parse. The harness merges
+what the model asks for into the scaffold and keeps `tsconfig.json`, the scripts and
+the compiler flags to itself. The model says what it needs; the harness decides how
+strictly the result is checked.
+
+That also converts an environment failure into a measurement. "Did it know it needed
+`@nestjs/schedule` for a scheduled sweep?" is a real question about a developer. "Did
+the harness happen to install it?" is not.
+
+**And publish the list either way.** Five lines in the cheatsheet naming the installed
+packages, so a model can stay inside the budget deliberately or step outside it
+deliberately. Right now it does neither, because it cannot see the budget.
+
+One caveat worth stating: naming what is installed constrains design. Problem 03's
+brief asks for a scheduled reconciliation, and a model told `@nestjs/schedule` is
+absent might hand-roll `setInterval` instead. That is a different answer to the
+problem, not a worse one, and dependency budgets are real — but it should be a
+decision, not a side effect.
 
 Not applied in this pass: adding packages changes whether earlier runs compile.
