@@ -1,0 +1,160 @@
+
+===== ft-go invocation, 2026-09-04 04:50 UTC =====
+problem   06-multi-tenant-isolation
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1428/32768  out 14772/16384  think 43334c  1484s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (17157 bytes)
+
+manifest: 22 files
+  prisma/schema.prisma
+  prisma/migrations/0001_init/migration.sql   <- prisma/schema.prisma
+  src/errors/error-codes.ts
+  src/errors/app-exception.ts   <- src/errors/error-codes.ts
+  src/errors/http-exception.filter.ts   <- src/errors/app-exception.ts
+  src/db/tenant-aware-prisma.ts   <- src/errors/app-exception.ts
+  src/db/prisma.service.ts   <- src/db/tenant-aware-prisma.ts
+  src/db/prisma.module.ts   <- src/db/prisma.service.ts
+  src/tenant/tenant-context.ts   <- src/errors/app-exception.ts
+  src/tenant/tenant.repository.ts   <- src/db/prisma.service.ts
+  src/customer/customer.repository.ts   <- src/db/prisma.service.ts
+  src/customer/customer.service.ts   <- src/customer/customer.repository.ts, src/errors/app-exception.ts
+  src/customer/customer.controller.ts   <- src/customer/customer.service.ts
+  src/tenant/tenant-resolution.middleware.ts   <- src/tenant/tenant-context.ts, src/tenant/tenant.repository.ts, src/errors/app-exception.ts
+  src/tenant/tenant.service.ts   <- src/tenant/tenant.repository.ts, src/tenant/tenant-context.ts
+  src/tenant/tenant.controller.ts   <- src/tenant/tenant.service.ts
+  src/tenant/tenant.module.ts   <- src/tenant/tenant.controller.ts, src/tenant/tenant.service.ts, src/tenant/tenant.repository.ts
+  src/customer/customer.module.ts   <- src/customer/customer.controller.ts, src/customer/customer.service.ts, src/customer/customer.repository.ts, src/db/prisma.module.ts
+  src/app.module.ts   <- src/tenant/tenant.module.ts, src/customer/customer.module.ts, src/tenant/tenant-resolution.middleware.ts
+  src/main.ts   <- src/app.module.ts, src/errors/http-exception.filter.ts
+  test/tenant-config.spec.ts   <- src/app.module.ts, src/db/prisma.service.ts
+  test/customer-isolation.spec.ts   <- src/app.module.ts, src/db/prisma.service.ts
+
+[01-schema.prisma] in 5548/32768  out 3532/16384  think 10526c  388s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (1753 bytes)
+[02-migration.sql] in 6173/32768  out 3174/16384  think 8927c  328s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/migrations/0001_init/migration.sql (2432 bytes)
+[03-error-codes.ts] in 5541/32768  out 264/16384  think 595c  38s  7.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/errors/error-codes.ts (311 bytes)
+[04-app-exception.ts] in 5758/32768  out 1315/16384  think 3412c  142s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/errors/app-exception.ts (1910 bytes)
+[05-http-exception.filter.ts] in 6167/32768  out 3332/16384  think 10818c  345s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/errors/http-exception.filter.ts (1691 bytes)
+[06-tenant-aware-prisma.ts] in 6169/32768  out 5701/16384  think 18534c  582s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/db/tenant-aware-prisma.ts (3268 bytes)
+[07-prisma.service.ts] in 6593/32768  out 809/16384  think 2544c  97s  8.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/db/prisma.service.ts (593 bytes)
+[08-prisma.module.ts] in 5812/32768  out 124/16384  think 261c  27s  4.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/db/prisma.module.ts (192 bytes)
+[09-tenant-context.ts] in 6169/32768  out 629/16384  think 2014c  77s  8.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant-context.ts (540 bytes)
+[10-tenant.repository.ts] in 5813/32768  out 462/16384  think 1420c  60s  7.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.repository.ts (372 bytes)
+[11-customer.repository.ts] in 5810/32768  out 2003/16384  think 6324c  210s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.repository.ts (1253 bytes)
+[12-customer.service.ts] in 6618/32768  out 1701/16384  think 4868c  187s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.service.ts (1598 bytes)
+[13-customer.controller.ts] in 6075/32768  out 2062/16384  think 6836c  218s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.controller.ts (953 bytes)
+[14-tenant-resolution.middleware.ts] in 6640/32768  out 5159/16384  think 18589c  533s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant-resolution.middleware.ts (2082 bytes)
+[15-tenant.service.ts] in 6010/32768  out 1117/16384  think 3441c  125s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.service.ts (878 bytes)
+[16-tenant.controller.ts] in 5873/32768  out 293/16384  think 844c  44s  6.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.controller.ts (332 bytes)
+[17-tenant.module.ts] in 6285/32768  out 229/16384  think 450c  39s  5.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.module.ts (408 bytes)
+[18-customer.module.ts] in 7083/32768  out 258/16384  think 638c  49s  5.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.module.ts (428 bytes)
+[19-app.module.ts] in 6602/32768  out 959/16384  think 3185c  114s  8.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (641 bytes)
+[20-main.ts] in 6350/32768  out 971/16384  think 3732c  113s  8.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (348 bytes)
+[21-tenant-config.spec.ts-cases] in 6087/32768  out 3130/16384  think 8948c  324s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/21-tenant-config.spec.ts-cases.txt (4248 bytes)
+[21-tenant-config.spec.ts] in 7236/32768  out 8946/16384  think 27639c  952s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/tenant-config.spec.ts (6408 bytes)
+[22-customer-isolation.spec.ts-cases] in 6087/32768  out 3110/16384  think 8638c  323s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/22-customer-isolation.spec.ts-cases.txt (4411 bytes)
+[22-customer-isolation.spec.ts] in 7313/32768  out 9723/16384  think 24737c  1003s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/customer-isolation.spec.ts (10393 bytes)
+
+files written: 22/22
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (52 errors)
+[gate] repairing 19 file(s)
+[repair1-tenant-config.spec.ts] in 6567/32768  out 6248/16384  think 21193c  625s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/tenant-config.spec.ts (2934 bytes)
+[repair1-tenant.service.ts] in 6570/32768  out 1477/16384  think 4719c  164s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.service.ts (888 bytes)
+[repair1-customer.controller.ts] in 6564/32768  out 1665/16384  think 5821c  183s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.controller.ts (945 bytes)
+[repair1-tenant.controller.ts] in 6570/32768  out 583/16384  think 1976c  76s  7.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.controller.ts (335 bytes)
+[repair1-prisma.service.ts] in 6567/32768  out 1915/16384  think 6741c  207s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/db/prisma.service.ts (596 bytes)
+[repair1-customer.module.ts] in 6564/32768  out 965/16384  think 3420c  114s  8.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.module.ts (440 bytes)
+[repair1-customer.repository.ts] in 6564/32768  out 6223/16384  think 23351c  638s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.repository.ts (1065 bytes)
+[repair1-tenant.module.ts] in 6570/32768  out 2189/16384  think 7716c  235s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.module.ts (420 bytes)
+[repair1-tenant-resolution.middleware.ts] in 6573/32768  out 4747/16384  think 16517c  490s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant-resolution.middleware.ts (2394 bytes)
+[repair1-tenant-context.ts] in 6570/32768  out 1250/16384  think 4494c  142s  8.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant-context.ts (543 bytes)
+[repair1-main.ts] in 6558/32768  out 2219/16384  think 8535c  237s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (383 bytes)
+[repair1-app-exception.ts] in 6567/32768  out 3469/16384  think 12358c  361s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/errors/app-exception.ts (1508 bytes)
+[repair1-customer.service.ts] in 6564/32768  out 1913/16384  think 5765c  207s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.service.ts (1884 bytes)
+[repair1-tenant-aware-prisma.ts] in 6573/32768  out 6778/16384  think 23373c  695s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/db/tenant-aware-prisma.ts (2512 bytes)
+[repair1-customer-isolation.spec.ts] in 6567/32768  out 6299/16384  think 16853c  646s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/customer-isolation.spec.ts (6582 bytes)
+[repair1-app.module.ts] in 6561/32768  out 1548/16384  think 5659c  170s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (650 bytes)
+[repair1-http-exception.filter.ts] in 6570/32768  out 4567/16384  think 16827c  471s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/errors/http-exception.filter.ts (1486 bytes)
+[repair1-tenant.repository.ts] in 6570/32768  out 1375/16384  think 4972c  154s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.repository.ts (413 bytes)
+[repair1-prisma.module.ts] in 6567/32768  out 1867/16384  think 7197c  202s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/db/prisma.module.ts (195 bytes)
+[gate] typecheck failed (15 errors)
+[gate] repairing 7 file(s), loading 1 definition(s) read-only
+[repair2-customer.service.ts] in 6969/32768  out 2355/16384  think 7558c  254s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/customer/customer.service.ts (1940 bytes)
+[repair2-tenant-config.spec.ts] in 6972/32768  out 4104/16384  think 12553c  415s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/tenant-config.spec.ts (2903 bytes)
+[repair2-tenant-aware-prisma.ts] in 6149/32768  out 2714/16384  think 8130c  283s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/db/tenant-aware-prisma.ts (2306 bytes)
+[repair2-tenant-resolution.middleware.ts] in 6920/32768  out 7604/16384  think 27914c  781s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant-resolution.middleware.ts (3087 bytes)
+[repair2-customer-isolation.spec.ts] in 6914/32768  out 13334/16384  think 41932c  1373s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/customer-isolation.spec.ts (7699 bytes)
+[repair2-tenant.service.ts] in 6917/32768  out 923/16384  think 2835c  111s  8.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/tenant/tenant.service.ts (878 bytes)
+[repair2-app.module.ts] in 6908/32768  out 1839/16384  think 6864c  204s  9.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (772 bytes)
+[gate] typecheck failed (24 errors)
+[tests] None of None passing
+[gate] cleaned install artifacts from the workspace
+
+wall 289.4 min   requests 51   in 323765   out 163945   9.5 tok/s
+generation 287.2 min   model loads 8s   gate+io 2.1 min
+REVISED x26 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 5/24 samples — throughput here is not comparable
+
+failures (2):
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 5 of 24 samples: corespotlightd is using 131% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap acti. Throughput here is the machine's, not the model's.
+
+artifacts in problems/06-multi-tenant-isolation/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

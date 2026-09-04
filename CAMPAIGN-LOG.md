@@ -13,3 +13,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-03 03:12 | 04-grounded-llm-product | a | **1 failure(s)**: test file overflowed at reasoning_effort=low, the lowest set | 144.5 min | 82510 | 9.6 | 4 | 10/10 | yes |
 | 2026-09-03 06:07 | 05-onchain-anchoring | a | **2 failure(s)**: typecheck still failing after 2 repairs | 174.8 min | 100054 | 9.6 | 13 | 10/10 | no |
 | 2026-09-03 08:40 | 06-multi-tenant-isolation | a | **2 failure(s)**: typecheck still failing after 2 repairs | 153.4 min | 86346 | 9.5 | 10 | 20/20 | no |
+| 2026-09-04 04:50 | 06-multi-tenant-isolation | a | **2 failure(s)**: typecheck still failing after 2 repairs | 289.4 min | 163945 | 9.5 | 26 | 22/22 | no |

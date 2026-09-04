@@ -1,0 +1,21 @@
+- Returns branding and feature flags for a valid tenant — proves the full happy path: middleware resolves host→slug, verifies JWT org matches, sets ALS, service reads context, repo fetches the row, controller shapes the response. Fails if any link in that chain is broken: ALS not populated, service can't call `requireTenant()`, repo query misses, response omits or mis-shapes `branding`/`featureFlags`.
+
+- Rejects when host slug and token org disagree (403 `tenant_mismatch`) — proves the middleware compares the two values and refuses to set context on a mismatch. Fails if the comparison is skipped, is case-insensitive where it should be exact, or compares the wrong fields (e.g. domain vs slug).
+
+- Rejects when no host is present or host doesn't map to a registered tenant (403 `unknown_tenant`) — proves the middleware looks up the slug in the registry before proceeding and doesn't fall through to a 404 or let an unscoped request reach the service. Fails if `hostToTenantSlug` returns a slug for an unregistered tenant and the middleware doesn't check, or if the lookup error is swallowed.
+
+- Rejects a request with no `Authorization` header (401 `unauthorized`) — proves the middleware requires a bearer token and does not attempt tenant resolution without one. Fails if the middleware skips JWT verification when the header is absent and proceeds to compare `undefined` org against the slug (which would give a misleading 403 instead of 401).
+
+- Rejects a bearer token with an invalid or tampered signature (401 `unauthorized`) — proves the middleware actually calls `jwt.verify` and treats a thrown `JsonWebTokenError`/`TokenExpiredError` as 401 rather than a 500. Fails if the error is uncaught and bubbles to the default NestJS handler (500 with no envelope) or if the middleware catches it and re-throws as `tenant_mismatch`.
+
+- Rejects a validly-signed token whose payload has no `org` claim (403 `tenant_mismatch`) — proves the middleware treats a missing claim as "does not match the resolved slug" rather than crashing or silently allowing the request. Fails if `payload.org` is `undefined` and the comparison `undefined === slug` is somehow bypassed (e.g. by an early-return when `org` is falsy), letting an unscoped request through.
+
+- Every error response uses the single envelope `{ error: { code, message, details } }` with `details` always an object (possibly `{}`), never null or absent — proves the global `HttpExceptionFilter` is registered and intercepts `AppException`s raised by the middleware. Fails if the filter isn't wired in `main.ts`, or if a particular error path (e.g. the 401 from JWT) throws a raw NestJS `HttpException` that the filter doesn't re-shape, leaking a non-envelope body.
+
+- Feature flags default to an empty object when the tenant row stores `null` or the column was never set — proves the service normalises a null/absent `featureFlags` jsonb to `{}` before returning it. Fails if the service passes `null` straight through to the response and the client receives `"featureFlags": null`, violating the `Record<string, boolean>` contract.
+
+- Branding is returned as a JSON object matching what was stored on the tenant row — proves no serialization layer (e.g. double-stringify, key transformation) corrupts the payload between Prisma and the response body. Fails if `JSON.stringify` is applied twice or if the service maps keys, so a stored `{ "logo": "/x.png" }` arrives as the string `"{\"logo\":\"/x.png\"}"`.
+
+- Host that equals the bare base domain (no subdomain prefix) is treated as unknown tenant, not as slug = "" — proves `hostToTenantSlug` returns `undefined` for the base domain itself rather than an empty string, so the middleware raises 403 instead of looking up a phantom tenant with slug `""`. Fails if the string split produces an empty first segment that is then looked up and (if a row existed with slug `""`) silently resolves.
+
+- Not testing cross-tenant data isolation (list/fetch/update/delete of another tenant's rows), duplicate-email registration, or concurrent-request context leakage — those are the responsibility of `test/customer-isolation.spec.ts`, which exercises the Prisma guard and repository layer through the customer endpoints.
