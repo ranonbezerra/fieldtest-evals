@@ -16,3 +16,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-04 04:50 | 06-multi-tenant-isolation | a | **2 failure(s)**: typecheck still failing after 2 repairs | 289.4 min | 163945 | 9.5 | 26 | 22/22 | no |
 | 2026-09-04 11:13 | 07-ingredient-classification | a | **2 failure(s)**: typecheck still failing after 2 repairs | 383.0 min | 218160 | 9.6 | 40 | 27/27 | no |
 | 2026-09-05 03:26 | 08-infra-debug | a | **2 failure(s)**: typecheck still failing after 2 repairs | 26.3 min | 15955 | 10.4 | 0 | 5/5 | no |
+| 2026-09-05 06:13 | 09-feature-in-conventions | a | **1 failure(s)**: typecheck still failing after 2 repairs | 166.6 min | 100074 | 10.1 | 13 | 12/12 | yes |

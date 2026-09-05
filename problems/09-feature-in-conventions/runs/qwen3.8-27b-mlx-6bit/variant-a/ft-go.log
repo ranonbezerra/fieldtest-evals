@@ -1,0 +1,107 @@
+
+===== ft-go invocation, 2026-09-05 06:13 UTC =====
+problem   09-feature-in-conventions
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+workspace seeded from scaffold (24 files)
+  copied into workspace/ before the run; node_modules, dist and .git are never copied
+
+[plan] in 1566/32768  out 4940/16384  think 5699c  463s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (12493 bytes)
+
+manifest: 12 files
+  drizzle/0001_create_trips.sql
+  src/modules/trips/entities/trip.entity.ts
+  src/modules/trips/entities/trip-member.entity.ts
+  src/modules/trips/entities/trip-invite.entity.ts
+  src/modules/trips/dto/create-trip.dto.ts
+  src/modules/trips/dto/invite-trip.dto.ts
+  src/modules/trips/dto/get-trip-response.dto.ts   <- src/modules/trips/entities/trip-member.entity.ts, src/modules/trips/entities/trip-invite.entity.ts
+  src/modules/trips/trips.repository.ts   <- src/modules/trips/entities/trip.entity.ts, src/modules/trips/entities/trip-member.entity.ts, src/modules/trips/entities/trip-invite.entity.ts
+  src/modules/trips/trips.service.ts   <- src/modules/trips/trips.repository.ts, src/modules/trips/dto/create-trip.dto.ts, src/modules/trips/dto/invite-trip.dto.ts, src/modules/trips/dto/get-trip-response.dto.ts, src/modules/trips/entities/trip.entity.ts, src/modules/trips/entities/trip-member.entity.ts, src/modules/trips/entities/trip-invite.entity.ts
+  src/modules/trips/trips.controller.ts   <- src/modules/trips/trips.service.ts, src/modules/trips/dto/create-trip.dto.ts, src/modules/trips/dto/invite-trip.dto.ts, src/modules/trips/dto/get-trip-response.dto.ts
+  src/modules/trips/trips.module.ts   <- src/modules/trips/trips.controller.ts, src/modules/trips/trips.service.ts, src/modules/trips/trips.repository.ts
+  src/modules/trips/trips.service.spec.ts   <- src/modules/trips/trips.service.ts, src/modules/trips/trips.repository.ts, src/modules/trips/dto/create-trip.dto.ts, src/modules/trips/dto/invite-trip.dto.ts
+
+[01-0001_create_trips.sql] in 4854/32768  out 742/16384  think 1430c  105s  7.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/drizzle/0001_create_trips.sql (1092 bytes)
+[02-trip.entity.ts] in 4840/32768  out 195/16384  think 559c  25s  7.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/entities/trip.entity.ts (153 bytes)
+[03-trip-member.entity.ts] in 4847/32768  out 204/16384  think 525c  26s  8.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/entities/trip-member.entity.ts (186 bytes)
+[04-trip-invite.entity.ts] in 4849/32768  out 177/16384  think 355c  23s  7.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/entities/trip-invite.entity.ts (246 bytes)
+[05-create-trip.dto.ts] in 4846/32768  out 450/16384  think 1452c  48s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/create-trip.dto.ts (280 bytes)
+[06-invite-trip.dto.ts] in 4848/32768  out 409/16384  think 1584c  44s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/invite-trip.dto.ts (105 bytes)
+[07-get-trip-response.dto.ts] in 5237/32768  out 640/16384  think 2033c  69s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/get-trip-response.dto.ts (400 bytes)
+[08-trips.repository.ts] in 5404/32768  out 9674/16384  think 20612c  911s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.repository.ts (7183 bytes)
+[09-trips.service.ts] in 8113/32768  out 5577/16384  think 17639c  561s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.service.ts (4179 bytes)
+[10-trips.controller.ts] in 6710/32768  out 3100/16384  think 10050c  307s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.controller.ts (1886 bytes)
+[11-trips.module.ts] in 8845/32768  out 586/16384  think 1959c  92s  6.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.module.ts (357 bytes)
+[12-trips.service.spec.ts-cases] in 8567/32768  out 3140/16384  think 8105c  332s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/12-trips.service.spec.ts-cases.txt (5419 bytes)
+[12-trips.service.spec.ts] in 9954/32768  out 6124/16384  think 8524c  658s  9.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.service.spec.ts (14287 bytes)
+
+files written: 12/12
+
+[gate] installing dependencies
+[gate] typecheck failed (39 errors)
+[gate] repairing 8 file(s)
+[repair1-trips.repository.ts] in 5935/32768  out 10305/16384  think 33327c  1000s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.repository.ts (7736 bytes)
+[repair1-trips.service.ts] in 5935/32768  out 7349/16384  think 24206c  698s  10.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.service.ts (4327 bytes)
+[repair1-get-trip-response.dto.ts] in 5947/32768  out 1094/16384  think 3710c  116s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/get-trip-response.dto.ts (408 bytes)
+[repair1-invite-trip.dto.ts] in 5947/32768  out 728/16384  think 2685c  82s  8.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/invite-trip.dto.ts (105 bytes)
+[repair1-trips.module.ts] in 5935/32768  out 824/16384  think 2761c  91s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.module.ts (366 bytes)
+[repair1-trips.service.spec.ts] in 5938/32768  out 12677/16384  think 36590c  1218s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.service.spec.ts (9607 bytes)
+[repair1-trips.controller.ts] in 5935/32768  out 6078/16384  think 22514c  603s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.controller.ts (1941 bytes)
+[repair1-create-trip.dto.ts] in 5944/32768  out 1330/16384  think 5061c  137s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/create-trip.dto.ts (280 bytes)
+[gate] typecheck failed (19 errors)
+[gate] repairing 5 file(s), loading 1 definition(s) read-only
+[repair2-trips.repository.ts] in 6242/32768  out 10871/16384  think 34590c  1047s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.repository.ts (8738 bytes)
+[repair2-trips.service.ts] in 6242/32768  out 8134/16384  think 27782c  786s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.service.ts (3898 bytes)
+[repair2-invite-trip.dto.ts] in 6254/32768  out 517/16384  think 2028c  64s  8.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/invite-trip.dto.ts (49 bytes)
+[repair2-trips.controller.ts] in 6242/32768  out 3453/16384  think 12096c  335s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/trips.controller.ts (1809 bytes)
+[repair2-create-trip.dto.ts] in 6251/32768  out 756/16384  think 2967c  86s  8.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/modules/trips/dto/create-trip.dto.ts (208 bytes)
+[gate] typecheck failed (12 errors)
+[tests] 7 of 16 failing — recorded, not repaired
+         TripsService > acceptInvite by a user whose email does not match the invite raises invite_not_found
+         TripsService > acceptInvite with an unknown token raises invite_not_found
+         TripsService > createTrip raises invalid_date_range when startDate equals endDate
+         TripsService > getTrip for a non-existent trip raises trip_not_found
+         TripsService > getTrip for a non-member raises not_a_member
+[gate] cleaned install artifacts from the workspace
+
+wall 166.6 min   requests 27   in 162227   out 100074   10.1 tok/s
+generation 165.4 min   model loads 0s   gate+io 1.2 min
+REVISED x13 by the model itself — not a pass; read this run first
+
+failures (1):
+  gate: typecheck still failing after 2 repairs
+
+artifacts in problems/09-feature-in-conventions/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md
