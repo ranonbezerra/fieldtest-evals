@@ -119,7 +119,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 07 | ingredient classification | ✗ | – | – | – | One file nobody was asked to write hid a wrong relation name in every query of a repository, and only a real database said so. |
 | 08 | infra debug | ✓ | – | – | – | Finds three faults behind four symptoms, fixes each in one line, and says which symptom was evidence rather than a bug. |
 | 09 | feature in conventions | ✗<br><sub>M2</sub> | – | – | – | Reads the codebase's conventions well, then infers the wrong rule from a failure and applies it to a whole file. |
-| 10 | adapt existing screen | – | – | – | – | *not yet run* |
+| 10 | adapt existing screen | ✗<br><sub>M1, M4</sub> | – | – | – | Builds the whole feature correctly beside the application and never connects it to anything. |
 | 11 | behavior preserving refactor | – | – | – | – | *not yet run* |
 | 12 | orm migration | – | – | – | – | *not yet run* |
 | 13 | legacy characterization tests | – | – | – | – | *not yet run* |
