@@ -1,0 +1,47 @@
+
+===== ft-go invocation, 2026-09-05 03:26 UTC =====
+problem   08-infra-debug
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1516/32768  out 6412/16384  think 15747c  611s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (6101 bytes)
+
+manifest: 5 files
+  diagnosis.md
+  runbook.md   <- diagnosis.md
+  fix/kubeconfig.diff   <- diagnosis.md
+  fix/api-deployment.diff   <- diagnosis.md
+  fix/api-service.diff   <- diagnosis.md
+
+[01-diagnosis.md] in 3008/32768  out 2832/16384  think 4573c  281s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/diagnosis.md (5590 bytes)
+[02-runbook.md] in 4678/32768  out 2735/16384  think 4703c  271s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/runbook.md (4376 bytes)
+[03-kubeconfig.diff] in 4692/32768  out 1051/16384  think 2914c  101s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/fix/kubeconfig.diff (221 bytes)
+[04-api-deployment.diff] in 4687/32768  out 1348/16384  think 4566c  129s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/fix/api-deployment.diff (279 bytes)
+[05-api-service.diff] in 4678/32768  out 1577/16384  think 4763c  150s  10.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/fix/api-service.diff (120 bytes)
+
+files written: 5/5
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (1 errors)
+[gate] cleaned install artifacts from the workspace
+
+wall 26.3 min   requests 6   in 23259   out 15955   10.4 tok/s
+generation 25.6 min   model loads 9s   gate+io 0.6 min
+HOST UNDER PRESSURE in 1/7 samples — throughput here is not comparable
+
+failures (2):
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 1 of 7 samples: spotlightknowled is using 86% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap act. Throughput here is the machine's, not the model's.
+
+artifacts in problems/08-infra-debug/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md
