@@ -1,0 +1,75 @@
+
+===== ft-go invocation, 2026-09-05 08:58 UTC =====
+problem   11-behavior-preserving-refactor
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+workspace seeded from fixtures/mapper (10 files)
+
+[plan] in 1478/32768  out 4254/16384  think 11313c  398s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (6658 bytes)
+
+manifest: 6 files
+  src/shared/payment-status-mapper.ts
+  test/reporting.spec.ts   <- src/shared/payment-status-mapper.ts
+  src/reporting/reporting.service.ts   <- src/shared/payment-status-mapper.ts
+  src/orders/orders.service.ts   <- src/shared/payment-status-mapper.ts
+  src/payouts/payouts.service.ts   <- src/shared/payment-status-mapper.ts
+  NOTES.md   <- src/shared/payment-status-mapper.ts
+
+[01-payment-status-mapper.ts] in 2917/32768  out 3019/16384  think 8883c  297s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/shared/payment-status-mapper.ts (3065 bytes)
+[02-reporting.spec.ts-cases] in 3831/32768  out 2260/16384  think 5498c  221s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/02-reporting.spec.ts-cases.txt (3960 bytes)
+[02-reporting.spec.ts] in 4969/32768  out 2243/16384  think 6292c  243s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/reporting.spec.ts (2811 bytes)
+[03-reporting.service.ts] in 3840/32768  out 1563/16384  think 5814c  157s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/reporting/reporting.service.ts (802 bytes)
+[04-orders.service.ts] in 3831/32768  out 1350/16384  think 5116c  138s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/orders/orders.service.ts (748 bytes)
+[05-payouts.service.ts] in 3841/32768  out 3396/16384  think 13123c  332s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.service.ts (1299 bytes)
+[06-NOTES.md] in 3827/32768  out 1216/16384  think 2502c  126s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/NOTES.md (2698 bytes)
+
+files written: 6/6
+
+[gate] installing dependencies
+[gate] typecheck failed (9 errors)
+[gate] repairing 4 file(s)
+[repair1-orders.service.ts] in 3258/32768  out 1510/16384  think 5724c  147s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/orders/orders.service.ts (603 bytes)
+[repair1-reporting.spec.ts] in 3258/32768  out 1966/16384  think 6574c  189s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/reporting.spec.ts (1237 bytes)
+[repair1-payouts.service.ts] in 3270/32768  out 4146/16384  think 16290c  389s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.service.ts (883 bytes)
+[repair1-reporting.service.ts] in 3264/32768  out 2305/16384  think 8251c  220s  10.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/reporting/reporting.service.ts (1148 bytes)
+[gate] typecheck failed (7 errors)
+[gate] repairing 4 file(s), loading 1 definition(s) read-only
+[repair2-orders.service.ts] in 4111/32768  out 3555/16384  think 14307c  341s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/orders/orders.service.ts (713 bytes)
+[repair2-reporting.spec.ts] in 4111/32768  out 2208/16384  think 7213c  217s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/reporting.spec.ts (1436 bytes)
+[repair2-payouts.service.ts] in 4123/32768  out 2551/16384  think 9139c  248s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/payouts/payouts.service.ts (1028 bytes)
+[repair2-reporting.service.ts] in 4117/32768  out 1183/16384  think 3886c  124s  9.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/reporting/reporting.service.ts (896 bytes)
+[gate] typecheck failed (4 errors)
+[tests] 12 of 12 passing
+[gate] cleaned install artifacts from the workspace
+
+wall 63.8 min   requests 16   in 58046   out 38725   10.2 tok/s
+generation 63.1 min   model loads 0s   gate+io 0.7 min
+REVISED x8 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 2/8 samples — throughput here is not comparable
+
+failures (2):
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 2 of 8 samples: corespotlightd is using 139% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap acti. Throughput here is the machine's, not the model's.
+
+artifacts in problems/11-behavior-preserving-refactor/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

@@ -1,0 +1,23 @@
+- `maps 'pending' to 'pending'` — Proves the base passthrough for a non-quirked status. Fails if the `STATUS_TABLE` entry for `'pending'` is removed, retyped, or if `legacyReportCasing` is erroneously applied to every status instead of only `'completed'`.
+
+- `maps 'completed' to 'COMPLETED' (legacy casing quirk)` — Proves the reporting-specific upper-casing is preserved. Fails if `legacyReportCasing` is not set on the reporting mapper instance, if the casing check compares against the wrong literal (e.g. `'Pending'`), or if the check is applied before the table lookup so it corrupts an unknown code.
+
+- `maps 'failed' to 'failed'` — Proves a second non-quirked status passes through unchanged. Fails if the `STATUS_TABLE` entry is removed, or if a blanket `.toUpperCase()` was applied to all results instead of a targeted check on `'completed'`.
+
+- `maps 'refunded' to 'refunded'` — Proves the fourth base status. Fails if the `STATUS_TABLE` entry is missing or if the fallback path is accidentally triggered for a known code (e.g. a typo in the key).
+
+- `skips an unknown provider code (not present in output)` — Proves the reporting call site silently drops codes not in the union table. Fails if `unknownPolicy` is set to `'throw'` or `'fallback'` on the reporting mapper, if the `undefined`-filtering step is removed from the service, or if the table lookup uses a case-insensitive match that accidentally "finds" the unknown code.
+
+- `skips all codes when none are recognised (empty result)` — Boundary/exhaustion: proves the service produces an empty array rather than a singleton `undefined` or throwing. Fails if the filter uses `.filter(Boolean)` incorrectly (e.g. also drops a legitimate empty-string status) or if the service iterates with `forEach` and pushes before checking for `undefined`.
+
+- `maps 'payout_initiated' to 'pending' (union table coverage)` — Proves the mapper's union includes payouts-specific codes so the reporting flow does not skip them. Fails if the `STATUS_TABLE` only contains the four base codes and the payouts entries were omitted during extraction.
+
+- `maps 'payout_settled' to 'COMPLETED' (union + quirk interaction)` — Proves that a payouts-specific code resolving to `'completed'` also receives the legacy casing, not just the base `'completed'` key. Fails if the `legacyReportCasing` check is performed on the *input* string (`providerCode === 'completed'`) rather than on the *mapped output*, so `payout_settled` escapes the quirk.
+
+- `does not apply legacy casing to 'payout_initiated' (which maps to 'pending')` — Proves the quirk is scoped to `'completed'` results only and does not over-cast a payouts code that resolves to a different status. Fails if the casing logic is "apply when `legacyReportCasing` is true and the code is in the payouts subset" or some other broader condition.
+
+- `treats a differently-cased known code (e.g. 'Pending') as unknown and skips it` — Boundary: the table keys are lowercase; a provider code with altered casing must not match. Fails if a `.toLowerCase()` or case-insensitive lookup was introduced in the table reference, silently "fixing" a code the legacy reporting pipeline would have dropped.
+
+- `does not throw or log for an unknown code (silent skip, not error path)` — The error-path-that-looks-like-success: proves the reporting flow's unknown-code handling is indistinguishable from a short input. Fails if `unknownPolicy` defaults to `'throw'` when omitted, or if a `try/catch` in the service swallows a `TypeError` but still pushes a placeholder string into the output.
+
+Deliberately **not** testing here: the `'throw'` (orders) and `'fallback'` (payouts) unknown-code policies, the constructor validation for missing `fallbackValue`, NestJS module wiring or DI, and CSV file I/O — those are pinned by `test/orders.spec.ts`, `test/payouts.spec.ts`, integration tests, and are outside the reporting call site's behavioural contract.
