@@ -244,3 +244,90 @@ untyped, so the compiler never validated a query made through it (§3.6b).
 
 The step that reported `ran: false` was hiding a run where nothing about the domain
 logic had ever executed.
+
+---
+
+# What may be prevented, and what may not
+
+Written after problems 09, 10 and 11 — the first three with an existing codebase —
+because they changed the shape of the question. Every item above is one of these three
+kinds, and the kind decides whether it may be applied at all.
+
+## The line
+
+A harness defect is ours to fix: it measures the harness, not the model. An environment
+fact we withhold is ours to publish: a real repository states it, and withholding it
+measures guessing. **A thing the problem exists to ask is not ours to touch**, no matter
+how cheaply a sentence in the prompt would fix the failure.
+
+## Kind 1 — harness defects. Fix, no question.
+
+Five are fixed: the file cap that cut a plan by fifteen files (§4.9), a gate that failed
+a deliverable containing no TypeScript (§4.11), a resumed run reporting its own tail
+(§4.7), a killed run's lock that outlived it (§4.10), and the test suite never being run
+at all (§3.7).
+
+Two remain, both above: §7 the scaffold does not supply `@nestjs/testing` or
+`@nestjs/schedule`, and §8 the test step has no database. Both have already cost real
+measurements — problem 06's suite could not load, and problem 07's reported `ran: false`
+while hiding six failures on a defect nothing else could see.
+
+## Kind 2 — environment facts we withhold. Publish them.
+
+The cheatsheet says `ESM, "type": "module"` and stops there. Three lines would close the
+largest single cause of gate failure in the campaign:
+
+- relative imports carry the `.js` extension
+- these are the installed packages
+- this is what `common/` contains, and what it does not
+
+None of the three resolves a design decision. Every one is what a `CLAUDE.md` in a real
+repository carries, and the model is currently guessing at all of them.
+
+The third would have prevented problem 09 outright. It assumed a `common/auth.guard`
+that does not exist, the `.js` import failed to resolve, and it concluded the extension
+was wrong rather than the file missing — then stripped extensions from nine imports,
+seven of which would have worked.
+
+## Kind 3 — the thing being measured. Do not direct.
+
+*Wire your new code into the existing application* kills problem 10, whose entire
+question is whether the model does that unprompted. *Delete the old copies* kills
+problem 11. *Every method you call must exist* kills 03 and 07. *Your plan's sections
+must agree* kills 01.
+
+These are not close calls, and the evidence says the tempting ones would not even work.
+Which brings us to the measurement that settles it.
+
+## The measurement that separates kind 2 from kind 3
+
+Whether a cross-file failure is a context problem or a model limit is checkable, because
+each phase declares what it reads:
+
+| phase | declared reads | what happened |
+|---|---|---|
+| 07 `product.repository.ts` | **nothing** | queried `productIngredients`; the schema names it `ingredients` |
+| 07 `product.controller.ts` | `product.service.ts` | called `getResults`, which that service does not define |
+| 03 `re-derivation.service.ts` | `operations.repository.ts` | called `reDeriveWindow`, which that repository does not define |
+
+The first is a context gap and the harness can close it — require every phase touching
+the database to read the schema, or better, **measure how often a phase declares its own
+dependencies wrongly**, which is information about the model rather than help for it.
+
+The second and third are not. Both phases had the interface in front of them and called
+a method it does not declare. No prompt fixes that without dictating the answer.
+
+## The confound underneath all of it
+
+One file per request is what makes cross-file agreement hard. An agentic loop would let
+the model re-read what it wrote. Some part of what this campaign calls a model limit may
+be a limit of the format.
+
+The repository already has the axis to settle it. `--spec ladder` reruns a problem with
+the design supplied — the reference's types, signatures and error codes, bodies left
+open. If the boundary failures vanish there, they belonged to the format. If they
+persist, they belong to the model.
+
+That is a second dimension of the matrix rather than a patch to this one, and it costs
+one variant rather than eighteen. It is the single most decision-relevant thing this
+campaign could do next.

@@ -12,18 +12,18 @@ export interface AccountResponse {
 
 @Injectable()
 export class AccountService {
-  constructor(private readonly repo: AccountRepository) {}
+  constructor(private readonly accountRepository: AccountRepository) {}
 
   async findById(id: string): Promise<AccountResponse> {
-    const row = await this.repo.findById(id);
+    const row = await this.accountRepository.findById(id);
     if (!row) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException(`Account ${id} not found`);
     }
     return this.toResponse(row);
   }
 
   async create(data: { name: string }): Promise<AccountResponse> {
-    const row = await this.repo.create(data);
+    const row = await this.accountRepository.create(data);
     return this.toResponse(row);
   }
 
