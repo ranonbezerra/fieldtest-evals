@@ -1,0 +1,35 @@
+- `returns null when GET /sessions/active resolves 200 with body null` — proves the "no active session" state is represented as `active: null`, not as an empty object or undefined; would fail if the queryFn returned the parsed JSON without the `?? null` coalescing, or if a 200-with-null was treated as an error.
+
+- `returns the full ActiveSession object (id, name, status, startedAt) when GET /sessions/active resolves 200 with a session` — proves every field the bar needs flows through the hook intact; would fail if a field was renamed in the interface, dropped by a transform, or the queryFn returned the `Response` instead of `await res.json()`.
+
+- `exposes isFetching true during the initial GET and false once it settles` — proves the layout can show a skeleton/indicator while restoring state after a page refresh; would fail if `isFetching` was hardcoded to false, the query key was mistyped so the fetch never fired, or the hook returned a stale `isFetching` from a prior render.
+
+- `sends PUT to /api/sessions/active with Content-Type application/json and body { "sessionId": "<id>" }` — proves the wire contract (method, path, header, key name) matches what the server expects; would fail if the method was POST, the path lacked the `/api` prefix, the body key was `id` instead of `sessionId`, or the JSON header was omitted causing a 415.
+
+- `includes credentials: "include" on every fetch call` — proves cookie-based auth is preserved across all requests; would fail if the option was dropped from one of the three fetch sites, silently breaking auth in a cross-origin or subpath deployment.
+
+- `rejects setActive with ApiError whose code is "session_not_found" when the server responds 404` — proves the error contract for an invalid or deleted session id; would fail if `parseErrorEnvelope` was not called, the mutation resolved on non-OK status, or the code string differed (e.g. `SESSION_NOT_FOUND`).
+
+- `rejects closeActive with ApiError whose code is "session_already_closed" when the server responds 409` — proves the double-close guard surfaces the correct code to the caller; would fail if the non-OK path was skipped for POST, or the envelope parser read `body.code` instead of `body.error.code`.
+
+- `rejects closeActive with ApiError code "no_active_session" and does not issue a fetch when active is null` — proves the guard clause prevents a request to `/api/sessions/undefined/close`; would fail if the null check was removed, placed after the fetch, or if `active.id` was accessed before the guard causing a TypeError instead of a controlled ApiError.
+
+- `invalidates and refetches the active-session query after successful setActive so active updates to the new session` — proves the bar reflects the newly-active session without a full page reload; would fail if `onSuccess` was missing, used a different query key (e.g. `['sessions']` without `'active'`), or called `setQueryData` with a stale snapshot instead of triggering a refetch.
+
+- `invalidates and refetches after successful closeActive so active becomes null` — proves the bar empties on close; would fail if the invalidation key was wrong, or if only `setQueryData(key, null)` was called without a refetch (leaving the server's truth unverified).
+
+- `sets isMutating to true while setActive is in flight and false once the promise settles (success or error)` — proves the UI can disable buttons and prevent double-submits during activation; would fail if `isMutating` was always false, only tracked `closeMutation`, or remained true after a rejected mutation.
+
+- `sets isMutating to true while closeActive is in flight and false once settled` — proves the close path independently drives the mutating flag; would fail if `setActiveMutation.isMutating` was the only term in the OR, or if the flag reset happened before the promise actually resolved.
+
+- `parses code, message, and details from a well-formed { error: { code, message, details } } envelope` — proves the standard error shape is correctly unpacked into the ApiError fields; would fail if the parser read `body.code` instead of `body.error.code`, or if `details` defaulted to `undefined` instead of `{}`.
+
+- `produces a fallback ApiError with code "unknown_error" when the error response body is not valid JSON` — proves graceful degradation when the server returns a plain-text 500 or an HTML error page; would fail if `res.json()` threw an unhandled exception inside `parseErrorEnvelope`, or if the catch block re-threw instead of returning a default ApiError.
+
+- `handles an error envelope where the top-level "error" field is a string rather than an object without throwing` — proves the defensive `typeof === 'object'` guard prevents a TypeError on malformed responses; would fail if the code unconditionally accessed `body.error.code` and crashed, or if the guard was `instanceof Object` which misses frozen/sealed objects.
+
+- `returns active as null (not undefined) when the query has not yet resolved and data is in its initial state` — proves consumers can rely on a stable `null | ActiveSession` type without optional chaining or undefined checks; would fail if the hook returned `data` directly (which is `undefined` before first fetch) instead of `data ?? null`.
+
+- `resolves setActive (does not reject) when the server responds 204 No Content` — proves the success path does not unconditionally call `res.json()` and crash on an empty body; would fail if the mutationFn parsed the response body on success.
+
+Not testing: UI rendering or DOM interactions (covered by `active-session-bar.test.tsx`), navigation side-effects, dirty-flag interaction with the detail screen (covered by session-detail tests), react-query retry/caching internals (framework concern, not hook logic), or the server's own behaviour on `PUT /sessions/active` (integration, not unit).

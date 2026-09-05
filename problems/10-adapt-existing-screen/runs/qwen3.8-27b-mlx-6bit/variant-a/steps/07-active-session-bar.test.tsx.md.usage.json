@@ -1,0 +1,31 @@
+{
+  "label": "07-active-session-bar.test.tsx",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 6461,
+  "completion_tokens": 14449,
+  "reasoning_chars": 44124,
+  "content_chars": 8879,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 1408.1,
+  "server_seconds": 1408.1,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 10.3,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/active-session-bar.tsx",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/use-active-session.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/dirty-context.tsx",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/07-active-session-bar.test.tsx-cases.txt"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

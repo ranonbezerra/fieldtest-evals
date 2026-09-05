@@ -1,0 +1,28 @@
+{
+  "label": "repair2-use-active-session.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 4100,
+  "completion_tokens": 2704,
+  "reasoning_chars": 8513,
+  "content_chars": 2060,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 266.6,
+  "server_seconds": 266.6,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 10.1,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/api/client.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

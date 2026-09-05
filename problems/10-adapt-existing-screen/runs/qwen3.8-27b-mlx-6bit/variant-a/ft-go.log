@@ -1,0 +1,74 @@
+
+===== ft-go invocation, 2026-09-05 07:54 UTC =====
+problem   10-adapt-existing-screen
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+workspace seeded from scaffold (32 files)
+  the scaffold carries both domains: sessions (A, C) and orders (B)
+
+[plan] in 1473/32768  out 5232/16384  think 13281c  489s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (7887 bytes)
+
+manifest: 7 files
+  src/features/sessions/dirty-context.tsx
+  src/features/sessions/use-active-session.ts   <- src/features/sessions/dirty-context.tsx
+  src/features/sessions/active-session-bar.tsx   <- src/features/sessions/use-active-session.ts
+  src/app/authenticated-layout.tsx   <- src/features/sessions/active-session-bar.tsx
+  src/features/sessions/session-detail.tsx   <- src/features/sessions/use-active-session.ts, src/features/sessions/dirty-context.tsx
+  test/use-active-session.test.ts   <- src/features/sessions/use-active-session.ts, src/features/sessions/dirty-context.tsx
+  test/active-session-bar.test.tsx   <- src/features/sessions/active-session-bar.tsx, src/features/sessions/use-active-session.ts, src/features/sessions/dirty-context.tsx
+
+[01-dirty-context.tsx] in 3265/32768  out 544/16384  think 1198c  75s  7.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/dirty-context.tsx (884 bytes)
+[02-use-active-session.ts] in 3622/32768  out 4650/16384  think 14359c  438s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/use-active-session.ts (4064 bytes)
+[03-active-session-bar.tsx] in 4462/32768  out 1945/16384  think 5358c  196s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/active-session-bar.tsx (1956 bytes)
+[04-authenticated-layout.tsx] in 3936/32768  out 1612/16384  think 6637c  163s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app/authenticated-layout.tsx (351 bytes)
+[05-session-detail.tsx] in 4817/32768  out 7298/16384  think 25274c  680s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/session-detail.tsx (3533 bytes)
+[06-use-active-session.test.ts-cases] in 4815/32768  out 3825/16384  think 10320c  358s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/06-use-active-session.test.ts-cases.txt (5859 bytes)
+[06-use-active-session.test.ts] in 6312/32768  out 8594/16384  think 13474c  848s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/use-active-session.test.ts (19230 bytes)
+[07-active-session-bar.test.tsx-cases] in 5494/32768  out 1533/16384  think 3090c  168s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/07-active-session-bar.test.tsx-cases.txt (3346 bytes)
+[07-active-session-bar.test.tsx] in 6461/32768  out 14449/16384  think 44124c  1408s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/active-session-bar.test.tsx (8875 bytes)
+
+files written: 7/7
+
+[gate] installing dependencies
+[gate] typecheck failed (3 errors)
+[gate] repairing 1 file(s)
+[repair1-use-active-session.ts] in 3460/32768  out 3794/16384  think 11629c  358s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/use-active-session.ts (2583 bytes)
+[gate] typecheck failed (2 errors)
+[gate] repairing 2 file(s), loading 2 definition(s) read-only
+[repair2-use-active-session.ts] in 4100/32768  out 2704/16384  think 8513c  267s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/use-active-session.ts (2051 bytes)
+[repair2-session-detail.tsx] in 4757/32768  out 6179/16384  think 21076c  590s  10.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/features/sessions/session-detail.tsx (3015 bytes)
+[gate] typecheck failed (1 errors)
+[tests] 3 of 15 failing — recorded, not repaired
+         ActiveSessionBar > does not crash or display NaN when startedAt is an invalid ISO string
+         ActiveSessionBar > does not navigate on Resume click when active is null
+         ActiveSessionBar > navigates to /sessions/<active.id> on Resume click
+[gate] cleaned install artifacts from the workspace
+
+wall 101.4 min   requests 13   in 56974   out 62359   10.3 tok/s
+generation 100.6 min   model loads 0s   gate+io 0.8 min
+REVISED x3 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 1/9 samples — throughput here is not comparable
+
+failures (2):
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 1 of 9 samples: routined is using 88% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap activity, s. Throughput here is the machine's, not the model's.
+
+artifacts in problems/10-adapt-existing-screen/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md
