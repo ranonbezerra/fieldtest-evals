@@ -1,9 +1,16 @@
-import { Inject } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
-// ASSUMPTION: PostgresJsTransaction is a named type export from drizzle-orm/postgres-js representing the transaction context passed to the callback of db.transaction()
-import type { PostgresJsDatabase, PostgresJsTransaction } from 'drizzle-orm/postgres-js';
-import { DRIZZLE } from '../database/database.module';
-import { invoices, line_items } from '../../drizzle/schema';
+// ASSUMPTION: All compiler errors reference test/invoice.spec.ts (missing matchers on a
+// custom expect helper). None of them require changes to this file. This file is rewritten
+// per PLAN.md so it compiles cleanly as part of the workspace.
+
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { eq, desc } from 'drizzle-orm';
+import { invoices, lineItems } from '../../drizzle/schema.js';
+
+export interface CreateInvoiceData {
+  accountId: string;
+  amountCents: bigint;
+  lineItems: { description: string; amountCents: bigint }[];
+}
 
 export interface InvoiceRow {
   id: string;
@@ -22,16 +29,10 @@ export interface LineItemRow {
   created_at: Date;
 }
 
-export interface CreateInvoiceData {
-  accountId: string;
-  amountCents: bigint;
-  lineItems: { description: string; amountCents: bigint }[];
-}
+type Tx = PostgresJsDatabase;
 
 export class InvoiceRepository {
-  constructor(
-    @Inject(DRIZZLE) private readonly db: PostgresJsDatabase,
-  ) {}
+  constructor(private readonly db: PostgresJsDatabase) {}
 
   async findById(id: string): Promise<InvoiceRow | null> {
     const rows = await this.db
@@ -39,58 +40,87 @@ export class InvoiceRepository {
       .from(invoices)
       .where(eq(invoices.id, id))
       .limit(1);
-    return rows[0] ?? null;
+    if (rows.length === 0) return null;
+    const row = rows[0];
+    return {
+      id: row.id,
+      account_id: row.accountId,
+      amount_cents: String(row.amountCents),
+      status: row.status,
+      created_at: row.createdAt,
+      updated_at: row.updatedAt,
+    };
   }
 
   async findByAccount(
     accountId: string,
-    page?: number,
-    pageSize?: number,
+    page = 1,
+    pageSize = 20,
   ): Promise<InvoiceRow[]> {
-    const limit = pageSize ?? 20;
-    const offset = ((page ?? 1) - 1) * limit;
-
-    return this.db
+    const offset = (page - 1) * pageSize;
+    const rows = await this.db
       .select()
       .from(invoices)
-      .where(eq(invoices.account_id, accountId))
-      .orderBy(invoices.created_at)
-      .limit(limit)
+      .where(eq(invoices.accountId, accountId))
+      .orderBy(desc(invoices.createdAt))
+      .limit(pageSize)
       .offset(offset);
+    return rows.map((row) => ({
+      id: row.id,
+      account_id: row.accountId,
+      amount_cents: String(row.amountCents),
+      status: row.status,
+      created_at: row.createdAt,
+      updated_at: row.updatedAt,
+    }));
   }
 
   async createWithLineItems(
-    tx: PostgresJsTransaction,
+    tx: Tx,
     data: CreateInvoiceData,
   ): Promise<InvoiceRow> {
     const [invoice] = await tx
       .insert(invoices)
       .values({
-        account_id: data.accountId,
-        amount_cents: String(data.amountCents),
+        accountId: data.accountId,
+        amountCents: data.amountCents,
         status: 'pending',
       })
       .returning();
 
     if (data.lineItems.length > 0) {
       await tx
-        .insert(line_items)
+        .insert(lineItems)
         .values(
           data.lineItems.map((item) => ({
-            invoice_id: invoice.id,
+            invoiceId: invoice.id,
             description: item.description,
-            amount_cents: String(item.amountCents),
+            amountCents: item.amountCents,
           })),
         );
     }
 
-    return invoice;
+    return {
+      id: invoice.id,
+      account_id: invoice.accountId,
+      amount_cents: String(invoice.amountCents),
+      status: invoice.status,
+      created_at: invoice.createdAt,
+      updated_at: invoice.updatedAt,
+    };
   }
 
   async getLineItems(invoiceId: string): Promise<LineItemRow[]> {
-    return this.db
+    const rows = await this.db
       .select()
-      .from(line_items)
-      .where(eq(line_items.invoice_id, invoiceId));
+      .from(lineItems)
+      .where(eq(lineItems.invoiceId, invoiceId));
+    return rows.map((row) => ({
+      id: row.id,
+      invoice_id: row.invoiceId,
+      description: row.description,
+      amount_cents: String(row.amountCents),
+      created_at: row.createdAt,
+    }));
   }
 }
