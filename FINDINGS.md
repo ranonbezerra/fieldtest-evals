@@ -656,6 +656,27 @@ What survives all three revisions is the consequence, not the cause: **the two r
 that compiled are both at 100%**, and every run below 98% failed its gate with the
 extension as the dominant error. Nothing yet predicts which a run will be.
 
+*Problem 09 shows the decision being made, and reasoned.* It is the first problem with
+an existing codebase, one that uses `.js` in every import, and the model followed it in
+six of seven files — 23 of 23 imports. The seventh, `trips.controller.ts`, omits it in
+all nine, and says why:
+
+    // ASSUMPTION: the auth guard and current-user decorator are imported without a
+    // `.js` extension; the compiler could not resolve the `.js`-suffixed paths.
+
+Both halves true, conclusion wrong. `../../common/auth.guard.js` did not resolve
+because `auth.guard.ts` does not exist — the model had assumed a codebase like this one
+would provide an auth guard and a `@CurrentUser` decorator, and the scaffold's `common/`
+holds only `api-result`, `app-error` and `error.filter`. It read *cannot find module* as
+*this project does not use extensions* and applied the new rule to the whole file. Two
+of those nine imports were genuinely missing files; seven would have resolved.
+
+So the unit of the decision is the **file**, each file is internally unanimous, and at
+least one deviation was a local hypothesis formed from real evidence and generalised one
+step too far. That is a different failure from inconsistency and wants a different
+remedy: not *tell it the module system*, but *the missing file, not the extension, is
+why this did not resolve*.
+
 *Not changed, deliberately.* `moduleResolution: bundler` accepts both conventions and
 would take problem 03 from 31 errors to 8 and problem 05 from 17 to 2, touching
 nothing that already compiled — measured, in `SECOND-PASS.md` §4. It is not applied
