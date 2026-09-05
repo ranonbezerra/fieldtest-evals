@@ -560,6 +560,31 @@ under a real run.
 The flush then recovered **26 GiB of swap** — 29.4 GiB occupied down to 3.2 — which is
 the cost the stale lock had been quietly holding.
 
+### 4.11 A gate that could not apply was recorded as a gate that failed
+
+Problem 08 delivers a diagnosis, a runbook and three config diffs. There is no
+TypeScript in it. `tsc --noEmit` returned `TS18003: No inputs were found in config
+file`, and the harness stored `gate: {ran: true, passed: false}`.
+
+By the rubric that submission is complete — six of six must-haves, three of three on
+every graded criterion. It would have appeared in the public results table as a
+failure.
+
+`README.md` has named the exception since before this campaign: *"problem 08 delivers
+diagnosis + corrected config + runbook (verify by following the runbook)"*. The gate
+never implemented what the documentation already said.
+
+*Changed:* the typecheck is skipped when the workspace holds no `.ts` files, and the
+run records `gate: {ran: false, skipped: "no TypeScript in the workspace"}`. **A gate
+that cannot apply is skipped, not failed.** Run 08's `meta.yaml` was corrected in
+place; no earlier run is affected, because problems 01–07 all deliver TypeScript.
+
+This is the eleventh instrument defect and it belongs to the family §4.9 named: a
+constant, a default or an assumption that was reasonable for the case it was written
+for, left in place into a case it was never true of. Here the assumption was *every
+problem delivers TypeScript*, which was true of the first seven problems and is
+documented as false of two more.
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was

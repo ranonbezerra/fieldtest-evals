@@ -584,7 +584,19 @@ def main():
                     say(f"[gate] prisma generate failed ({rc}); the typecheck will "
                         f"not see the generated client")
 
-            if (ws / "tsconfig.json").exists():
+            # A problem whose deliverable is a diagnosis, a runbook and three diffs
+            # has no TypeScript, and running `tsc` on it produces TS18003 — "no
+            # inputs were found" — which was recorded as a failed gate. README has
+            # always named the exception in prose; this implements it. A gate that
+            # cannot apply is skipped, not failed.
+            sources = [q for q in ws.rglob("*.ts")
+                       if "node_modules" not in q.parts and q.name != "tsconfig.json"]
+            if (ws / "tsconfig.json").exists() and not sources:
+                say("\n[gate] the workspace has no TypeScript; typecheck does not "
+                    "apply to this deliverable and is skipped")
+                gate["ran"] = False
+                gate["skipped"] = "no TypeScript in the workspace"
+            elif (ws / "tsconfig.json").exists():
                 gate["ran"] = True
                 for attempt in range(MAX_REPAIRS + 1):
                     rc, out = run(["npx", "--no-install", "tsc", "--noEmit"], cwd=ws, timeout=900)
@@ -814,6 +826,7 @@ def main():
             "files_empty": [str(p.relative_to(ws)) for p in empty],
             "gate": {"ran": gate["ran"], "passed": gate["passed"],
                      "repairs": gate["repairs"],
+                     "skipped": gate.get("skipped"),
                      "gate_scaffold_added": gate["scaffold"]},
             "tests": tests,
             "failures": failures,
