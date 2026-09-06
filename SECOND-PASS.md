@@ -205,6 +205,23 @@ decision, not a side effect.
 
 Not applied in this pass: adding packages changes whether earlier runs compile.
 
+## 8b. The gate must typecheck the deliverable
+
+**From:** problem 13, which passed its gate without the compiler opening the file it
+delivered.
+
+The fixture's `tsconfig.json` carries `include: ['*.ts']` — the workspace root, which is
+where the fixture's own modules live. The deliverable lands in `test/`. So `tsc`
+checked two files the model never touched, found them clean, and reported a pass on a
+run whose product does not load.
+
+Correct for verifying a fixture standalone; wrong for a run. The gate should union the
+fixture's `include` with every path the manifest declares, so what the model wrote is
+always in scope.
+
+Same family as §4.11 and §4.12: a fixture-level setting that is right in one context
+and silently wrong in the other.
+
 ## 8. Give the test step a database
 
 **From:** problem 07, whose suite could not run at all.

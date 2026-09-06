@@ -146,6 +146,44 @@ It reached the verdicts for problems 01 and 03 before it was checked against the
 §4 sections. Both verdicts now record `plan_gate: wrong` for the affected must-haves
 rather than `decided`.
 
+### 1.4 It does not reliably declare what it needs to read, and nothing checks
+
+The plan's manifest names, per file, the already-written files that file depends on.
+`ft-go` passes exactly those into the phase. The model chooses them, and when it
+chooses wrongly the phase works blind — with no signal that it did.
+
+Measured on the three runs where a cross-file defect was traceable:
+
+| phase | declared reads | what happened |
+|---|---|---|
+| 13 `test/fee-calculator.spec.ts` | **nothing** | wrote a characterization suite for a module it never opened |
+| 07 `product.repository.ts` | **nothing** | queried `productIngredients`; the schema names it `ingredients` |
+| 07 `product.controller.ts` | `product.service.ts` | called `getResults`, which that service does not define |
+| 03 `re-derivation.service.ts` | `operations.repository.ts` | called `reDeriveWindow`, which that repository does not define |
+
+**Two distinct failures live in that table and they want opposite fixes.**
+
+The first two are declaration failures: the file needed was available and not asked
+for. Problem 13 is the extreme — the entire task is to characterize one 250-line
+module, and neither of the two phases declared it. Everything downstream follows: the
+import path is invented, the assumed signature is wrong in all three positions, and the
+findings report documents behaviour nobody looked at.
+
+The last two are not. Both phases had the interface in front of them and called a
+method it does not declare. Reading was not the problem.
+
+*What the harness could do about the first kind, without helping the model:* count it.
+A phase that reads nothing while writing code that imports something is a measurable
+event, and the count is a fact about the model. Enforcing the read — injecting the
+schema into every repository phase — would help it, and belongs to a different
+experiment than this one.
+
+*What this does to §1.3's story.* The plan is where the failures are visible, and this
+is a third way that is true. §1.3 found invariants contradicted between the plan's own
+sections; problem 01 at `medium` found a class named in constructors and absent from
+the manifest; this is the manifest's `reads` column being wrong. All three are the plan
+under-specifying itself, and all three are checkable before a line of code exists.
+
 ## 2. The machine
 
 Full detail in [`harness/host-limits.md`](harness/host-limits.md).

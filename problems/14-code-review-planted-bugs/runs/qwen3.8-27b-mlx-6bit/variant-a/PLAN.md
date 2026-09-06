@@ -1,0 +1,77 @@
+## 1. Assumptions
+
+- The reviewer has read access to `fixtures/transfers/transfers.service.ts`, `fixtures/transfers/accounts.repository.ts`, and `fixtures/transfers/serializer.ts` before writing findings.
+- Output is a single file `REVIEW.md` at the repository root; no other files are produced.
+- Findings reference 1-based line numbers as they appear in the fixture files.
+- "Minimal fix" means a short code sketch (≤ 10 lines) or a one-sentence description of the change; no full rewrites.
+- A finding that cannot be traced to a concrete code path (e.g., "might be slow") is excluded.
+- The "areas worth tracing" list in the task is a hint set, not an exhaustive bug list; the reviewer traces those first, then reads the remaining code for additional defensible findings.
+
+## 2. Data model
+
+None. The task produces a markdown document; no persistence is involved.
+
+## 3. Types and signatures
+
+The deliverable is `REVIEW.md`, structured as follows:
+
+```
+# Code Review — Transfers Service
+
+## Findings
+
+### F1 — <short title>
+- **Location:** `file.ts:NN`
+- **Severity:** blocker | major | minor
+- **Mechanism:** <why it breaks, under what conditions (load / error path / concurrent shape)>
+- **Fix:** <code sketch ≤ 10 lines, or precise one-sentence description>
+
+### F2 — ...
+(repeat for each finding)
+
+## Verdict
+block | approve-with-comments
+<one-paragraph justification referencing finding IDs>
+
+## Non-blocking observations
+(bullet list; explicitly labelled "style / readability — does not affect correctness")
+```
+
+Severity ordering: all `blocker` findings first, then `major`, then `minor`. Within a severity tier, order is by file (transfers.service.ts → accounts.repository.ts → serializer.ts).
+
+Rules:
+- Every finding must name at least one concrete line range.
+- "Mechanism" must state the triggering condition (e.g., "when two concurrent transfers touch the same pair of accounts in opposite order").
+- A finding with no fix sketch is invalid; if the fix is a one-liner, write it inline.
+- The verdict must reference finding IDs (e.g., "Blocked by F1, F3").
+
+## 4. Control flow
+
+The review process is linear:
+
+1. **Read all three fixture files in full.** Note the public method signatures and any injected dependencies.
+2. **Trace the hinted paths first** (in this order): notification promise handling → lock acquisition order → raw-connection client lifecycle → audit-log money serialization → statement-builder query pattern → retry-path balance update → transaction boundary (inside vs. outside).
+3. **Trace remaining paths** not covered by step 2: error branches, early returns, retry loops, and any code that mutates state without a visible rollback.
+4. **Draft findings.** For each, verify the line number by re-reading that region of the file.
+5. **Rank and assign severity.** A finding is a blocker if it corrupts money or violates atomicity under a realistic condition. Major if it causes a crash, deadlock, or silent data loss on an error path. Minor if it is a leak, a race that degrades but does not corrupt, or an inconsistent state that is self-healing.
+6. **Write the verdict.** If any blocker exists → block. Else if majors exist → approve-with-comments (list them). Else → approve-with-comments (style only) or plain approve.
+7. **List non-blocking observations** separately, if any.
+
+No code is modified. No files other than `REVIEW.md` are written.
+
+## 5. Tests
+
+This task produces a document, not executable code. Validation criteria:
+
+- Every finding cites a real line in one of the three fixture files (spot-checkable by opening the file).
+- No finding duplicates another (same root cause at the same site appears once).
+- Severity assignments are mutually consistent: a blocker implies "corrupts funds or breaks atomicity"; a major implies "crashes or silently loses data on an error path"; a minor is anything less.
+- The verdict matches the highest-severity finding present (block iff ≥ 1 blocker).
+- Non-blocking section, if present, contains no items that restate a finding.
+- Total findings: the reviewer should expect between 4 and 8 findings across the hinted areas; fewer than 4 suggests missed paths, more than 8 suggests low-precision padding.
+
+## 6. Manifest
+
+<!-- manifest
+REVIEW.md | reads: fixtures/transfers/transfers.service.ts, fixtures/transfers/accounts.repository.ts, fixtures/transfers/serializer.ts | code-review findings with severity, mechanism, and fix for the transfers service -->
+-->

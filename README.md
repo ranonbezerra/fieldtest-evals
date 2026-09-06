@@ -122,7 +122,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 10 | adapt existing screen | ✗<br><sub>M1, M4</sub> | – | – | – | Builds the whole feature correctly beside the application and never connects it to anything. |
 | 11 | behavior preserving refactor | ✗<br><sub>M3, M4, M5</sub> | – | – | – | Turns three copies into four, and the suite stays green because the tests still point at the copies it left alone. |
 | 12 | orm migration | – | – | – | – | *not yet run* |
-| 13 | legacy characterization tests | – | – | – | – | *not yet run* |
+| 13 | legacy characterization tests | ✗<br><sub>M2, M3, M5, M6</sub> | – | – | – | Writes a characterization suite and a bug report for a module it never opened, and presents invented code as the evidence. |
 | 14 | code review planted bugs | – | – | – | – | *not yet run* |
 | 15 | wiring boot failure | – | – | – | – | *not yet run* |
 | 16 | migration that lied | – | – | – | – | *not yet run* |
