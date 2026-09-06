@@ -805,7 +805,6 @@ def main():
                         f"— recorded, not repaired")
                     for name in tests["failing"][:5]:
                         say(f"         {name}")
-                else:
                 elif tests.get("total"):
                     say(f"[tests] {tests.get('passed')} of {tests.get('total')} passing")
                 else:
