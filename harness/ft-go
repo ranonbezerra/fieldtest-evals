@@ -389,16 +389,29 @@ def main():
         # The phase design below exists because no single reply fits under 16,384
         # tokens (FINDINGS 3.1). A model with room does not need it, and asking it
         # one file at a time measures this harness's shape as much as the model.
+        retried_single = False
         if a.shape == "single":
             say("\nshape: single — the whole solution in one reply, no plan phase")
             instruction = (HARNESS / "instructions" / "single-shot.md").read_text()
             rc = ft_run("solution", instruction, steps / "00-solution.md",
                         reads=[variant], system=cheatsheet, files_into=ws)
             if rc != 0:
-                say("the single request produced nothing; recorded as a failure")
+                # Nobody reads an empty reply and moves on. A developer asks again,
+                # and a field test that does not is measuring patience nobody has.
+                # Once: a second failure is a real one, and a third ask is a person
+                # deciding to break the task up — which is the other shape.
+                say("the request produced no files; asking again, as a person would")
+                rc = ft_run("solution-retry", instruction,
+                            steps / "00-solution-retry.md",
+                            reads=[variant], system=cheatsheet, files_into=ws)
+                retried_single = True
+            if rc != 0:
+                say("the second request produced nothing either; recorded as a "
+                    "failure")
                 failures.append({"phase": "solution", "exit": rc,
-                                 "reason": "the one request that carries the whole "
-                                           "solution wrote no files"})
+                                 "reason": "two requests, neither wrote a file. The "
+                                           "replies are in steps/ and are reasoning "
+                                           "that ran out of budget before answering."})
             written = [q for q in ws.rglob("*")
                        if q.is_file() and "node_modules" not in q.parts]
             say(f"files written: {len(written)}")
@@ -914,6 +927,7 @@ def main():
                                            if tot_out else None}
                      if tot_cost else None),
             "runner": a.runner, "spec_source": a.spec, "shape": a.shape,
+            "asked_again_after_empty": retried_single,
             "manifest": {"declared": manifest_declared, "built": len(manifest),
                          "truncated": manifest_declared > len(manifest)},
             "requests": len(on_disk),
