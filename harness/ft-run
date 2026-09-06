@@ -83,6 +83,26 @@ def strip_stray_fences(text):
     return "\n".join(lines)
 
 
+MULTI = re.compile(
+    r"^###[ \t]+`?([\w./+-]+)`?[ \t]*\r?\n+```[\w+-]*\r?\n(.*?)\r?\n```",
+    re.S | re.M)
+
+
+def extract_files(text):
+    """Every `### path` heading followed by a fence, as {path: content}.
+
+    For the single-request shape, where one reply carries the whole solution. A
+    path repeated later wins: a reply that sketches a file and then writes it
+    properly should land the second version.
+    """
+    out = {}
+    for path, body in MULTI.findall(text):
+        p = path.strip().lstrip("./")
+        if p:
+            out[p] = strip_stray_fences(body.rstrip("\n")) + "\n"
+    return out
+
+
 def extract_file(text):
     """The largest fenced block, or the whole reply if it has no fence.
 
@@ -102,6 +122,9 @@ def main():
     ap.add_argument("--read", action="append", default=[], help="read-only reference; repeatable")
     ap.add_argument("--raw", required=True, help="where to write the complete reply")
     ap.add_argument("--file", help="also extract the fenced block and write it here")
+    ap.add_argument("--files-into", metavar="DIR",
+                    help="the reply carries several files as `### path` headings "
+                         "followed by fences; write each under DIR")
     ap.add_argument("--verbatim", action="store_true",
                     help="write the reply as-is instead of extracting a fenced block; "
                          "required when the artifact itself contains fences, such as the plan")
@@ -283,6 +306,27 @@ def main():
     print(f"[{a.label}] in {u.get('prompt_tokens')}/{WINDOW}  "
           f"out {out_tokens}/{a.max_tokens}  think {len(reasoning)}c  "
           f"{wall:.0f}s  {tps} tok/s  {finish}{flag}")
+
+    if a.files_into:
+        # The single-request shape: one reply carrying every file. Written under the
+        # workspace root by the path each `### heading` names.
+        root = Path(a.files_into)
+        found = extract_files(content)
+        if not found:
+            print(f"ft-run: [{a.label}] no `### path` + fence pairs in the reply; "
+                  f"nothing written", file=sys.stderr)
+            return 6
+        for rel, body in sorted(found.items()):
+            if ".." in Path(rel).parts or Path(rel).is_absolute():
+                print(f"ft-run: [{a.label}] refusing path outside the workspace: "
+                      f"{rel}", file=sys.stderr)
+                continue
+            dest = root / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(body, encoding="utf-8")
+        print(f"ft-run: [{a.label}] wrote {len(found)} file(s): "
+              f"{', '.join(sorted(found)[:6])}"
+              f"{' …' if len(found) > 6 else ''}")
 
     if a.file:
         text, fenced = ((strip_stray_fences(content.strip()) + "\n", True)

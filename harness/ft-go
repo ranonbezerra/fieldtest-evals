@@ -181,6 +181,11 @@ def main():
     ap.add_argument("variant")
     ap.add_argument("--runner", choices=["api", "aider"], default="api")
     ap.add_argument("--spec", choices=["model", "ladder"], default="model")
+    ap.add_argument("--shape", choices=["phased", "single"], default="phased",
+                    help="phased: a plan, then one file per request — forced by the "
+                         "local server's 16,384-token output ceiling. single: the "
+                         "whole solution in one reply, which is how a model with "
+                         "room would actually be asked.")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--no-gate", action="store_true")
@@ -210,7 +215,11 @@ def main():
     tag = slug + ("" if a.runner == "api" else f"--{a.runner}") \
                + ("" if a.spec == "model" else f"--{a.spec}")
     RUNNER = HARNESS / ("ft-run" if a.runner == "api" else "ft-aider")
-    rundir = prob / "runs" / tag / vslug
+    # A different shape is a different condition, not a different variant, and the
+    # two must not overwrite each other: `variant-a` stays the phased run every
+    # recorded verdict refers to, and the single-request shape sits beside it.
+    rslug = vslug if a.shape == "phased" else f"{vslug}-{a.shape}"
+    rundir = prob / "runs" / tag / rslug
     ws, steps = rundir / "workspace", rundir / "steps"
 
     if rundir.exists() and not (a.resume or a.dry_run):
@@ -226,7 +235,9 @@ def main():
     say()
 
     if a.dry_run:
-        say("phases: 0 plan -> N files from the plan's manifest -> gate -> capture")
+        say("phases: 0 plan -> N files from the plan's manifest -> gate -> capture"
+            if a.shape == "phased" else
+            "phases: one request carrying every file -> gate -> capture")
         say(f"cheatsheet {cheatsheet.relative_to(ROOT)}")
         return 0
 
@@ -321,8 +332,10 @@ def main():
         host_samples.append(vitals())
 
     def ft_run(label, instruction, raw, reads=(), out_file=None, system=None,
-               verbatim=False, no_thinking=False, effort=None):
+               verbatim=False, no_thinking=False, effort=None, files_into=None):
         cmd = [str(RUNNER), "--label", label, "--instruction", "-", "--raw", str(raw)]
+        if files_into:
+            cmd += ["--files-into", str(files_into)]
         if no_thinking:
             cmd += ["--no-thinking"]
         if effort:
@@ -372,212 +385,238 @@ def main():
         return "runner exited non-zero"
 
     try:
-        # ---- phase 0: the model writes its own level-2 specification ----------
-        plan_md = rundir / "PLAN.md"
-        if not (a.resume and plan_md.exists()):
-            flush()
-            if a.spec == "ladder":
-                src = prob / "ladder" / "L2-spec.md"
-                if not src.is_file():
-                    sys.exit(f"ft-go: --spec ladder needs {src}")
-                shutil.copyfile(src, plan_md)
-                say("[plan] taken from the ladder spec; phase 0 not run")
-                phases.append({"label": "plan", "source": "ladder", "exit": 0,
-                               "runner": "none"})
-            else:
-                instruction = (HARNESS / "instructions" / "phase0-plan.md").read_text()
-                # Every phase runs at `reasoning_effort: medium`, set in ft-env.sh.
-                # That is a measurement, not a preference: at the model's own default
-                # this phase overflowed the ceiling in 3 of 3 runs and produced
-                # deliberation instead of a plan, so the fallback below fired every
-                # time and the whole campaign ran on plans written at `low`. Those
-                # plans contradict themselves — the invariant in one section, the
-                # procedure that breaks it in another — and that is what the runs
-                # were measuring. See FINDINGS 1.3 and 6.2.
-                #
-                # A phase that overflows is retried at `reasoning_effort: low` —
-                # the model's own dial rather than a switch the harness invented —
-                # and the fallback is recorded per file.
-                rc = ft_run("plan", instruction, steps / "00-plan.md",
-                            reads=[variant], out_file=plan_md, system=cheatsheet,
-                            verbatim=True)
-                pu = Path(str(steps / "00-plan.md") + ".usage.json")
-                if pu.is_file() and json.loads(pu.read_text()).get("output_ceiling_hit"):
-                    say("phase 0 hit the ceiling — retrying at reasoning_effort=low")
-                    rc = ft_run("plan-retry", instruction, steps / "00-plan-retry.md",
+        # ---- the single-request shape ----------------------------------------
+        # The phase design below exists because no single reply fits under 16,384
+        # tokens (FINDINGS 3.1). A model with room does not need it, and asking it
+        # one file at a time measures this harness's shape as much as the model.
+        if a.shape == "single":
+            say("\nshape: single — the whole solution in one reply, no plan phase")
+            instruction = (HARNESS / "instructions" / "single-shot.md").read_text()
+            rc = ft_run("solution", instruction, steps / "00-solution.md",
+                        reads=[variant], system=cheatsheet, files_into=ws)
+            if rc != 0:
+                say("the single request produced nothing; recorded as a failure")
+                failures.append({"phase": "solution", "exit": rc,
+                                 "reason": "the one request that carries the whole "
+                                           "solution wrote no files"})
+            written = [q for q in ws.rglob("*")
+                       if q.is_file() and "node_modules" not in q.parts]
+            say(f"files written: {len(written)}")
+            manifest_declared = len(written)
+            manifest = []
+        else:
+            manifest_declared = 0
+
+        # Everything from here to the gate is the phased shape: a plan, then a
+        # file per request. `--shape single` has already written the workspace
+        # in one reply and goes straight to the gate.
+        if a.shape == "phased":
+            # ---- phase 0: the model writes its own level-2 specification ----------
+            plan_md = rundir / "PLAN.md"
+            if not (a.resume and plan_md.exists()):
+                flush()
+                if a.spec == "ladder":
+                    src = prob / "ladder" / "L2-spec.md"
+                    if not src.is_file():
+                        sys.exit(f"ft-go: --spec ladder needs {src}")
+                    shutil.copyfile(src, plan_md)
+                    say("[plan] taken from the ladder spec; phase 0 not run")
+                    phases.append({"label": "plan", "source": "ladder", "exit": 0,
+                                   "runner": "none"})
+                else:
+                    instruction = (HARNESS / "instructions" / "phase0-plan.md").read_text()
+                    # Every phase runs at `reasoning_effort: medium`, set in ft-env.sh.
+                    # That is a measurement, not a preference: at the model's own default
+                    # this phase overflowed the ceiling in 3 of 3 runs and produced
+                    # deliberation instead of a plan, so the fallback below fired every
+                    # time and the whole campaign ran on plans written at `low`. Those
+                    # plans contradict themselves — the invariant in one section, the
+                    # procedure that breaks it in another — and that is what the runs
+                    # were measuring. See FINDINGS 1.3 and 6.2.
+                    #
+                    # A phase that overflows is retried at `reasoning_effort: low` —
+                    # the model's own dial rather than a switch the harness invented —
+                    # and the fallback is recorded per file.
+                    rc = ft_run("plan", instruction, steps / "00-plan.md",
                                 reads=[variant], out_file=plan_md, system=cheatsheet,
-                                verbatim=True, effort="low")
-                    ceiling_retries.append("plan")
-                # Only if the retry ALSO overflowed. The abort here was written
-                # before the retry existed and read the FIRST attempt's counters, so a
-                # successful retry was overwritten by a note saying no plan was
-                # produced. Two fixes written at different times, contradicting each
-                # other. The self-test caught it in 31 minutes.
-                ru = Path(str(steps / "00-plan-retry.md") + ".usage.json")
-                src = ru if ru.is_file() else (pu if pu.is_file() else None)
-                if src and json.loads(src.read_text()).get("output_ceiling_hit"):
-                    say("\nphase 0 hit the ceiling at reasoning_effort=low as well.")
-                    say("What came back is reasoning, not a plan. Recorded as the result.")
-                    plan_md.write_text(
-                        "PHASE 0 PRODUCED NO PLAN — the output ceiling was reached at "
-                        "the model's default effort and again at low. The replies are "
-                        "in steps/ and are reasoning, not a specification.\n")
-                    (rundir / "GATE.md").write_text("plan phase hit the ceiling twice\n")
-                    failures.append({"phase": "plan", "exit": None,
-                                     "reason": "output ceiling reached at the model's "
-                                               "default effort and again at low"})
-                    return 1
-                if rc != 0:
-                    say("\nphase 0 produced no plan. That is the result: record it and stop.")
-                    return 1
+                                verbatim=True)
+                    pu = Path(str(steps / "00-plan.md") + ".usage.json")
+                    if pu.is_file() and json.loads(pu.read_text()).get("output_ceiling_hit"):
+                        say("phase 0 hit the ceiling — retrying at reasoning_effort=low")
+                        rc = ft_run("plan-retry", instruction, steps / "00-plan-retry.md",
+                                    reads=[variant], out_file=plan_md, system=cheatsheet,
+                                    verbatim=True, effort="low")
+                        ceiling_retries.append("plan")
+                    # Only if the retry ALSO overflowed. The abort here was written
+                    # before the retry existed and read the FIRST attempt's counters, so a
+                    # successful retry was overwritten by a note saying no plan was
+                    # produced. Two fixes written at different times, contradicting each
+                    # other. The self-test caught it in 31 minutes.
+                    ru = Path(str(steps / "00-plan-retry.md") + ".usage.json")
+                    src = ru if ru.is_file() else (pu if pu.is_file() else None)
+                    if src and json.loads(src.read_text()).get("output_ceiling_hit"):
+                        say("\nphase 0 hit the ceiling at reasoning_effort=low as well.")
+                        say("What came back is reasoning, not a plan. Recorded as the result.")
+                        plan_md.write_text(
+                            "PHASE 0 PRODUCED NO PLAN — the output ceiling was reached at "
+                            "the model's default effort and again at low. The replies are "
+                            "in steps/ and are reasoning, not a specification.\n")
+                        (rundir / "GATE.md").write_text("plan phase hit the ceiling twice\n")
+                        failures.append({"phase": "plan", "exit": None,
+                                         "reason": "output ceiling reached at the model's "
+                                                   "default effort and again at low"})
+                        return 1
+                    if rc != 0:
+                        say("\nphase 0 produced no plan. That is the result: record it and stop.")
+                        return 1
 
-        plan_text = plan_md.read_text(encoding="utf-8", errors="replace")
-        manifest, fenced = parse_manifest(plan_text)
-        if not manifest:
-            say("\nPLAN.md carries no readable manifest. Recorded as a plan-phase failure.")
-            (rundir / "GATE.md").write_text("plan produced no machine-readable manifest\n")
-            return 1
-        manifest_declared = len(manifest)
-        if manifest_declared > a.max_files:
-            say(f"\nPLAN.md declares {manifest_declared} files, above --max-files "
-                f"{a.max_files}. Truncating, and this run is not comparable: the "
-                f"model's own plan is being cut, not its work judged.")
-            failures.append({
-                "phase": "manifest", "exit": None,
-                "reason": f"the plan declared {manifest_declared} files and "
-                          f"--max-files is {a.max_files}; "
-                          f"{manifest_declared - a.max_files} were never written"})
-        manifest = manifest[: a.max_files]
-        say(f"\nmanifest: {len(manifest)} files"
-            f"{'' if fenced else '  (recovered without a manifest block)'}")
-        for m in manifest:
-            say(f"  {m['path']}" + (f"   <- {', '.join(m['reads'])}" if m["reads"] else ""))
-        say()
+            plan_text = plan_md.read_text(encoding="utf-8", errors="replace")
+            manifest, fenced = parse_manifest(plan_text)
+            if not manifest:
+                say("\nPLAN.md carries no readable manifest. Recorded as a plan-phase failure.")
+                (rundir / "GATE.md").write_text("plan produced no machine-readable manifest\n")
+                return 1
+            manifest_declared = len(manifest)
+            if manifest_declared > a.max_files:
+                say(f"\nPLAN.md declares {manifest_declared} files, above --max-files "
+                    f"{a.max_files}. Truncating, and this run is not comparable: the "
+                    f"model's own plan is being cut, not its work judged.")
+                failures.append({
+                    "phase": "manifest", "exit": None,
+                    "reason": f"the plan declared {manifest_declared} files and "
+                              f"--max-files is {a.max_files}; "
+                              f"{manifest_declared - a.max_files} were never written"})
+            manifest = manifest[: a.max_files]
+            say(f"\nmanifest: {len(manifest)} files"
+                f"{'' if fenced else '  (recovered without a manifest block)'}")
+            for m in manifest:
+                say(f"  {m['path']}" + (f"   <- {', '.join(m['reads'])}" if m["reads"] else ""))
+            say()
 
-        # ---- phases 1..N: one file per request --------------------------------
-        tmpl = (HARNESS / "instructions" / "phase-file.md").read_text()
-        written = []
-        for i, item in enumerate(manifest, start=1):
-            target = ws / item["path"]
-            if a.resume and target.exists() and target.stat().st_size > 0:
-                say(f"[{i:02d}] {item['path']} already written; skipping")
-                written.append(target)
-                continue
-            flush()
-            reads = [variant, plan_md]
-            for d in item["reads"]:
-                dp = ws / d
-                if dp.is_file() and dp.stat().st_size > 0:
-                    reads.append(dp)
-            instruction = (tmpl.replace("{{PATH}}", item["path"])
-                               .replace("{{NOTE}}", item["note"] or "as the plan specifies"))
-            label = f"{i:02d}-{Path(item['path']).name}"
+            # ---- phases 1..N: one file per request --------------------------------
+            tmpl = (HARNESS / "instructions" / "phase-file.md").read_text()
+            written = []
+            for i, item in enumerate(manifest, start=1):
+                target = ws / item["path"]
+                if a.resume and target.exists() and target.stat().st_size > 0:
+                    say(f"[{i:02d}] {item['path']} already written; skipping")
+                    written.append(target)
+                    continue
+                flush()
+                reads = [variant, plan_md]
+                for d in item["reads"]:
+                    dp = ws / d
+                    if dp.is_file() and dp.stat().st_size > 0:
+                        reads.append(dp)
+                instruction = (tmpl.replace("{{PATH}}", item["path"])
+                                   .replace("{{NOTE}}", item["note"] or "as the plan specifies"))
+                label = f"{i:02d}-{Path(item['path']).name}"
 
-            # A test file goes in two passes. Reasoning is not the problem in
-            # itself — it is productive on every other kind of file — but on tests
-            # it consumed the whole 16,384-token budget every time, four for four,
-            # while the retry without it produced the same file in a median of
-            # 3,080 tokens. So: enumerate the cases WITH reasoning, where it is
-            # cheap and is exactly the thinking worth having, then write them out
-            # WITHOUT it, from a list that already contains the decisions.
-            #
-            # Capping the number of tests instead would optimise the harness against
-            # the thing it grades: coverage is a scored criterion.
-            if IS_TEST.search(item["path"]):
-                cases = steps / f"{label}-cases.md"
-                ctmpl = (HARNESS / "instructions" / "phase-test-cases.md").read_text()
-                cmsg = ctmpl.replace("{{PATH}}", item["path"])
-                ft_run(f"{label}-cases", cmsg, cases,
-                       reads=reads, out_file=cases.with_suffix(".txt"),
-                       system=cheatsheet, verbatim=True)
-
-                # The case phase needs the same ceiling retry as every other phase.
-                # Without it, an overflow here wrote 80 KB of deliberation as "the
-                # case list", that was fed to the writing phase as context, the
-                # prompt then exceeded the window, ft-run correctly refused, and the
-                # test file came back empty. One missing retry, four steps later an
-                # empty artifact.
-                cu = Path(str(cases) + ".usage.json")
-                cases_over = (json.loads(cu.read_text()).get("output_ceiling_hit")
-                              if cu.is_file() else False)
-                if cases_over:
-                    say(f"         ceiling hit enumerating cases — retrying at "
-                        f"reasoning_effort=low")
-                    ft_run(f"{label}-cases-retry", cmsg,
-                           steps / f"{label}-cases-retry.md",
+                # A test file goes in two passes. Reasoning is not the problem in
+                # itself — it is productive on every other kind of file — but on tests
+                # it consumed the whole 16,384-token budget every time, four for four,
+                # while the retry without it produced the same file in a median of
+                # 3,080 tokens. So: enumerate the cases WITH reasoning, where it is
+                # cheap and is exactly the thinking worth having, then write them out
+                # WITHOUT it, from a list that already contains the decisions.
+                #
+                # Capping the number of tests instead would optimise the harness against
+                # the thing it grades: coverage is a scored criterion.
+                if IS_TEST.search(item["path"]):
+                    cases = steps / f"{label}-cases.md"
+                    ctmpl = (HARNESS / "instructions" / "phase-test-cases.md").read_text()
+                    cmsg = ctmpl.replace("{{PATH}}", item["path"])
+                    ft_run(f"{label}-cases", cmsg, cases,
                            reads=reads, out_file=cases.with_suffix(".txt"),
-                           system=cheatsheet, verbatim=True, effort="low")
-                    ru = Path(str(steps / f"{label}-cases-retry.md") + ".usage.json")
-                    cases_over = (json.loads(ru.read_text()).get("output_ceiling_hit")
-                                  if ru.is_file() else True)
-                    ceiling_retries.append(f"cases:{item['path']}")
+                           system=cheatsheet, verbatim=True)
 
-                case_list = cases.with_suffix(".txt")
-                # A list that overflowed is deliberation, not a list. Passing it on
-                # is how the writing phase lost its budget to someone else's thinking.
-                if cases_over and case_list.is_file():
-                    say("         the case list overflowed twice; writing the file "
-                        "without it")
-                    case_list.write_text(
-                        "CASE ENUMERATION PRODUCED NO LIST — the ceiling was reached "
-                        "at the model's default effort and again at low. The replies "
-                        "are in steps/ and are reasoning, not a list.\n")
-                if not cases_over and case_list.is_file() and case_list.stat().st_size > 0:
-                    reads = list(reads) + [case_list]
-                    instruction += (
-                        "\n\nThe read-only file above lists the cases you already "
-                        "decided on. Write every one of them. It is a list of "
-                        "decisions, not a suggestion.")
-                # `low` here is a local remedy: under a 16,384 ceiling, reasoning ate
-                # the whole budget on test files and the retry without it produced the
-                # same file in a fraction. With no ceiling there is nothing to ration,
-                # and forcing the dial down would carry this laptop into a run that
-                # never had its limit.
-                ft_run(label, instruction, steps / f"{label}.md",
-                       reads=reads, out_file=target, system=cheatsheet,
-                       effort=("low" if CEILING else None))
-                # Already at the lowest effort, so there is nowhere to retry to. What
-                # matters is not writing a fragment that reads like a test file: an
-                # empty file announces itself, a plausible half of one does not.
-                wu = Path(str(steps / f"{label}.md") + ".usage.json")
-                if wu.is_file() and json.loads(wu.read_text()).get("output_ceiling_hit"):
-                    say(f"         {item['path']} overflowed at the lowest effort; "
-                        f"the reply is truncated and is not written")
-                    target.write_text("")
-                    failures.append({
-                        "phase": label, "exit": None,
-                        "reason": "test file overflowed at reasoning_effort=low, the "
-                                  "lowest setting. The truncated reply is in steps/ "
-                                  "and was not written as an artifact."})
-                two_pass_tests.append(item["path"])
-            else:
-                ft_run(label, instruction, steps / f"{label}.md",
-                       reads=reads, out_file=target, system=cheatsheet)
+                    # The case phase needs the same ceiling retry as every other phase.
+                    # Without it, an overflow here wrote 80 KB of deliberation as "the
+                    # case list", that was fed to the writing phase as context, the
+                    # prompt then exceeded the window, ft-run correctly refused, and the
+                    # test file came back empty. One missing retry, four steps later an
+                    # empty artifact.
+                    cu = Path(str(cases) + ".usage.json")
+                    cases_over = (json.loads(cu.read_text()).get("output_ceiling_hit")
+                                  if cu.is_file() else False)
+                    if cases_over:
+                        say(f"         ceiling hit enumerating cases — retrying at "
+                            f"reasoning_effort=low")
+                        ft_run(f"{label}-cases-retry", cmsg,
+                               steps / f"{label}-cases-retry.md",
+                               reads=reads, out_file=cases.with_suffix(".txt"),
+                               system=cheatsheet, verbatim=True, effort="low")
+                        ru = Path(str(steps / f"{label}-cases-retry.md") + ".usage.json")
+                        cases_over = (json.loads(ru.read_text()).get("output_ceiling_hit")
+                                      if ru.is_file() else True)
+                        ceiling_retries.append(f"cases:{item['path']}")
 
-            # A file phase that hit the ceiling did not finish answering. The reply is
-            # deliberation with code fragments in it, and the extractor then writes a
-            # fragment -- one observed file began at `async processMessages()` with no
-            # class around it, which is worse than an empty file because it looks like
-            # code. Retry once with reasoning off: measured on the plan phase, that is
-            # the mode that produces an answer rather than filling the budget.
-            #
-            # Both attempts are kept. The first is what the model does by default.
-            u = Path(str(steps / f"{label}.md") + ".usage.json")
-            if u.is_file() and json.loads(u.read_text()).get("output_ceiling_hit"):
-                say(f"         ceiling hit — retrying {item['path']} at "
-                    f"reasoning_effort=low")
-                ft_run(f"{label}-retry", instruction, steps / f"{label}-retry.md",
-                       reads=reads, out_file=target, system=cheatsheet, effort="low")
-                ceiling_retries.append(item["path"])
-            written.append(target)
+                    case_list = cases.with_suffix(".txt")
+                    # A list that overflowed is deliberation, not a list. Passing it on
+                    # is how the writing phase lost its budget to someone else's thinking.
+                    if cases_over and case_list.is_file():
+                        say("         the case list overflowed twice; writing the file "
+                            "without it")
+                        case_list.write_text(
+                            "CASE ENUMERATION PRODUCED NO LIST — the ceiling was reached "
+                            "at the model's default effort and again at low. The replies "
+                            "are in steps/ and are reasoning, not a list.\n")
+                    if not cases_over and case_list.is_file() and case_list.stat().st_size > 0:
+                        reads = list(reads) + [case_list]
+                        instruction += (
+                            "\n\nThe read-only file above lists the cases you already "
+                            "decided on. Write every one of them. It is a list of "
+                            "decisions, not a suggestion.")
+                    # `low` here is a local remedy: under a 16,384 ceiling, reasoning ate
+                    # the whole budget on test files and the retry without it produced the
+                    # same file in a fraction. With no ceiling there is nothing to ration,
+                    # and forcing the dial down would carry this laptop into a run that
+                    # never had its limit.
+                    ft_run(label, instruction, steps / f"{label}.md",
+                           reads=reads, out_file=target, system=cheatsheet,
+                           effort=("low" if CEILING else None))
+                    # Already at the lowest effort, so there is nowhere to retry to. What
+                    # matters is not writing a fragment that reads like a test file: an
+                    # empty file announces itself, a plausible half of one does not.
+                    wu = Path(str(steps / f"{label}.md") + ".usage.json")
+                    if wu.is_file() and json.loads(wu.read_text()).get("output_ceiling_hit"):
+                        say(f"         {item['path']} overflowed at the lowest effort; "
+                            f"the reply is truncated and is not written")
+                        target.write_text("")
+                        failures.append({
+                            "phase": label, "exit": None,
+                            "reason": "test file overflowed at reasoning_effort=low, the "
+                                      "lowest setting. The truncated reply is in steps/ "
+                                      "and was not written as an artifact."})
+                    two_pass_tests.append(item["path"])
+                else:
+                    ft_run(label, instruction, steps / f"{label}.md",
+                           reads=reads, out_file=target, system=cheatsheet)
 
-        empty = [p for p in written if not p.exists() or p.stat().st_size == 0]
-        # The exit code is not the signal: a runner can report success having created
-        # the files and never filled them. Fingerprint what the plan declared.
-        say()
-        say(f"files written: {len(written) - len(empty)}/{len(written)}")
-        for p in empty:
-            say(f"  EMPTY  {p.relative_to(ws)}")
+                # A file phase that hit the ceiling did not finish answering. The reply is
+                # deliberation with code fragments in it, and the extractor then writes a
+                # fragment -- one observed file began at `async processMessages()` with no
+                # class around it, which is worse than an empty file because it looks like
+                # code. Retry once with reasoning off: measured on the plan phase, that is
+                # the mode that produces an answer rather than filling the budget.
+                #
+                # Both attempts are kept. The first is what the model does by default.
+                u = Path(str(steps / f"{label}.md") + ".usage.json")
+                if u.is_file() and json.loads(u.read_text()).get("output_ceiling_hit"):
+                    say(f"         ceiling hit — retrying {item['path']} at "
+                        f"reasoning_effort=low")
+                    ft_run(f"{label}-retry", instruction, steps / f"{label}-retry.md",
+                           reads=reads, out_file=target, system=cheatsheet, effort="low")
+                    ceiling_retries.append(item["path"])
+                written.append(target)
+
+            empty = [p for p in written if not p.exists() or p.stat().st_size == 0]
+            # The exit code is not the signal: a runner can report success having created
+            # the files and never filled them. Fingerprint what the plan declared.
+            say()
+            say(f"files written: {len(written) - len(empty)}/{len(written)}")
+            for p in empty:
+                say(f"  EMPTY  {p.relative_to(ws)}")
 
         # ---- gate: typecheck, then repair with the compiler's exact words ------
         gate = {"ran": False, "passed": None, "repairs": 0, "log": "", "scaffold": []}
@@ -802,6 +841,12 @@ def main():
         tot_in = sum(p.get("prompt_tokens") or 0 for p in on_disk)
         tot_out = sum(p.get("completion_tokens") or 0 for p in on_disk)
         gen_s = sum(p.get("server_seconds") or 0 for p in on_disk)
+        # Hosted runs bill, and the bill is the run's other cost. Reasoning is
+        # charged as output there, so keeping it apart is the only way to see what
+        # the deliberation itself came to.
+        tot_cost = sum(p.get("cost_usd") or 0 for p in on_disk)
+        tot_reason = sum(p.get("reasoning_tokens") or 0 for p in on_disk)
+        tot_cached = sum(p.get("cached_tokens") or 0 for p in on_disk)
         load_s = sum(p.get("model_load_seconds") or 0 for p in on_disk)
         rates = [p["output_tokens_per_second"] for p in on_disk
                  if p.get("output_tokens_per_second")]
@@ -850,7 +895,11 @@ def main():
                     "test_write_pass_effort": "low",
                 },
             },
-            "runner": a.runner, "spec_source": a.spec,
+            "cost": ({"total_usd": round(tot_cost, 4),
+                      "per_1k_output_usd": round(tot_cost / tot_out * 1000, 4)
+                                           if tot_out else None}
+                     if tot_cost else None),
+            "runner": a.runner, "spec_source": a.spec, "shape": a.shape,
             "manifest": {"declared": manifest_declared, "built": len(manifest),
                          "truncated": manifest_declared > len(manifest)},
             "requests": len(on_disk),
@@ -859,6 +908,8 @@ def main():
             "tokens": {
                 "prompt_total": tot_in,
                 "completion_total": tot_out,
+                "reasoning_total": tot_reason or None,
+                "cached_total": tot_cached or None,
                 "completion_this_invocation": segment_out,
                 "are_estimates": a.runner == "aider",
             },
