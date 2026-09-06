@@ -16,30 +16,27 @@ are measured from the first three runs at the corrected parameters.
 
 ## The arithmetic
 
-**Measured on seven runs at `reasoning_effort: medium`.** These replace the estimates
-from the discarded campaigns, which were built from phase timings taken before the gate
-could fire.
+**Measured on seventeen runs at `reasoning_effort: medium`.**
 
-| run | requests | output tokens | generation | gate |
-|---|--:|--:|--:|:-:|
-| 02 reconciliation resend | 14 | 58,593 | **1.7 h** | passed |
-| 04 grounded llm product | 18 | 82,510 | **2.4 h** | passed |
-| 05 on-chain anchoring | 25 | 100,054 | **2.9 h** | failed |
-| 01 payout outbox | 25 | 110,036 | **3.1 h** | failed |
-| 06 multi-tenant isolation | 51 | 163,945 | **4.8 h** | failed |
-| 07 ingredient classification | 69 | 218,160 | **6.3 h** | failed |
-| 03 read model projection | 54 | 269,975 | **7.7 h** | failed |
-| **total** | **256** | **1,003,273** | **28.9 h** | 2 of 7 |
+| | |
+|---|--:|
+| runs | 17 of 18 (problem 12 discarded, see FINDINGS §4.12) |
+| requests | **391** |
+| output tokens | **1,529,689** |
+| generation | **43.2 h** |
+| per run | 0.3 h to 7.7 h, mean 2.5 |
+| throughput | **9.5–10.5 tok/s in every run** |
 
-Throughput is flat at **9.5–9.6 tok/s in every run**, so a run's length is entirely a
-function of how many tokens it takes. The spread is the repair loop, and the ordering
-above is almost exactly the ordering by repair count: 5, 4, 13, 9, 26, 40, 30.
+Throughput never moved, so a run's length is a pure function of how many tokens it
+takes, and the spread is the repair loop. The cheapest run — problem 16, five requests
+and sixteen minutes — passed. The most expensive — problem 03, seven and a half hours
+and thirty repairs — failed four of six must-haves.
 
 | scope | wall time |
 |---|--:|
-| variant A of all 18 problems | **~74 h** (range 31–139) |
-| A and B | ~148 h |
-| all 54 | **~223 h** |
+| variant A of all 18 | **~45 h**, measured |
+| A and B | ~90 h |
+| all 54 | **~135 h** |
 
 The whole acervo does not fit in one sitting, so the order has to earn its place.
 

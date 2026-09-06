@@ -184,6 +184,58 @@ sections; problem 01 at `medium` found a class named in constructors and absent 
 the manifest; this is the manifest's `reads` column being wrong. All three are the plan
 under-specifying itself, and all three are checkable before a line of code exists.
 
+### 1.5 One artifact of a run is right and another, from the same run, disagrees
+
+Seven times across seventeen runs, and it is the campaign's most repeated shape.
+
+| run | it stated the right thing in | and contradicted it in |
+|---|---|---|
+| 01 | the plan's *Ordering rules* | the plan's *Control flow* |
+| 02 | `amount mismatch: NOT settled and NOT treated as absent` | the reconcile loop twenty lines above |
+| 04 | a test asserting faithfulness below threshold | a pipeline that filters the lie before the judge sees it |
+| 09 | tests asserting domain-specific error codes | an implementation reusing the scaffold's generic ones |
+| 15 | `DIAGNOSIS.md`, naming the unexported provider exactly | a new module created instead of exporting it |
+| 17 | the hash the repository stored | the token the service returned |
+| 18 | a 30-sample interleaved timing test | an unmatched `argon2.hash` four lines above it |
+
+**In five of the seven, the artifact that is right is a test.** Problem 17's suite
+caught a refresh endpoint issuing unusable tokens through a clean typecheck. Problem
+18's timing test would have caught its own KDF asymmetry. Problem 02 named the case it
+then violated.
+
+*The practical consequence, and the single most useful line in this document for
+someone using this model:* **run what it writes.** Its tests are a better judge of its
+code than its code is, and the gate that only typechecks will tell you a working build
+is a working product.
+
+*Why this is not simply "it makes mistakes".* Each artifact is internally coherent and
+at least one side of every pair is correct. The model is not failing to know the right
+answer — it produces the right answer in one place and a different one in another, with
+nothing reconciling them. That is a different defect from ignorance and it wants a
+different fix: not better knowledge, a consistency pass.
+
+### 1.6 Given existing code, it builds beside the defect rather than changing it
+
+The three problems that hand the model a working codebase and ask it to modify one
+thing:
+
+| run | diagnosed correctly | and then |
+|---|---|---|
+| 10 adapt existing screen | the feature to add | built it whole, wired to nothing; **zero scaffold files modified** |
+| 11 behavior-preserving refactor | one mapper, three copies | wrote a fourth and removed none — three became four |
+| 15 wiring boot failure | a provider not exported across a module boundary | created a new module instead of adding one line to `exports` |
+
+In every case the diagnosis is right and written down. Problem 15's `DIAGNOSIS.md` is
+the best artifact in that run. What follows is an addition placed next to the problem.
+
+Problem 10 is the cleanest statement of it: five new files, each referencing the others
+correctly, and not one reference outward into the application. Its single compile error
+was an unused import — by error count the closest any run came to compiling, and the
+whole feature was unreachable.
+
+*What this means for a reviewer:* the diff will look competent and the defect is what
+is missing from it. Read for what was **not** touched.
+
 ## 2. The machine
 
 Full detail in [`harness/host-limits.md`](harness/host-limits.md).
