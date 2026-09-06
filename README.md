@@ -127,7 +127,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 15 | wiring boot failure | ✗<br><sub>M1, M2, M3</sub> | – | – | – | Diagnoses the wiring correctly and then builds a new module rather than fixing the one that is broken. |
 | 16 | migration that lied | ~ | – | – | – | Names all three silent failures, gets one mechanism wrong, and says out loud which part it is guessing. |
 | 17 | token rotation reuse | ✗ | – | – | – | Gets all eight security properties right and hands the caller a token it never stored. |
-| 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+| 18 | timing equal enumeration | ✗<br><sub>M1</sub> | – | – | – | Equalises the expensive operation, then adds a second expensive operation to one branch, and writes the test that would have caught it. |
 
 
 <!-- results:end -->
