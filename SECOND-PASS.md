@@ -390,9 +390,19 @@ with a removed ceiling, which is exactly why 9a comes first: fix what quantizati
 costs locally, and whatever the hosted run shows beyond that is the ceiling and the
 phase design.
 
-Two hosted runs settle it — one capped at 16,384 to confirm the setup reproduces what
-we measured, one uncapped to see what the constraint was costing. Compare against
-problems 10 and 11, where the boundary failure is cleanest.
+**Run it uncapped.** The 16,384 ceiling is one oMLX server's limit on one 48 GB
+laptop; nobody weighing a laptop against an API imposes it on the API. Capping would
+compare the local model at its best against the hosted one with a leg tied, and the
+question here is which to use, not whether the same weights behave identically.
+
+That reaches further than the token budget: **the one-file-per-request design exists
+because of the ceiling** (§3.1). With 131,072 tokens of output there may be nothing to
+decompose, and the problem can be posed as a developer would pose it. *Local with this
+scaffolding* against *hosted without it* is the comparison that decides.
+
+A capped run stays available as a **diagnostic** — run it after the two disagree, to
+find which difference explains it. Not first. Compare against problems 10 and 11, where
+the boundary failure is cleanest.
 
 *Cost:* this campaign spent 1,529,689 output tokens over seventeen problems. At $3.00
 per million that is about **$5** for a full hosted pass, plus input. The machine time

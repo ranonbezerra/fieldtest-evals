@@ -10,6 +10,13 @@ payment pipelines, an LLM product, a web3 anchoring pipeline, multi-tenant
 platforms, infra — and every solution is judged as a whole: did it get the hard
 parts right, did it respect the constraints, would I ship it?
 
+**Every setting has to earn itself from real use.** A field test measures what a
+developer would actually do, so a knob is set the way a developer would set it or it
+is not set at all. Where a limit comes from this machine rather than from a decision —
+the 16,384-token output ceiling is one oMLX server's, not a choice — it binds the local
+runs because it must, and it is not imposed on anything that does not share the
+constraint. Handicapping one side to make a table tidier measures the table.
+
 ## The problems
 
 | # | Problem | Domain | Origin |
@@ -292,9 +299,26 @@ go for hours. Half the harness — `ft-vitals`, `ft-flush`, the pressure gate, t
 margin arithmetic — exists to manage that and nothing else.
 
 **The hosted figure is a floor, not a quote.** It assumes the same token counts. A
-hosted model with a 131,072-token output ceiling instead of this server's 16,384 may
-spend far more per phase, and output pricing includes reasoning tokens. Held at the
-same ceiling the estimate is close; uncapped it could triple.
+hosted model with a 131,072-token output ceiling instead of this server's 16,384 will
+spend more per phase, and output pricing includes reasoning tokens, so it could be
+several times this.
+
+That is the honest number to plan against, because **a hosted run should not be capped
+at 16,384**. Nobody choosing between a laptop and an API imposes this machine's output
+ceiling on the API — the cap is an artifact of one oMLX server on one 48 GB laptop, not
+a decision anybody would make. Capping it would compare the local model at its best
+against the hosted one with a leg tied.
+
+The consequence runs deeper than the number. **The one-file-per-request phase design
+exists because of that ceiling** (§3.1): the work had to be cut up because no single
+reply could hold it. With 131,072 tokens of output there may be nothing to cut up, and
+the problem can be posed the way a developer would actually pose it. Comparing *the
+local model with this scaffolding* against *the hosted model without it* is the
+comparison that decides anything, because that is how each would really be used.
+
+A capped hosted run is still worth doing — but as a **diagnostic**, after the two
+disagree and you want to know which of the differences explains it. Not first, and not
+as the default.
 
 ### About the machine and the instruments
 
