@@ -1,0 +1,94 @@
+
+===== ft-go invocation, 2026-09-06 15:38 UTC =====
+problem   18-timing-equal-enumeration
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1553/32768  out 5904/16384  think 12416c  550s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (10441 bytes)
+
+manifest: 11 files
+  prisma/schema.prisma
+  prisma/migrations/0001_init/migration.sql   <- prisma/schema.prisma
+  src/main.ts   <- src/app.module.ts
+  src/app.module.ts   <- src/auth/auth.module.ts
+  src/auth/auth.module.ts   <- src/auth/auth.controller.ts, src/auth/auth.service.ts, src/auth/auth.repository.ts, src/auth/auth.dto.ts
+  src/auth/auth.dto.ts
+  src/auth/auth.controller.ts   <- src/auth/auth.service.ts, src/auth/auth.dto.ts
+  src/auth/auth.service.ts   <- src/auth/auth.repository.ts
+  src/auth/auth.repository.ts
+  test/auth.spec.ts   <- src/auth/auth.controller.ts, src/auth/auth.service.ts, src/auth/auth.repository.ts, src/auth/auth.dto.ts
+  SECURITY.md
+
+[01-schema.prisma] in 4190/32768  out 551/16384  think 1531c  81s  6.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (347 bytes)
+[02-migration.sql] in 4422/32768  out 1048/16384  think 3661c  114s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/migrations/0001_init/migration.sql (342 bytes)
+[03-main.ts] in 4185/32768  out 2441/16384  think 8943c  239s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (1331 bytes)
+[04-app.module.ts] in 4184/32768  out 190/16384  think 547c  34s  5.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (155 bytes)
+[05-auth.module.ts] in 4184/32768  out 3187/16384  think 12498c  308s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.module.ts (731 bytes)
+[06-auth.dto.ts] in 4190/32768  out 344/16384  think 893c  48s  7.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.dto.ts (286 bytes)
+[07-auth.controller.ts] in 4409/32768  out 446/16384  think 1118c  59s  7.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.controller.ts (556 bytes)
+[08-auth.service.ts] in 4197/32768  out 2819/16384  think 8295c  274s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.service.ts (2441 bytes)
+[09-auth.repository.ts] in 4192/32768  out 2577/16384  think 8928c  252s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.repository.ts (919 bytes)
+[10-auth.spec.ts-cases] in 5810/32768  out 3051/16384  think 8162c  310s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/10-auth.spec.ts-cases.txt (4566 bytes)
+[10-auth.spec.ts] in 7044/32768  out 13971/16384  think 36265c  1370s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/auth.spec.ts (18435 bytes)
+[11-SECURITY.md] in 4192/32768  out 4152/16384  think 14439c  397s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/SECURITY.md (1259 bytes)
+
+files written: 11/11
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (43 errors)
+[gate] repairing 8 file(s)
+[repair1-auth.repository.ts] in 5389/32768  out 2446/16384  think 8568c  251s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.repository.ts (806 bytes)
+[repair1-auth.module.ts] in 5389/32768  out 2630/16384  think 10292c  267s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.module.ts (534 bytes)
+[repair1-auth.spec.ts] in 5386/32768  out 16384/16384  think 49196c  1578s  10.4 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/auth.spec.ts (13861 bytes, UNFENCED reply)
+         ceiling hit on repair — retrying test/auth.spec.ts with reasoning off
+[repair1-auth.spec.ts-retry] in 5386/32768  out 16384/16384  think 51077c  1576s  10.4 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/auth.spec.ts (11285 bytes, UNFENCED reply)
+[repair1-app.module.ts] in 5386/32768  out 2630/16384  think 10574c  268s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (155 bytes)
+[repair1-main.ts] in 5383/32768  out 2305/16384  think 7416c  238s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/main.ts (1768 bytes)
+[repair1-auth.controller.ts] in 5389/32768  out 1931/16384  think 7346c  203s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.controller.ts (565 bytes)
+[repair1-auth.service.ts] in 5389/32768  out 4027/16384  think 13338c  407s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.service.ts (2779 bytes)
+[repair1-auth.dto.ts] in 5389/32768  out 735/16384  think 2439c  93s  7.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.dto.ts (282 bytes)
+[gate] typecheck failed (1 errors)
+[gate] repairing 1 file(s)
+[repair2-auth.spec.ts] in 4176/32768  out 14079/16384  think 42492c  1372s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/auth.spec.ts (11801 bytes)
+[gate] typecheck failed (17 errors)
+[tests] None of None passing
+[gate] cleaned install artifacts from the workspace
+
+wall 172.6 min   requests 23   in 109414   out 104232   10.1 tok/s
+generation 171.4 min   model loads 0s   gate+io 1.1 min
+OUTPUT CEILING HIT on: repair1-auth.spec.ts-retry, repair1-auth.spec.ts  <-- read the reasoning first
+retried at reasoning_effort=low after a ceiling hit: repair:test/auth.spec.ts
+REVISED x9 by the model itself — not a pass; read this run first
+
+failures (1):
+  gate: typecheck still failing after 2 repairs
+
+artifacts in problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

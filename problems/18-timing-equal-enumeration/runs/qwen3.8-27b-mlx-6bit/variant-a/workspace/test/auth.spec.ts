@@ -1,323 +1,329 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as argon2 from 'argon2';
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe, BadRequestException } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost } from '@nestjs/common';
 import * as request from 'supertest';
+import * as argon2 from 'argon2';
 import { AuthModule } from '../src/auth/auth.module';
-import { AuthFailureError } from '../src/auth/auth.service';
-// ASSUMPTION: MAIL_PORT is a DI token constant (string or Symbol) exported from
-// auth.service.ts. The plan references "a token-level provider" for the mail port;
-// without seeing the source we assume a named constant rather than the interface
-// being used directly as a runtime token.
-import { MAIL_PORT } from '../src/auth/auth.service';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { AuthService, MailPort, AuthFailureError } from '../src/auth/auth.service';
+import { AuthRepository } from '../src/auth/auth.repository';
 
-// ─── Types & helpers ───────────────────────────────────────────────────────────
-
-interface StoredUser {
-  id: string;
-  email: string;
-  passwordHash: string;
-  createdAt: Date;
+@Catch(AuthFailureError)
+class AuthFailureFilter implements ExceptionFilter {
+  catch(exception: AuthFailureError, host: ArgumentsHost): void {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    response.status(401).json({
+      error: { code: 'invalid_credentials', message: 'Invalid credentials.', details: {} },
+    });
+  }
 }
 
-interface MailCall {
-  to: string;
-  template: string;
-  vars: Record<string, string>;
+@Catch(BadRequestException)
+class ValidationFilter implements ExceptionFilter {
+  catch(exception: BadRequestException, host: ArgumentsHost): void {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    response.status(400).json({
+      error: { code: 'validation_failed', message: exception.message, details: {} },
+    });
+  }
 }
-
-function buildPrismaMock(users: Map<string, StoredUser>) {
-  return {
-    user: {
-      findUnique: async (args: { where: Record<string, string> }) => {
-        if (args.where.email !== undefined) {
-          return users.get(args.where.email) ?? null;
-        }
-        if (args.where.id !== undefined) {
-          for (const u of users.values()) {
-            if (u.id === args.where.id) return u;
-          }
-          return null;
-        }
-        return null;
-      },
-      create: async (args: { data: { email: string; passwordHash: string } }) => {
-        const id = crypto.randomUUID();
-        const record: StoredUser = {
-          id,
-          email: args.data.email,
-          passwordHash: args.data.passwordHash,
-          createdAt: new Date(),
-        };
-        users.set(args.data.email, record);
-        return { id };
-      },
-      update: async () => ({}),
-    },
-  };
-}
-
-async function createApp(
-  users: Map<string, StoredUser>,
-  mailCalls: MailCall[],
-): Promise<INestApplication> {
-  const prismaMock = buildPrismaMock(users);
-  const mailMock = {
-    sendEmail: async (to: string, template: string, vars: Record<string, string>) => {
-      mailCalls.push({ to, template, vars });
-    },
-  };
-
-  const moduleRef = await Test.createTestingModule({
-    imports: [AuthModule],
-  })
-    .overrideProvider(PrismaService)
-    .useValue(prismaMock)
-    .overrideProvider(MAIL_PORT)
-    .useValue(mailMock)
-    .compile();
-
-  const app = moduleRef.createNestApplication();
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  await app.init();
-  return app;
-}
-
-function median(arr: number[]): number {
-  const sorted = [...arr].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function p95(arr: number[]): number {
-  const sorted = [...arr].sort((a, b) => a - b);
-  const idx = Math.ceil(sorted.length * 0.95) - 1;
-  return sorted[Math.max(0, idx)];
-}
-
-// ─── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('Auth', () => {
-  // Test 1: sign-up new email → 200, correct body
-  it('sign-up with a new email returns 200 and the standard message', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
+  let app: INestApplication;
+  let existingUser: { id: string; email: string; passwordHash: string };
 
-    const res = await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'new@example.com', password: 'password123' })
-      .expect(200);
+  const mockRepo = {
+    findByEmail: vi.fn(),
+    createUser: vi.fn(),
+    touchUser: vi.fn(),
+  };
 
-    expect(res.body).toEqual({ message: 'Check your email for next steps.' });
+  const mockMail: MailPort = {
+    sendEmail: vi.fn(),
+  };
+
+  beforeAll(async () => {
+    const realPassword = 'correct-password-123';
+    const realHash = await argon2.hash(realPassword, { type: argon2.argon2id });
+    existingUser = {
+      id: 'test-uuid-1234',
+      email: 'existing@example.com',
+      passwordHash: realHash,
+    };
+
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [AuthModule],
+      overrides: [
+        { token: AuthRepository, useValue: mockRepo },
+        { token: MailPort, useValue: mockMail },
+      ],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    app.useGlobalFilters(new AuthFailureFilter(), new ValidationFilter());
+    await app.init();
+  });
+
+  afterAll(async () => {
     await app.close();
   });
 
-  // Test 2: sign-up existing email → 200, correct body
-  it('sign-up with an existing email returns 200 and the same message', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
-
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'existing@example.com', password: 'password123' })
-      .expect(200);
-
-    const res = await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'existing@example.com', password: 'password456' })
-      .expect(200);
-
-    expect(res.body).toEqual({ message: 'Check your email for next steps.' });
-    await app.close();
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMail.sendEmail.mockResolvedValue(undefined);
   });
 
-  // Test 3: sign-up byte-equality of response (new vs existing)
-  it('sign-up responses are byte-identical for new and existing emails', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
+  // --- Sign-up ---
 
-    // Pre-create so we have an "existing" case
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'preexisting@example.com', password: 'password123' })
-      .expect(200);
+  describe('POST /auth/sign-up', () => {
+    it('creates a new account and returns 200 with expected body', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.createUser.mockResolvedValue({ id: 'new-uuid' });
 
-    const resNew = await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'brandnew@example.com', password: 'password123' });
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .send({ email: 'new@example.com', password: 'password123' })
+        .expect(200);
 
-    const resExisting = await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'preexisting@example.com', password: 'password456' });
+      expect(res.body).toEqual({ message: 'Check your email for next steps.' });
+    });
 
-    expect(resNew.status).toBe(resExisting.status);
-    expect(resNew.body).toEqual(resExisting.body);
-    expect(resNew.headers['content-type']).toBe(resExisting.headers['content-type']);
+    it('returns the same 200 response for an existing email', async () => {
+      mockRepo.findByEmail.mockResolvedValue(existingUser);
+      mockRepo.touchUser.mockResolvedValue(undefined);
 
-    await app.close();
-  });
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .send({ email: 'existing@example.com', password: 'password123' })
+        .expect(200);
 
-  // Test 4: sign-up timing (N=30 samples each branch)
-  it('sign-up timing: new and existing branches are indistinguishable', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
+      expect(res.body).toEqual({ message: 'Check your email for next steps.' });
+    });
 
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'timing-existing@example.com', password: 'password123' })
-      .expect(200);
+    it('produces byte-identical responses for new and existing emails', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.createUser.mockResolvedValue({ id: 'new-uuid' });
 
-    const N = 30;
-    const newTimes: number[] = [];
-    const existingTimes: number[] = [];
+      const resNew = await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .send({ email: 'byte-new@example.com', password: 'password123' });
 
-    for (let i = 0; i < N; i++) {
-      const t0 = performance.now();
+      mockRepo.findByEmail.mockResolvedValue(existingUser);
+      mockRepo.touchUser.mockResolvedValue(undefined);
+
+      const resExisting = await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .send({ email: 'existing@example.com', password: 'password123' });
+
+      expect(resNew.status).toBe(resExisting.status);
+      expect(Buffer.from(resNew.text, 'utf-8')).toEqual(Buffer.from(resExisting.text, 'utf-8'));
+      expect(resNew.headers['content-type']).toBe(resExisting.headers['content-type']);
+    });
+
+    it('sends a verification email for a new address', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.createUser.mockResolvedValue({ id: 'new-uuid' });
+
       await request(app.getHttpServer())
         .post('/auth/sign-up')
-        .send({ email: `timing-new-${i}@example.com`, password: 'password123' });
-      newTimes.push(performance.now() - t0);
-    }
+        .send({ email: 'verify@example.com', password: 'password123' })
+        .expect(200);
 
-    for (let i = 0; i < N; i++) {
-      const t0 = performance.now();
+      expect(mockMail.sendEmail).toHaveBeenCalledWith(
+        'verify@example.com',
+        'verification',
+        { email: 'verify@example.com' },
+      );
+    });
+
+    it('sends a sign-up-attempt email for an existing address', async () => {
+      mockRepo.findByEmail.mockResolvedValue(existingUser);
+      mockRepo.touchUser.mockResolvedValue(undefined);
+
       await request(app.getHttpServer())
         .post('/auth/sign-up')
-        .send({ email: 'timing-existing@example.com', password: 'password123' });
-      existingTimes.push(performance.now() - t0);
-    }
+        .send({ email: 'existing@example.com', password: 'password123' })
+        .expect(200);
 
-    const newMedian = median(newTimes);
-    const existingMedian = median(existingTimes);
-    const newP95 = p95(newTimes);
-    const existingP95 = p95(existingTimes);
+      expect(mockMail.sendEmail).toHaveBeenCalledWith(
+        'existing@example.com',
+        'sign-up-attempt',
+        { email: 'existing@example.com' },
+      );
+    });
 
-    expect(Math.abs(newMedian - existingMedian)).toBeLessThan(50);
-    expect(Math.abs(newP95 - existingP95)).toBeLessThan(100);
+    it('stores the password as an argon2id hash', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
 
-    await app.close();
+      await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .send({ email: 'hash-check@example.com', password: 'password123' })
+        .expect(200);
+
+      expect(mockRepo.createUser).toHaveBeenCalledTimes(1);
+      const [email, passwordHash] = mockRepo.createUser.mock.calls[0];
+      expect(email).toBe('hash-check@example.com');
+      expect(passwordHash).toMatch(/^\$argon2id\$/);
+    });
+
+    it('returns 400 validation_failed for missing fields', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .send({ email: 'no-password@example.com' })
+        .expect(400);
+
+      expect(res.body.error.code).toBe('validation_failed');
+    });
+
+    it('does not reveal branch via timing (new vs existing)', async () => {
+      const N = 30;
+      const newTimes: number[] = [];
+      const existingTimes: number[] = [];
+
+      for (let i = 0; i < N; i++) {
+        mockRepo.findByEmail.mockResolvedValue(null);
+        mockRepo.createUser.mockResolvedValue({ id: 'timing-uuid' });
+
+        const t0 = performance.now();
+        await request(app.getHttpServer())
+          .post('/auth/sign-up')
+          .send({ email: 'timing-new@example.com', password: 'password123' });
+        newTimes.push(performance.now() - t0);
+
+        mockRepo.findByEmail.mockResolvedValue(existingUser);
+        mockRepo.touchUser.mockResolvedValue(undefined);
+
+        const t1 = performance.now();
+        await request(app.getHttpServer())
+          .post('/auth/sign-up')
+          .send({ email: 'existing@example.com', password: 'password123' });
+        existingTimes.push(performance.now() - t1);
+      }
+
+      const median = (arr: number[]): number => {
+        const sorted = [...arr].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      };
+
+      const p95 = (arr: number[]): number => {
+        const sorted = [...arr].sort((a, b) => a - b);
+        return sorted[Math.min(Math.ceil(0.95 * sorted.length) - 1, sorted.length - 1)];
+      };
+
+      const medDiff = Math.abs(median(newTimes) - median(existingTimes));
+      const p95Diff = Math.abs(p95(newTimes) - p95(existingTimes));
+
+      expect(medDiff).toBeLessThan(50);
+      expect(p95Diff).toBeLessThan(100);
+    });
   });
 
-  // Test 5: sign-up sends verification email for new address
-  it('sign-up sends a verification email for a new address', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
+  // --- Sign-in ---
 
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'verify-me@example.com', password: 'password123' })
-      .expect(200);
+  describe('POST /auth/sign-in', () => {
+    it('returns 200 with a token for correct credentials', async () => {
+      mockRepo.findByEmail.mockResolvedValue(existingUser);
 
-    expect(mailCalls).toHaveLength(1);
-    expect(mailCalls[0].to).toBe('verify-me@example.com');
-    expect(mailCalls[0].template).toBe('verification');
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .send({ email: 'existing@example.com', password: 'correct-password-123' })
+        .expect(200);
 
-    await app.close();
+      expect(res.body).toHaveProperty('token');
+      expect(typeof res.body.token).toBe('string');
+    });
+
+    it('returns 401 invalid_credentials for wrong password', async () => {
+      mockRepo.findByEmail.mockResolvedValue(existingUser);
+
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .send({ email: 'existing@example.com', password: 'wrong-password' })
+        .expect(401);
+
+      expect(res.body.error.code).toBe('invalid_credentials');
+    });
+
+    it('returns 401 invalid_credentials for unknown email', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
+
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .send({ email: 'unknown@example.com', password: 'some-password' })
+        .expect(401);
+
+      expect(res.body.error.code).toBe('invalid_credentials');
+    });
+
+    it('produces byte-identical responses for wrong-password and unknown-email', async () => {
+      mockRepo.findByEmail.mockResolvedValue(existingUser);
+
+      const resWrong = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .send({ email: 'existing@example.com', password: 'wrong-password' });
+
+      mockRepo.findByEmail.mockResolvedValue(null);
+
+      const resUnknown = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .send({ email: 'unknown@example.com', password: 'wrong-password' });
+
+      expect(resWrong.status).toBe(resUnknown.status);
+      expect(Buffer.from(resWrong.text, 'utf-8')).toEqual(Buffer.from(resUnknown.text, 'utf-8'));
+      expect(resWrong.headers['content-type']).toBe(resUnknown.headers['content-type']);
+    });
+
+    it('returns 400 validation_failed for missing fields', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .send({ email: 'no-password@example.com' })
+        .expect(400);
+
+      expect(res.body.error.code).toBe('validation_failed');
+    });
+
+    it('does not reveal branch via timing (wrong-password vs unknown-email)', async () => {
+      const N = 30;
+      const wrongPasswordTimes: number[] = [];
+      const unknownEmailTimes: number[] = [];
+
+      for (let i = 0; i < N; i++) {
+        mockRepo.findByEmail.mockResolvedValue(existingUser);
+
+        const t0 = performance.now();
+        await request(app.getHttpServer())
+          .post('/auth/sign-in')
+          .send({ email: 'existing@example.com', password: 'wrong-password' });
+        wrongPasswordTimes.push(performance.now() - t0);
+
+        mockRepo.findByEmail.mockResolvedValue(null);
+
+        const t1 = performance.now();
+        await request(app.getHttpServer())
+          .post('/auth/sign-in')
+          .send({ email: 'unknown@example.com', password: 'wrong-password' });
+        unknownEmailTimes.push(performance.now() - t1);
+      }
+
+      const median = (arr: number[]): number => {
+        const sorted = [...arr].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      };
+
+      const p95 = (arr: number[]): number => {
+        const sorted = [...arr].sort((a, b) => a - b);
+        return sorted[Math.min(Math.ceil(0.95 * sorted.length) - 1, sorted.length - 1)];
+      };
+
+      const medDiff = Math.abs(median(wrongPasswordTimes) - median(unknownEmailTimes));
+      const p95Diff = Math.abs(p95(wrongPasswordTimes) - p95(unknownEmailTimes));
+
+      expect(medDiff).toBeLessThan(50);
+      expect(p95Diff).toBeLessThan(100);
+    });
   });
-
-  // Test 6: sign-up sends "sign-up-attempt" email for existing address
-  it('sign-up sends a sign-up-attempt email for an existing address', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
-
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'dup@example.com', password: 'password123' })
-      .expect(200);
-
-    mailCalls.length = 0;
-
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'dup@example.com', password: 'password456' })
-      .expect(200);
-
-    expect(mailCalls).toHaveLength(1);
-    expect(mailCalls[0].to).toBe('dup@example.com');
-    expect(mailCalls[0].template).toBe('sign-up-attempt');
-
-    await app.close();
-  });
-
-  // Test 8: sign-in correct credentials → 200 + token
-  it('sign-in with correct credentials returns 200 and a token', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
-
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'login@example.com', password: 'password123' })
-      .expect(200);
-
-    const res = await request(app.getHttpServer())
-      .post('/auth/sign-in')
-      .send({ email: 'login@example.com', password: 'password123' })
-      .expect(200);
-
-    expect(res.body).toHaveProperty('token');
-    expect(typeof res.body.token).toBe('string');
-    expect(res.body.token.length).toBeGreaterThan(0);
-
-    await app.close();
-  });
-
-  // Test 9: sign-in wrong password (known email) → 401 envelope
-  it('sign-in with wrong password returns 401 with invalid_credentials', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
-
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'wrongpw@example.com', password: 'password123' })
-      .expect(200);
-
-    const res = await request(app.getHttpServer())
-      .post('/auth/sign-in')
-      .send({ email: 'wrongpw@example.com', password: 'wrongpassword' })
-      .expect(401);
-
-    expect(res.body).toHaveProperty('error');
-    expect(res.body.error.code).toBe('invalid_credentials');
-    expect(res.body.error.details).toEqual({});
-
-    await app.close();
-  });
-
-  // Test 10: sign-in unknown email → 401 envelope
-  it('sign-in with unknown email returns 401 with invalid_credentials', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
-
-    const res = await request(app.getHttpServer())
-      .post('/auth/sign-in')
-      .send({ email: 'ghost@example.com', password: 'password123' })
-      .expect(401);
-
-    expect(res.body).toHaveProperty('error');
-    expect(res.body.error.code).toBe('invalid_credentials');
-    expect(res.body.error.details).toEqual({});
-
-    await app.close();
-  });
-
-  // Test 11: sign-in byte-equality (wrong-password vs unknown-email)
-  it('sign-in failure responses are byte-identical for wrong-password and unknown-email', async () => {
-    const users = new Map<string, StoredUser>();
-    const mailCalls: MailCall[] = [];
-    const app = await createApp(users, mailCalls);
-
-    await request(app.getHttpServer())
-      .post('/auth/sign-up')
-      .send({ email: 'bytecmp@example.com', password: 'password123' })
-      .expect(200);
-
-    const resWrongPw = await request(app
+});
