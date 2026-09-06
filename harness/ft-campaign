@@ -70,6 +70,14 @@ def sh(cmd, timeout=600, cwd=None):
 
 
 def server_up():
+    # Local: is anything listening. Hosted: is the key good and is there credit —
+    # which `ft-budget` answers in one call, and answering it before a campaign
+    # rather than during one is the difference between a message and an hour.
+    if os.environ.get("FT_PROVIDER", "omlx") != "omlx":
+        rc, out = sh([str(HARNESS / "ft-budget"), "--json"], timeout=60)
+        if rc != 0:
+            say(f"provider check failed: {out.strip()[:200]}")
+        return rc == 0
     rc, _ = sh(["lsof", "-nP", "-iTCP:9050", "-sTCP:LISTEN"], timeout=30)
     return rc == 0
 
@@ -246,7 +254,8 @@ def main():
             say("cannot reach a server; stopping")
             break
 
-        sh([str(HARNESS / "ft-flush"), "--if-above", "26"], timeout=300)
+        if os.environ.get("FT_PROVIDER", "omlx") == "omlx":
+            sh([str(HARNESS / "ft-flush"), "--if-above", "26"], timeout=300)
 
         cmd = [str(HARNESS / "ft-go"), prob.name, vslug[-1]]
         if state == "ignore":

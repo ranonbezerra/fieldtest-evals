@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""What is left to spend, for a provider that bills.
+
+The remote counterpart of `ft-vitals`. On this machine the resource that runs out
+is memory and the guard is a margin in GiB; on a hosted provider it is credit, and
+a campaign that starts without it burns an hour to find out.
+
+    ft-budget                 human-readable
+    ft-budget --json          for the orchestrators
+    ft-budget --need 5.00     exit 1 if less than $5.00 remains
+
+Reads `GET /key`, which validates the key as a side effect: a 401 here is a wrong
+key, and finding that out before a run rather than during one is the whole point.
+"""
+import json, os, sys, urllib.error, urllib.request
+
+BASE = os.environ.get("OMLX_BASE", "https://openrouter.ai/api/v1").rstrip("/")
+KEY = os.environ.get("OPENROUTER_KEY") or os.environ.get("OMLX_KEY", "")
+PROVIDER = os.environ.get("FT_PROVIDER", "omlx")
+
+
+def fetch():
+    req = urllib.request.Request(
+        BASE + "/key", headers={"Authorization": f"Bearer {KEY}"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read()).get("data", {})
+
+
+def main():
+    args = sys.argv[1:]
+    as_json = "--json" in args
+    need = None
+    if "--need" in args:
+        try:
+            need = float(args[args.index("--need") + 1])
+        except (IndexError, ValueError):
+            print("ft-budget: --need wants a number of dollars", file=sys.stderr)
+            return 2
+
+    if PROVIDER == "omlx":
+        msg = "provider is omlx; nothing is billed. ft-vitals is the guard that applies."
+        print(json.dumps({"provider": "omlx", "billed": False, "note": msg})
+              if as_json else f"  {msg}")
+        return 0
+
+    try:
+        d = fetch()
+    except urllib.error.HTTPError as e:
+        detail = f"HTTP {e.code}"
+        if e.code == 401:
+            detail += " — the key was rejected"
+        print(json.dumps({"error": detail}) if as_json else f"  {detail}",
+              file=sys.stderr)
+        return 3
+    except Exception as e:
+        print(json.dumps({"error": repr(e)[:200]}) if as_json
+              else f"  cannot reach {BASE}: {repr(e)[:120]}", file=sys.stderr)
+        return 3
+
+    limit, rem = d.get("limit"), d.get("limit_remaining")
+    out = {
+        "provider": "openrouter",
+        "label": d.get("label"),
+        "limit_usd": limit,
+        "remaining_usd": rem,
+        "usage_usd": d.get("usage"),
+        "usage_daily_usd": d.get("usage_daily"),
+        "is_free_tier": d.get("is_free_tier"),
+        "unlimited": limit is None,
+    }
+    if as_json:
+        print(json.dumps(out, indent=2))
+    else:
+        if limit is None:
+            print(f"  key {d.get('label') or '(unlabelled)'} — no spending cap")
+            print(f"  used ${d.get('usage') or 0:.2f} lifetime, "
+                  f"${d.get('usage_daily') or 0:.2f} today")
+        else:
+            print(f"  key {d.get('label') or '(unlabelled)'} — "
+                  f"${rem:.2f} of ${limit:.2f} remaining")
+            print(f"  used ${d.get('usage') or 0:.2f} lifetime, "
+                  f"${d.get('usage_daily') or 0:.2f} today")
+
+    if need is not None:
+        if limit is None:
+            return 0                      # no cap: nothing to fall short of
+        if rem is None or rem < need:
+            print(f"  below the ${need:.2f} this run asks for", file=sys.stderr)
+            return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

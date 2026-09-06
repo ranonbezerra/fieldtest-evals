@@ -240,8 +240,14 @@ def main():
         except Exception as e:
             return {"error": repr(e)[:120]}
 
-    baseline = vitals()
+    # Only a local model can be starved by this machine. For a hosted one the guard
+    # would be gating a run on whether a browser tab is open here.
+    REMOTE = os.environ.get("FT_PROVIDER", "omlx") != "omlx"
+    baseline = {} if REMOTE else vitals()
     pressure = baseline.get("pressure") or []
+    if REMOTE:
+        say(f"provider {os.environ.get('FT_PROVIDER')} — the model is not on this "
+            f"machine; host memory guards do not apply")
     if pressure:
         say("host pressure:")
         for r in pressure:
@@ -299,6 +305,11 @@ def main():
     host_samples = [baseline] if baseline else []
 
     def flush():
+        # Nothing to flush and nothing to sample when the weights are somebody
+        # else's. Sampling anyway would fill the run's host record with readings
+        # about a machine that is only holding the client.
+        if REMOTE:
+            return
         run([str(HARNESS / "ft-flush"), "--if-above", str(FLUSH_ABOVE)])
         # Sampled per phase, not once: pressure that appears mid-run is exactly the
         # case where a slow phase gets misread as a slow model.

@@ -25,6 +25,7 @@ of the output ceiling, so a phase that needed 1,900 tokens of code can spend
 import argparse, json, os, re, subprocess, sys, time, urllib.error, urllib.request
 from pathlib import Path
 
+PROVIDER = os.environ.get("FT_PROVIDER", "omlx")
 BASE = os.environ.get("OMLX_BASE", "http://localhost:9050/v1").rstrip("/")
 KEY = os.environ.get("OMLX_KEY", "")
 MODEL = os.environ.get("OMLX_MODEL", "Qwen3.8-27B-MLX-6bit").removeprefix("openai/")
@@ -116,8 +117,11 @@ def main():
     # The gate lived only in ft-go, and ft-run is callable on its own -- which is how
     # a controlled experiment got fired into a host doing 4,013 swapouts/s. A single
     # request is exactly the case where nobody thinks to check.
+    # A hosted model is not on this machine. Its throughput does not depend on this
+    # host's swap, `ft-flush` has nothing to flush, and refusing to send because a
+    # local browser is using memory would be measuring the wrong computer.
     pressure = []
-    if not a.ignore_pressure:
+    if not a.ignore_pressure and PROVIDER == "omlx":
         try:
             v = subprocess.run([str(Path(__file__).with_name("ft-vitals")), "--json"],
                                capture_output=True, text=True, timeout=30)
@@ -160,14 +164,29 @@ def main():
     }
     effort = a.reasoning_effort or os.environ.get("FT_REASONING_EFFORT") or None
     if effort:
-        payload["reasoning_effort"] = effort
+        if PROVIDER == "openrouter":
+            # OpenRouter rejects `reasoning_effort` and takes `reasoning: {effort}`.
+            # The word is the same and the meaning is not: here it is a fraction of
+            # max_tokens reserved for thinking (~50% at medium), where oMLX passes
+            # the model's own dial through. Recorded per request so a comparison
+            # across providers cannot silently assume they are the same setting.
+            payload["reasoning"] = {"effort": effort}
+        else:
+            payload["reasoning_effort"] = effort
     if a.no_thinking:
-        payload["chat_template_kwargs"] = {"enable_thinking": False}
+        if PROVIDER == "openrouter":
+            payload["reasoning"] = {"enabled": False}
+        else:
+            payload["chat_template_kwargs"] = {"enable_thinking": False}
+
+    headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
+    if PROVIDER == "openrouter":
+        headers["HTTP-Referer"] = os.environ.get("FT_HTTP_REFERER", "")
+        headers["X-Title"] = os.environ.get("FT_APP_TITLE", "fieldtest-evals")
 
     req = urllib.request.Request(
         BASE + "/chat/completions", method="POST",
-        headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"},
-        data=json.dumps(payload).encode())
+        headers=headers, data=json.dumps(payload).encode())
 
     t0 = time.time()
     try:
@@ -215,7 +234,7 @@ def main():
     Path(a.raw).write_text("\n".join(parts), encoding="utf-8")
 
     record = {
-        "label": a.label, "model": MODEL,
+        "label": a.label, "model": MODEL, "provider": PROVIDER,
         "temperature": TEMPERATURE, "top_p": TOP_P, "top_k": TOP_K,
         "max_tokens": a.max_tokens, "context_window": WINDOW,
         "thinking": not a.no_thinking,
@@ -231,6 +250,20 @@ def main():
         "reads": a.read, "system": a.system,
         "host_pressure_at_send": pressure,
     }
+    if PROVIDER == "openrouter":
+        # What runs out on a hosted provider is money, and the response carries it.
+        # `reasoning_tokens` is reported separately there and is billed as output;
+        # keeping it apart is the only way to see what deliberation cost.
+        record["cost_usd"] = u.get("cost")
+        record["upstream_cost_usd"] = (u.get("cost_details") or {}).get(
+            "upstream_inference_cost")
+        record["reasoning_tokens"] = u.get("reasoning_tokens")
+        record["cached_tokens"] = u.get("cached_tokens")
+        record["generation_id"] = body.get("id")
+        # The effort word is the same across providers and the meaning is not.
+        record["reasoning_effort_semantics"] = (
+            "fraction of max_tokens reserved for thinking (OpenRouter), not the "
+            "model's own dial")
     usage_path.write_text(json.dumps(record, indent=2))
 
     flag = ""

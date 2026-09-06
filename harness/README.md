@@ -138,6 +138,63 @@ model's defining behaviour by default is not measuring the model; running it at 
 setting where it can finish a sentence is.
 
 
+
+## Running a model that is not on this machine
+
+    FT_PROVIDER=openrouter FT_MODEL=anthropic/claude-sonnet-4.6 \
+      ./harness/ft-go 01-payout-outbox a
+
+Everything downstream is unchanged: the phase design, the gate, the verdict template,
+the results table. What changes is where the weights are and what runs out.
+
+**Setup.** Copy `harness/openrouter.env.example` to
+`~/.config/fieldtest/openrouter.env`, put the key in it, `chmod 600`. The two provider
+files are read separately and never both — sourcing both would let the local base URL
+survive into a hosted run through `:=`, which does not overwrite, and the run would
+point at localhost with the wrong model id.
+
+**The guard changes.** Memory is not the scarce thing when the model is elsewhere, so
+`ft-vitals`, `ft-flush` and the pressure gate are skipped. `ft-budget` takes their
+place:
+
+    ft-budget                  what the key has left
+    ft-budget --need 5.00      exit 1 below that
+
+It reads `GET /key`, which validates the key as a side effect. A campaign that starts
+on a rejected key finds out in one second instead of one hour.
+
+**Run directories.** `anthropic/claude-sonnet-4.6` becomes
+`runs/anthropic-claude-sonnet-4.6/`, so models sit side by side under each problem and
+`ft-results` renders one table per model with no changes.
+
+### Three things that are not comparable across providers, and are recorded per run
+
+**`reasoning_effort` is the same word for two different settings.** On oMLX it is the
+model's own dial, passed through. OpenRouter does not accept `reasoning_effort` at all
+and takes `reasoning: {effort}`, where the levels are fractions of `max_tokens`
+reserved for thinking — medium is about 50%. Each request records which semantics
+applied, because a table comparing "both at medium" would otherwise be comparing two
+unrelated things.
+
+**The 16,384-token output ceiling is this server's, not a fact about models.** Hosted
+models routinely allow more. Keeping the cap makes the budget equal; lifting it lets a
+model use what it would actually use. Both are defensible and they answer different
+questions — *what does each model do with the same budget* against *what does each
+model do*. The cap stays until that is decided deliberately, and the decision belongs
+in `SECOND-PASS.md`.
+
+**The whole phase design exists because of that ceiling.** One file per request was
+forced by §3.1 and §1.1. A model with a 64k output window may not need it, and running
+it that way measures the harness's shape as much as the model. The honest comparison
+of a hosted model against this one is at the same ceiling; the interesting question
+about the hosted model may be a different run entirely.
+
+**Cost is recorded per request** — `cost_usd`, `upstream_cost_usd`, `reasoning_tokens`
+and `cached_tokens` land in each phase's usage file, and `generation_id` lets a charge
+be audited against OpenRouter's `/generation` endpoint afterwards. Reasoning tokens are
+billed as output there, so a run's cost and its thinking are separable for the first
+time.
+
 ## The machine is part of the measurement
 
 Two ceilings were described above as if they were properties of the model. One of them

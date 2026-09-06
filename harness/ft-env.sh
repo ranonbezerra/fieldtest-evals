@@ -18,15 +18,52 @@ ft_root() {
 FT_ROOT=$(ft_root) || exit 1
 export FT_ROOT
 
+# --- provider: a local server, or a hosted one --------------------------------
+# `omlx` is a model on this machine and the memory guards apply to it. `openrouter`
+# is a model somewhere else: nothing here can page it out, `ft-flush` has nothing to
+# flush, and the resource that runs out is money rather than RAM.
+: "${FT_PROVIDER:=omlx}"
+export FT_PROVIDER
+
 # --- credentials: environment wins, then a file outside the repo --------------
-_envfile="$HOME/.config/fieldtest/omlx.env"
-# shellcheck disable=SC1090
-[ -f "$_envfile" ] && . "$_envfile"
-: "${OMLX_BASE:=http://localhost:9050/v1}"
-: "${OMLX_MODEL:=Qwen3.8-27B-MLX-6bit}"
-: "${OMLX_KEY:?OMLX_KEY is not set and $_envfile does not define it}"
-# aider-style ids arrive as "openai/<id>"; the raw API wants the bare id.
-OMLX_MODEL=${OMLX_MODEL#openai/}
+# Each provider reads only its own file. Sourcing both would let the local server's
+# base URL and model name survive into a hosted run through `:=`, which does not
+# overwrite — and the run would quietly point at localhost with the wrong model id.
+case "$FT_PROVIDER" in
+  omlx)
+    _envfile="$HOME/.config/fieldtest/omlx.env"
+    # shellcheck disable=SC1090
+    [ -f "$_envfile" ] && . "$_envfile"
+    : "${OMLX_BASE:=http://localhost:9050/v1}"
+    : "${OMLX_MODEL:=Qwen3.8-27B-MLX-6bit}"
+    : "${OMLX_KEY:?OMLX_KEY is not set and $_envfile does not define it}"
+    ;;
+  openrouter)
+    _envfile="$HOME/.config/fieldtest/openrouter.env"
+    # shellcheck disable=SC1090
+    [ -f "$_envfile" ] && . "$_envfile"
+    # FT_MODEL is the knob a caller sets per run; OMLX_MODEL stays the internal name
+    # so every downstream script keeps working unchanged.
+    [ -n "${FT_MODEL:-}" ] && OMLX_MODEL="$FT_MODEL"
+    : "${OPENROUTER_KEY:?OPENROUTER_KEY is not set and $_envfile does not define it}"
+    OMLX_BASE="${OPENROUTER_BASE:-https://openrouter.ai/api/v1}"
+    : "${OMLX_MODEL:?set FT_MODEL to a model id, e.g. anthropic/claude-sonnet-4.6}"
+    OMLX_KEY="$OPENROUTER_KEY"
+    # OpenRouter asks callers to identify themselves; it costs nothing and shows up
+    # in the account's activity, which is useful when several campaigns share a key.
+    : "${FT_HTTP_REFERER:=https://github.com/ranonbezerra/fieldtest-evals}"
+    : "${FT_APP_TITLE:=fieldtest-evals}"
+    export FT_HTTP_REFERER FT_APP_TITLE
+    ;;
+  *)
+    echo "fieldtest: FT_PROVIDER must be omlx or openrouter, not '$FT_PROVIDER'" >&2
+    exit 1
+    ;;
+esac
+
+# aider-style ids arrive as "openai/<id>"; the raw API wants the bare id. Only for
+# the local server — an OpenRouter id is `org/model` and the prefix is meaningful.
+[ "$FT_PROVIDER" = omlx ] && OMLX_MODEL=${OMLX_MODEL#openai/}
 export OMLX_BASE OMLX_MODEL OMLX_KEY
 
 # --- fixed generation parameters ---------------------------------------------
