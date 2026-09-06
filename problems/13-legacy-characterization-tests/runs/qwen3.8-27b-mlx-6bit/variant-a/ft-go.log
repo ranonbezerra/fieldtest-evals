@@ -1,0 +1,48 @@
+
+===== ft-go invocation, 2026-09-06 08:07 UTC =====
+problem   13-legacy-characterization-tests
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/13-legacy-characterization-tests/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+workspace seeded from fixtures (3 files)
+  the fixture is the deliverable is written against; it is never edited
+
+[plan] in 1479/32768  out 3200/16384  think 6937c  307s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/13-legacy-characterization-tests/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (5971 bytes)
+
+manifest: 2 files
+  test/fee-calculator.spec.ts
+  FINDINGS.md
+
+[01-fee-calculator.spec.ts-cases] in 2866/32768  out 2478/16384  think 3896c  247s  10.0 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/13-legacy-characterization-tests/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/01-fee-calculator.spec.ts-cases.txt (6071 bytes)
+[01-fee-calculator.spec.ts] in 4571/32768  out 16384/16384  think 35896c  1583s  10.3 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/13-legacy-characterization-tests/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/fee-calculator.spec.ts (17804 bytes, UNFENCED reply)
+         test/fee-calculator.spec.ts overflowed at the lowest effort; the reply is truncated and is not written
+         ceiling hit — retrying test/fee-calculator.spec.ts at reasoning_effort=low
+[01-fee-calculator.spec.ts-retry] in 4571/32768  out 12720/16384  think 22414c  1189s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/13-legacy-characterization-tests/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/fee-calculator.spec.ts (18073 bytes)
+[02-FINDINGS.md] in 2877/32768  out 3963/16384  think 9078c  368s  10.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/13-legacy-characterization-tests/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/FINDINGS.md (6411 bytes)
+
+files written: 2/2
+[gate] supplied by the harness, not the model: package.json
+
+[gate] installing dependencies
+[gate] typecheck clean
+[tests] None of None passing
+[gate] cleaned install artifacts from the workspace
+
+wall 61.9 min   requests 5   in 16364   out 38745   10.5 tok/s
+generation 61.6 min   model loads 0s   gate+io 0.4 min
+OUTPUT CEILING HIT on: 01-fee-calculator.spec.ts  <-- read the reasoning first
+retried at reasoning_effort=low after a ceiling hit: test/fee-calculator.spec.ts
+
+failures (1):
+  01-fee-calculator.spec.ts: test file overflowed at reasoning_effort=low, the lowest setting. The truncated reply is in steps/ and was not written as an artifact.
+
+artifacts in problems/13-legacy-characterization-tests/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

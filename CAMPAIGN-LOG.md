@@ -19,3 +19,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-05 06:13 | 09-feature-in-conventions | a | **1 failure(s)**: typecheck still failing after 2 repairs | 166.6 min | 100074 | 10.1 | 13 | 12/12 | yes |
 | 2026-09-05 07:54 | 10-adapt-existing-screen | a | **2 failure(s)**: typecheck still failing after 2 repairs | 101.4 min | 62359 | 10.3 | 3 | 7/7 | no |
 | 2026-09-05 08:58 | 11-behavior-preserving-refactor | a | **2 failure(s)**: typecheck still failing after 2 repairs | 63.8 min | 38725 | 10.2 | 8 | 6/6 | no |
+| 2026-09-06 08:07 | 13-legacy-characterization-tests | a | **1 failure(s)**: test file overflowed at reasoning_effort=low, the lowest set | 61.9 min | 38745 | 10.5 | 0 | 2/2 | yes |
