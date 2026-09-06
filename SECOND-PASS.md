@@ -348,3 +348,31 @@ persist, they belong to the model.
 That is a second dimension of the matrix rather than a patch to this one, and it costs
 one variant rather than eighteen. It is the single most decision-relevant thing this
 campaign could do next.
+
+## 9. Run the same model hosted, before running a different one
+
+`qwen/qwen3.8-27b` is on OpenRouter: **the same weights this campaign measured
+locally at 6-bit**, served with a 131,072-token output ceiling against our 16,384 and
+a 1M context against our 32,768.
+
+That is a better first hosted run than any frontier model, because it separates three
+things this campaign could not:
+
+- **quantization** — 6-bit MLX here against whatever precision the provider serves
+- **the output ceiling** — every phase design decision in §1.1 and §3.1 follows from
+  16,384, and 131,072 removes the constraint entirely
+- **the phase shape** — one file per request exists *because* of the ceiling; with
+  room to spare, the same problem can be posed as one request
+
+The campaign's central open question is whether *"builds beside instead of changing"*
+(§1.6) is the model or this harness's shape. Running the same model without the
+ceiling answers it directly: if the boundary failures disappear, they were ours.
+
+Two runs settle it — one at our ceiling to confirm the hosted setup reproduces what we
+measured, one uncapped to see what the constraint was costing. Compare against
+`problems/10` and `problems/11`, where the failure is cleanest.
+
+*Cost, for planning:* $0.42 per million in, $3.00 per million out. This campaign spent
+1,529,689 output tokens across seventeen problems, so a full hosted pass at those rates
+is roughly **$5**, plus input. The comparison is cheap; the machine time was the
+expensive part all along.

@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""What OpenRouter offers, priced, so a model id is chosen rather than guessed.
+
+    ft-models                     the ones likely to be worth a run here
+    ft-models --search qwen       filter by id or name
+    ft-models --all               everything, unfiltered
+    ft-models --id <model>        one model in full
+
+Prices are per million tokens, as OpenRouter reports them. `out` includes reasoning
+tokens: they are billed as output, so a model that thinks a lot costs more than its
+answer length suggests.
+"""
+import argparse, json, sys, urllib.error, urllib.request
+
+BASE = "https://openrouter.ai/api/v1"
+
+
+def fetch():
+    req = urllib.request.Request(BASE + "/models")
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read()).get("data", [])
+
+
+def per_m(v):
+    try:
+        return float(v) * 1_000_000
+    except (TypeError, ValueError):
+        return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--search")
+    ap.add_argument("--all", action="store_true")
+    ap.add_argument("--id")
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+
+    try:
+        models = fetch()
+    except Exception as e:
+        print(f"ft-models: cannot reach OpenRouter: {repr(e)[:160]}", file=sys.stderr)
+        return 3
+
+    if a.id:
+        m = next((x for x in models if x.get("id") == a.id), None)
+        if not m:
+            print(f"ft-models: no model with id {a.id}", file=sys.stderr)
+            return 1
+        print(json.dumps(m, indent=2))
+        return 0
+
+    rows = []
+    for m in models:
+        mid = m.get("id", "")
+        if a.search and a.search.lower() not in (mid + " " + (m.get("name") or "")).lower():
+            continue
+        p = m.get("pricing") or {}
+        ctx = m.get("context_length")
+        top = (m.get("top_provider") or {}).get("max_completion_tokens")
+        rows.append({
+            "id": mid, "context": ctx, "max_output": top,
+            "in_per_m": per_m(p.get("prompt")), "out_per_m": per_m(p.get("completion")),
+        })
+
+    # Without a filter, a bare list of several hundred is not a choice. These are the
+    # ones with the output room this harness's phases need and a price worth knowing.
+    if not (a.all or a.search):
+        rows = [r for r in rows
+                if (r["max_output"] or 0) >= 16384 and (r["out_per_m"] or 0) > 0]
+        rows.sort(key=lambda r: r["out_per_m"])
+
+    if a.json:
+        print(json.dumps(rows, indent=2))
+        return 0
+
+    if not rows:
+        print("  nothing matched")
+        return 0
+    print(f"  {'model id':52} {'ctx':>8} {'out max':>8} {'$/M in':>8} {'$/M out':>8}")
+    for r in rows:
+        print(f"  {r['id'][:52]:52} {str(r['context'] or '-'):>8} "
+              f"{str(r['max_output'] or '-'):>8} "
+              f"{('%.2f' % r['in_per_m']) if r['in_per_m'] is not None else '-':>8} "
+              f"{('%.2f' % r['out_per_m']) if r['out_per_m'] is not None else '-':>8}")
+    print(f"\n  {len(rows)} model(s). Prices per million tokens; output includes "
+          f"reasoning tokens.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

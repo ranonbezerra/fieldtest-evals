@@ -147,6 +147,19 @@ setting where it can finish a sentence is.
 Everything downstream is unchanged: the phase design, the gate, the verdict template,
 the results table. What changes is where the weights are and what runs out.
 
+**Choosing a model.** `ft-models` lists what is on offer with its context window,
+output ceiling and price per million tokens — output includes reasoning tokens, which
+are billed as output, so a model that thinks a lot costs more than its answers
+suggest.
+
+    ft-models                  the ones with room for these phases, cheapest first
+    ft-models --search qwen    filter
+    ft-models --id <model>     one model in full
+
+`FT_MODEL` is set per run, not fixed in a file:
+
+    FT_PROVIDER=openrouter FT_MODEL=openai/gpt-5.2 ./harness/ft-campaign --variants a
+
 **Setup.** Copy `harness/openrouter.env.example` to
 `~/.config/fieldtest/openrouter.env`, put the key in it, `chmod 600`. The two provider
 files are read separately and never both — sourcing both would let the local base URL
