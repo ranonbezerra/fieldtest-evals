@@ -180,6 +180,33 @@ on a rejected key finds out in one second instead of one hour.
 `runs/anthropic-claude-sonnet-4.6/`, so models sit side by side under each problem and
 `ft-results` renders one table per model with no changes.
 
+### The local configuration is local
+
+Every value the campaign fixed to make a 27B model work on a 48 GB laptop is applied
+**only when the model is on that laptop**. A field test measures what a developer would
+do, and nobody imposes one machine's ceiling on somebody else's API.
+
+| | local (`omlx`) | hosted |
+|---|---|---|
+| `FT_MAX_TOKENS` | **16,384** — the oMLX server's output ceiling | unset — the model's own maximum |
+| `FT_CONTEXT_WINDOW` | **32,768** — chosen from a measured prefill rate | a generous client-side guard, never binding |
+| `FT_REASONING_EFFORT` | **medium** — because at the default the plan phase overflowed 16,384 in 3 of 3 runs | unset — the model's own dial, untouched |
+| test-writing pass | forced to `low`, to fit the ceiling | left at the model's default |
+| `ft-vitals` / `ft-flush` / pressure gate | on | off; nothing here can page out somebody else's weights |
+| `ft-budget` | n/a | the guard that applies — credit, not memory |
+
+What stays the same in both: temperature, `top_p` and `top_k`, because those are the
+**model card's** recommendation and travel with the model rather than the machine.
+Point `FT_MODEL` at a different model and they have to be read from that model's card —
+they are not harness constants.
+
+One thing does not yet separate cleanly, and saying so is better than implying it does.
+**The one-file-per-request phase design was forced by the 16,384 ceiling** (§3.1), and
+it is structural rather than a variable: a hosted run still gets it. With 131,072
+tokens of output there may be nothing to decompose, and posing the whole problem in one
+request is closer to how a developer would use such a model. That is a change to
+`ft-go`'s shape, not a setting, and it is in `SECOND-PASS.md`.
+
 ### Three things that are not comparable across providers, and are recorded per run
 
 **`reasoning_effort` is the same word for two different settings.** On oMLX it is the

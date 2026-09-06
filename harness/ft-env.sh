@@ -66,29 +66,57 @@ esac
 [ "$FT_PROVIDER" = omlx ] && OMLX_MODEL=${OMLX_MODEL#openai/}
 export OMLX_BASE OMLX_MODEL OMLX_KEY
 
-# --- fixed generation parameters ---------------------------------------------
-# The model card's own recommendation for thinking mode, which is this model's
-# default mode. An earlier campaign ran at 0.6 — carried over from Qwen3 guidance
-# for a different model — and every run taken that way was discarded rather than
-# compared against these.
+# --- generation parameters, in three layers -----------------------------------
 #
-# Changing any of these invalidates comparison with every run already recorded.
+# 1. THE MODEL'S OWN RECOMMENDATION. Travels with the model, not with the machine,
+#    so it holds wherever the model runs. It is *not* a harness constant: pointing
+#    FT_MODEL at something else means reading that model's card.
+#
+#    These are Qwen3.8's card values for thinking mode, which is its default mode.
+#    An earlier campaign ran at 0.6 — Qwen3 guidance carried over to a different
+#    model — and every run taken that way was discarded rather than compared.
 : "${FT_TEMPERATURE:=1.0}"
 : "${FT_TOP_P:=0.95}"
 : "${FT_TOP_K:=20}"
-# xhigh | medium | low. The model's own dial for how much it deliberates before
-# answering. Set to `medium`, measured rather than chosen: at the model's own default
-# the plan phase overflowed the 16,384-token ceiling in 3 of 3 runs and never produced
-# a specification, so the harness fell back to `low` and every run was governed by a
-# low-effort plan. At `medium`, 6 of 6 replayed phases fit — the largest using 65% of
-# the ceiling — and the plans stopped contradicting themselves. See FINDINGS 6.2.
-# The harness still lowers to `low` as a fallback after a phase overflows.
-: "${FT_REASONING_EFFORT:=medium}"
-: "${FT_MAX_TOKENS:=16384}"      # the server's output ceiling; thinking is paid out of it
-: "${FT_CONTEXT_WINDOW:=32768}"  # client-side budget; keep equal to the server's setting
-: "${FT_REQUEST_TIMEOUT:=3600}"  # seconds; a request that hangs must not hang the campaign
-export FT_TEMPERATURE FT_TOP_P FT_TOP_K FT_MAX_TOKENS FT_CONTEXT_WINDOW FT_REQUEST_TIMEOUT
-export FT_REASONING_EFFORT
+export FT_TEMPERATURE FT_TOP_P FT_TOP_K
+
+: "${FT_REQUEST_TIMEOUT:=3600}"  # seconds; a hung request must not hang a campaign
+export FT_REQUEST_TIMEOUT
+
+# 2. WHAT THIS MACHINE IMPOSES. Every value below exists because a 27B model runs on
+#    a 48 GB laptop through one oMLX server. None of it is a fact about the model,
+#    and none of it is applied to a provider that does not share the constraint —
+#    a field test measures what a developer would do, and nobody imposes a laptop's
+#    output ceiling on an API.
+if [ "$FT_PROVIDER" = omlx ]; then
+  # The server's own output ceiling. Reasoning is paid out of it, which is what
+  # forced the phase design in FINDINGS 3.1: no single reply can hold a problem.
+  : "${FT_MAX_TOKENS:=16384}"
+  # Measured, not inherited: prefill is linear at ~120 tok/s (FINDINGS 2.6), so a
+  # full window costs four and a half minutes before the first token. Nothing here
+  # sends more than a few thousand.
+  : "${FT_CONTEXT_WINDOW:=32768}"
+  # A consequence of the ceiling above, not a preference. At the model's own default
+  # the plan phase overflowed in 3 of 3 runs and the harness fell back to `low`, so
+  # every run was governed by a low-effort plan. At `medium`, 6 of 6 replayed phases
+  # fit. See FINDINGS 6.2. Remove the ceiling and this reason disappears with it.
+  : "${FT_REASONING_EFFORT:=medium}"
+else
+  # 3. HOSTED. The limits above do not exist here, so they are not invented. Left
+  #    unset, each falls to the provider's own default — which is what a developer
+  #    calling the API gets, and therefore what a field test should measure.
+  #
+  #    FT_MAX_TOKENS unset  -> the model's own maximum
+  #    FT_CONTEXT_WINDOW    -> a client-side guard only; generous, never binding
+  #    FT_REASONING_EFFORT  -> the model's default dial, untouched
+  #
+  #    Set any of them explicitly to run a deliberate comparison against the local
+  #    configuration; that is a diagnostic, not the default.
+  : "${FT_CONTEXT_WINDOW:=1000000}"
+fi
+[ -n "${FT_MAX_TOKENS:-}" ] && export FT_MAX_TOKENS
+[ -n "${FT_REASONING_EFFORT:-}" ] && export FT_REASONING_EFFORT
+export FT_CONTEXT_WINDOW
 
 # --- run lock -----------------------------------------------------------------
 # ft-flush refuses to unload the model while this exists. Unloading mid-generation

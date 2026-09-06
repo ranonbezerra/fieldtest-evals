@@ -32,7 +32,11 @@ MODEL = os.environ.get("OMLX_MODEL", "Qwen3.8-27B-MLX-6bit").removeprefix("opena
 TEMPERATURE = float(os.environ.get("FT_TEMPERATURE", "0.6"))
 TOP_P = float(os.environ.get("FT_TOP_P", "0.95"))
 TOP_K = int(os.environ.get("FT_TOP_K", "20"))
-MAX_TOKENS = int(os.environ.get("FT_MAX_TOKENS", "16384"))
+# Unset means "no ceiling of ours" — the provider's own maximum applies. Only the
+# local server imposes one, and imposing it on anything else would measure this
+# laptop rather than the model. See ft-env.sh.
+_mt = os.environ.get("FT_MAX_TOKENS", "")
+MAX_TOKENS = int(_mt) if _mt else None
 WINDOW = int(os.environ.get("FT_CONTEXT_WINDOW", "32768"))
 TIMEOUT = int(os.environ.get("FT_REQUEST_TIMEOUT", "3600"))
 
@@ -102,7 +106,9 @@ def main():
                     help="write the reply as-is instead of extracting a fenced block; "
                          "required when the artifact itself contains fences, such as the plan")
     ap.add_argument("--label", default="step", help="name for this request in the log")
-    ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS)
+    ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS,
+                    help="omit and leave FT_MAX_TOKENS unset to accept the "
+                         "provider's own maximum")
     ap.add_argument("--reasoning-effort", choices=["xhigh", "medium", "low"],
                     help="the model's own dial for how much it deliberates. Omitted "
                          "means the model's default. Lowering it is a deviation and is "
@@ -152,7 +158,7 @@ def main():
     # Pre-flight budget check. The server refuses hard where the client would have
     # trimmed gracefully, so the client is given the same number and stops first.
     est = sum(len(m["content"]) for m in messages) // 3
-    if est + a.max_tokens > WINDOW:
+    if a.max_tokens and est + a.max_tokens > WINDOW:
         print(f"ft-run: [{a.label}] prompt ~{est} tokens + {a.max_tokens} output exceeds "
               f"the {WINDOW} window. Split the phase; do not raise the window.", file=sys.stderr)
         return 4
@@ -160,8 +166,10 @@ def main():
     payload = {
         "model": MODEL, "messages": messages,
         "temperature": TEMPERATURE, "top_p": TOP_P, "top_k": TOP_K,
-        "max_tokens": a.max_tokens, "stream": False,
+        "stream": False,
     }
+    if a.max_tokens:
+        payload["max_tokens"] = a.max_tokens
     effort = a.reasoning_effort or os.environ.get("FT_REASONING_EFFORT") or None
     if effort:
         if PROVIDER == "openrouter":
@@ -242,7 +250,9 @@ def main():
         "prompt_tokens": u.get("prompt_tokens"), "completion_tokens": out_tokens,
         "reasoning_chars": len(reasoning), "content_chars": len(content),
         "finish_reason": finish,
-        "output_ceiling_hit": finish == "length" or out_tokens >= a.max_tokens,
+        # Without a ceiling of ours, only the provider can say it stopped early.
+        "output_ceiling_hit": finish == "length" or (
+            bool(a.max_tokens) and out_tokens >= a.max_tokens),
         "wall_seconds": round(wall, 1),
         "server_seconds": round(server_time, 1),
         "model_load_seconds": round(load_time, 1),

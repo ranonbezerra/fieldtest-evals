@@ -51,6 +51,11 @@ LOCK = Path(os.environ.get("FT_LOCK", "/tmp/fieldtest-run.lock"))
 MODEL = os.environ.get("OMLX_MODEL", "unknown").removeprefix("openai/")
 FLUSH_ABOVE = float(os.environ.get("FT_FLUSH_ABOVE_GIB", "26"))
 MAX_REPAIRS = 2
+# Is there an output ceiling of ours at all? Only the local server imposes one,
+# and several phase-level remedies exist solely to live within it: lowering the
+# reasoning dial on a test write, retrying a phase that overflowed. Where no
+# ceiling exists, neither does the reason for them.
+CEILING = bool(os.environ.get("FT_MAX_TOKENS", ""))
 MAX_AUTO_READS = 4
 
 MANIFEST = re.compile(r"<!--\s*manifest\s*(.*?)-->", re.S | re.I)
@@ -523,8 +528,14 @@ def main():
                         "\n\nThe read-only file above lists the cases you already "
                         "decided on. Write every one of them. It is a list of "
                         "decisions, not a suggestion.")
+                # `low` here is a local remedy: under a 16,384 ceiling, reasoning ate
+                # the whole budget on test files and the retry without it produced the
+                # same file in a fraction. With no ceiling there is nothing to ration,
+                # and forcing the dial down would carry this laptop into a run that
+                # never had its limit.
                 ft_run(label, instruction, steps / f"{label}.md",
-                       reads=reads, out_file=target, system=cheatsheet, effort="low")
+                       reads=reads, out_file=target, system=cheatsheet,
+                       effort=("low" if CEILING else None))
                 # Already at the lowest effort, so there is nowhere to retry to. What
                 # matters is not writing a fragment that reads like a test file: an
                 # empty file announces itself, a plausible half of one does not.
@@ -828,7 +839,8 @@ def main():
                 "temperature": float(os.environ.get("FT_TEMPERATURE", 1.0)),
                 "top_p": float(os.environ.get("FT_TOP_P", 0.95)),
                 "top_k": int(os.environ.get("FT_TOP_K", 20)),
-                "max_tokens": int(os.environ.get("FT_MAX_TOKENS", 16384)),
+                "max_tokens": int(os.environ["FT_MAX_TOKENS"])
+                              if os.environ.get("FT_MAX_TOKENS") else "provider maximum",
                 "context_window": int(os.environ.get("FT_CONTEXT_WINDOW", 32768)),
                 "reasoning": {
                     "effort": os.environ.get("FT_REASONING_EFFORT")
