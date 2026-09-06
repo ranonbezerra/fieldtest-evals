@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuditEventType {
+  ROTATED
+  REJECTED_MALFORMED
+  REJECTED_UNKNOWN
+  REJECTED_EXPIRED
+  REUSE_COMPROMISE
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique @map("token_hash") @db.VarChar(64)
+  familyId  String    @map("family_id")
+  userId    String    @map("user_id") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  retiredAt DateTime? @map("retired_at")
+
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+model AuditEvent {
+  id        String         @id @default(uuid())
+  familyId  String         @map("family_id")
+  tokenId   String?        @map("token_id")
+  eventType AuditEventType @map("event_type")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@index([familyId])
+  @@map("audit_events")
+}

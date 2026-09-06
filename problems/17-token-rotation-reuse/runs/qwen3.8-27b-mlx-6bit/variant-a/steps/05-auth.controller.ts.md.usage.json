@@ -1,0 +1,28 @@
+{
+  "label": "05-auth.controller.ts",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "medium",
+  "prompt_tokens": 4586,
+  "completion_tokens": 2570,
+  "reasoning_chars": 8609,
+  "content_chars": 1613,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 254.6,
+  "server_seconds": 254.6,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 10.1,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.service.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

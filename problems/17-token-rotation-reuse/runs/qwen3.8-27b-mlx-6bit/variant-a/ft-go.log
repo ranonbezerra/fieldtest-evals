@@ -1,0 +1,73 @@
+
+===== ft-go invocation, 2026-09-06 12:45 UTC =====
+problem   17-token-rotation-reuse
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+[plan] in 1532/32768  out 5760/16384  think 12213c  543s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (10201 bytes)
+
+manifest: 8 files
+  prisma/schema.prisma
+  prisma/migrations/20250711000000_init/migration.sql   <- prisma/schema.prisma
+  src/auth/auth.repository.ts   <- prisma/schema.prisma
+  src/auth/auth.service.ts   <- src/auth/auth.repository.ts
+  src/auth/auth.controller.ts   <- src/auth/auth.service.ts
+  src/auth/auth.module.ts   <- src/auth/auth.controller.ts, src/auth/auth.service.ts, src/auth/auth.repository.ts
+  test/auth.spec.ts   <- src/auth/auth.repository.ts, src/auth/auth.service.ts, src/auth/auth.controller.ts
+  SECURITY.md
+
+[01-schema.prisma] in 4017/32768  out 2949/16384  think 9742c  300s  9.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/schema.prisma (973 bytes)
+[02-migration.sql] in 4458/32768  out 1248/16384  think 3353c  132s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/prisma/migrations/20250711000000_init/migration.sql (1151 bytes)
+[03-auth.repository.ts] in 4429/32768  out 6834/16384  think 21471c  632s  10.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.repository.ts (5282 bytes)
+[04-auth.service.ts] in 5498/32768  out 5582/16384  think 21857c  543s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.service.ts (1906 bytes)
+[05-auth.controller.ts] in 4586/32768  out 2570/16384  think 8609c  255s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.controller.ts (1596 bytes)
+[06-auth.module.ts] in 6586/32768  out 3258/16384  think 13536c  335s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.module.ts (938 bytes)
+[07-auth.spec.ts-cases] in 6593/32768  out 3510/16384  think 8599c  343s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/07-auth.spec.ts-cases.txt (6036 bytes)
+[07-auth.spec.ts] in 8219/32768  out 16384/16384  think 42982c  1618s  10.1 tok/s  length  <-- OUTPUT CEILING HIT
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/auth.spec.ts (21752 bytes, UNFENCED reply)
+         test/auth.spec.ts overflowed at the lowest effort; the reply is truncated and is not written
+         ceiling hit — retrying test/auth.spec.ts at reasoning_effort=low
+[07-auth.spec.ts-retry] in 8219/32768  out 13578/16384  think 33550c  1283s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/auth.spec.ts (22225 bytes)
+[08-SECURITY.md] in 4011/32768  out 2380/16384  think 8465c  233s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/SECURITY.md (872 bytes)
+
+files written: 8/8
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (1 errors)
+[gate] repairing 1 file(s), loading 1 definition(s) read-only
+[repair1-auth.module.ts] in 4592/32768  out 2729/16384  think 11306c  269s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.module.ts (568 bytes)
+[gate] typecheck clean after repair
+[tests] 3 of 14 failing — recorded, not repaired
+         POST /auth/refresh > audit completeness > each rejection class writes a distinct event_type to audit_events
+         POST /auth/refresh > replay and reuse detection > family invalidation exhausts every active token in the chain
+         POST /auth/refresh > successful rotation > returns a new, distinct refresh token that itself works for a subsequent rotation
+[gate] cleaned install artifacts from the workspace
+
+wall 109.0 min   requests 12   in 62740   out 66782   10.3 tok/s
+generation 108.1 min   model loads 0s   gate+io 0.9 min
+OUTPUT CEILING HIT on: 07-auth.spec.ts  <-- read the reasoning first
+retried at reasoning_effort=low after a ceiling hit: test/auth.spec.ts
+REVISED x1 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 1/10 samples — throughput here is not comparable
+
+failures (2):
+  07-auth.spec.ts: test file overflowed at reasoning_effort=low, the lowest setting. The truncated reply is in steps/ and was not written as an artifact.
+  host: memory pressure during 1 of 10 samples: corespotlightd is using 137% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap acti. Throughput here is the machine's, not the model's.
+
+artifacts in problems/17-token-rotation-reuse/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md
