@@ -578,6 +578,31 @@ def main():
             if gate["scaffold"]:
                 say(f"[gate] supplied by the harness, not the model: "
                     f"{', '.join(gate['scaffold'])}")
+
+            # The scaffold's tsconfig asks for `vitest/globals` types, which is only
+            # true when the scaffold's package.json is also in play. Problem 16's
+            # workspace carried its own package.json — drizzle and pg, no vitest,
+            # correctly, since it delivers migrations and shell scripts — and the
+            # harness supplied only the tsconfig. One error, TS2688, no file to
+            # repair, gate failed. Half a scaffold depending on the half it did not
+            # supply.
+            tsc_cfg = ws / "tsconfig.json"
+            if tsc_cfg.exists() and "tsconfig.json" in gate["scaffold"] \
+               and "package.json" not in gate["scaffold"]:
+                try:
+                    cfg = json.loads(tsc_cfg.read_text())
+                    pkg = json.loads((ws / "package.json").read_text()) \
+                        if (ws / "package.json").exists() else {}
+                    have = set(pkg.get("dependencies", {})) | set(pkg.get("devDependencies", {}))
+                    types = cfg.get("compilerOptions", {}).get("types")
+                    if types and "vitest/globals" in types and "vitest" not in have:
+                        cfg["compilerOptions"]["types"] = [
+                            t for t in types if t != "vitest/globals"]
+                        tsc_cfg.write_text(json.dumps(cfg, indent=2) + "\n")
+                        say("[gate] dropped `vitest/globals` from the supplied "
+                            "tsconfig: this workspace's package.json has no vitest")
+                except (json.JSONDecodeError, OSError):
+                    pass
             if (ws / "package.json").exists() and not (ws / "node_modules").exists() \
                and not a.no_install:
                 say("\n[gate] installing dependencies")

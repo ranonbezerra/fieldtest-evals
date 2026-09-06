@@ -3,9 +3,7 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": [
-      "ES2022"
-    ],
+    "lib": ["ES2022"],
     "strict": true,
     "strictPropertyInitialization": false,
     "experimentalDecorators": true,
@@ -13,14 +11,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node", "vitest/globals"]
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "tests/**/*.ts",
-    "*.ts"
-  ]
+  "include": ["src/**/*.ts", "test/**/*.ts", "tests/**/*.ts", "*.ts"]
 }

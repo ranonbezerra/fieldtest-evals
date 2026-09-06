@@ -125,7 +125,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 13 | legacy characterization tests | ✗<br><sub>M2, M3, M5, M6</sub> | – | – | – | Writes a characterization suite and a bug report for a module it never opened, and presents invented code as the evidence. |
 | 14 | code review planted bugs | – | – | – | – | *not yet run* |
 | 15 | wiring boot failure | – | – | – | – | *not yet run* |
-| 16 | migration that lied | – | – | – | – | *not yet run* |
+| 16 | migration that lied | ~ | – | – | – | Names all three silent failures, gets one mechanism wrong, and says out loud which part it is guessing. |
 | 17 | token rotation reuse | – | – | – | – | *not yet run* |
 | 18 | timing equal enumeration | – | – | – | – | *not yet run* |
 

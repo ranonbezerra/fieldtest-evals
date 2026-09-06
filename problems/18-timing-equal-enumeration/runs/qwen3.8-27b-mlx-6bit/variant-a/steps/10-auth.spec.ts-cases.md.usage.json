@@ -1,0 +1,31 @@
+{
+  "label": "10-auth.spec.ts-cases",
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": 16384,
+  "context_window": 32768,
+  "thinking": true,
+  "reasoning_effort": "medium",
+  "prompt_tokens": 5810,
+  "completion_tokens": 3051,
+  "reasoning_chars": 8162,
+  "content_chars": 4515,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 309.8,
+  "server_seconds": 309.7,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 9.9,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/variants/variant-a.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.controller.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.service.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.repository.ts",
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/18-timing-equal-enumeration/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/auth/auth.dto.ts"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": []
+}

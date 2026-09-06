@@ -1,0 +1,22 @@
+- sign-up with a new email returns 200 with the expected message body — fails if the service throws, returns a different status, or returns a different body shape for the new-address branch
+- sign-up with an existing email returns 200 with the same message body — fails if the existing-address branch returns a different status (e.g. 409) or a different message string
+- sign-up byte-equality: the serialised response (status line, `Content-Type` header, body bytes) is identical for a new address and an existing address — fails if any extra field, whitespace difference, or header (e.g. `Set-Cookie`, custom header) distinguishes the two branches
+- sign-up timing: over N ≥ 30 interleaved samples per branch, the median and p95 latencies fall within a tight threshold of each other — fails if the dummy-hash verify is skipped, the no-op `touchUser` write is absent, or the branch order allows one path to skip a DB round-trip
+- sign-up with a new email dispatches a "verification" email to that address — fails if the template name is wrong, the `to` field is empty, or the mail call is only in one branch
+- sign-up with an existing email dispatches a "sign-up-attempt" email to that address — fails if the template name is wrong or the call is missing from the existing branch
+- password is persisted as an argon2id hash with timeCost ≥ 3 and memoryCost ≥ 64 MiB — fails if the stored string does not start with `$argon2id$` or the embedded parameters are below the stated cost
+- sign-in with correct credentials returns 200 and a non-empty opaque token string — fails if the happy path throws, returns an empty/undefined token, or the token is not a hex string of the expected length
+- sign-in with a known email and wrong password returns 401 `invalid_credentials` — fails if the status is not 401, the error code differs, or the body deviates from the single envelope
+- sign-in with an unknown email returns 401 `invalid_credentials` — fails if the status, code, or body differs from the wrong-password case
+- sign-in byte-equality: the serialised failure response (status, `Content-Type`, body bytes) is identical for wrong-password and unknown-email — fails if one branch omits a field, adds a hint string, or emits an extra header
+- sign-in timing: over N ≥ 30 interleaved samples per failure branch, the median and p95 latencies fall within a tight threshold — fails if the unknown-email path skips argon2.verify or uses a lighter dummy hash
+- sign-up missing email returns 400 `validation_failed` — fails if a bare string or undefined passes the pipe, or the error envelope is absent
+- sign-up password shorter than 8 characters returns 400 `validation_failed` — fails if the boundary (7 chars) is accepted or the 400 body is not the standard envelope
+- sign-in malformed email (e.g. "not-an-email") returns 400 `validation_failed` — fails if the `@IsEmail()` guard is absent or a 500 leaks
+- sign-in missing password returns 400 `validation_failed` — fails if an undefined/empty password bypasses validation
+- concurrent sign-up race: two simultaneous POSTs with the same previously-unseen email — at most one row is created; the losing request must still return 200 (not a 500 from Prisma P2002 unique-constraint violation), or at minimum the caller cannot distinguish success from the constraint error via timing alone — fails if the unhandled P2002 propagates as a 500 with a different body and timing than the 200 path
+- mail port rejection during new-email sign-up: after `sendEmail` throws, the user row still exists in the database — fails if the code wraps create+mail in a transaction that rolls back, or if the INSERT is deferred until after the mail call
+- repeated sign-up with the same existing email: every call returns 200 and dispatches "sign-up-attempt" (no silent deduplication, no 429, no body change) — fails if a second call within a short window returns a different status or skips the mail dispatch
+- sign-in called twice with identical valid credentials produces two distinct token values — fails if the token is derived deterministically from user id + password (e.g. HMAC of the email) rather than `randomBytes`
+
+Deliberately not testing: token validation or expiry (no consuming endpoint exists in this feature); email case-normalisation (the code stores the email as-received; the plan marks this optional); brute-force rate-limiting (out of scope per the task statement); mail content beyond template name (the port is assumed to exist and its internals are not under test).
