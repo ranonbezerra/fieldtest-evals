@@ -1,0 +1,1473 @@
+{
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "15-wiring-boot-failure",
+  "variant": "variant-a",
+  "date": "2026-09-06T10:33:35+00:00",
+  "wall_seconds": 4418,
+  "wall_minutes": 73.6,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": 16384,
+    "context_window": 32768,
+    "reasoning": {
+      "effort": "medium",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "runner": "api",
+  "spec_source": "model",
+  "manifest": {
+    "declared": 10,
+    "built": 10,
+    "truncated": false
+  },
+  "requests": 22,
+  "resumed": false,
+  "requests_this_invocation": 22,
+  "tokens": {
+    "prompt_total": 85502,
+    "completion_total": 43608,
+    "completion_this_invocation": 43608,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 9.2,
+    "output_tokens_per_second_overall": 10.0,
+    "generation_seconds": 4358,
+    "model_load_seconds": 0,
+    "overhead_seconds": 60
+  },
+  "revisions": {
+    "self_repairs": 10,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 5,
+    "samples": 12,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": 37.44,
+    "ceiling_gib_max": 37.44,
+    "swap_used_gib_max": 2.94,
+    "free_percent_min": 35,
+    "trace": [
+      {
+        "at": "2026-09-06T06:19:53",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.98,
+          "available_gib": 13.24,
+          "anonymous_gib": 35.04,
+          "wired_gib": 3.44,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 91
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.53,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.84,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.5,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T06:19:57",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 3.02,
+          "available_gib": 14.59,
+          "anonymous_gib": 35.19,
+          "wired_gib": 3.26,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 91
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.53,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 1.1,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.84,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.49,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T06:27:31",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.27,
+          "available_gib": 10.4,
+          "anonymous_gib": 10.82,
+          "wired_gib": 28.23,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.75,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.84,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T06:28:17",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.29,
+          "available_gib": 10.25,
+          "anonymous_gib": 10.72,
+          "wired_gib": 28.55,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.38,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.84,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T06:29:20",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.44,
+          "available_gib": 10.37,
+          "anonymous_gib": 10.74,
+          "wired_gib": 28.36,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.54,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.84,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T06:31:20",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.2,
+          "available_gib": 10.18,
+          "anonymous_gib": 10.86,
+          "wired_gib": 28.43,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 2.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.43,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.5,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.84,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T06:32:09",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.21,
+          "available_gib": 10.34,
+          "anonymous_gib": 10.92,
+          "wired_gib": 28.37,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.29,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.7,
+          "competitors": [
+            {
+              "cpu": 133.4,
+              "command": "corespotlightd"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.85,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": [
+          "corespotlightd is using 133% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+        ]
+      },
+      {
+        "at": "2026-09-06T06:33:57",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.86,
+          "available_gib": 9.92,
+          "anonymous_gib": 10.8,
+          "wired_gib": 28.69,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 37
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.45,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.5,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.85,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T06:35:13",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.82,
+          "available_gib": 10.21,
+          "anonymous_gib": 10.78,
+          "wired_gib": 28.42,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.41,
+          "cores": 14,
+          "gpu_percent": 34,
+          "server_cpu": 1.1,
+          "competitors": [
+            {
+              "cpu": 86.7,
+              "command": "spotlightknowled"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.82,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": [
+          "spotlightknowled is using 87% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+        ]
+      },
+      {
+        "at": "2026-09-06T06:36:27",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.39,
+          "available_gib": 9.95,
+          "anonymous_gib": 10.82,
+          "wired_gib": 28.57,
+          "compressed_gib": 0.76,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 37
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.13,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.8,
+          "competitors": [
+            {
+              "cpu": 86.8,
+              "command": "spotlightknowled"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 7.8,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.82,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": [
+          "spotlightknowled is using 87% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+        ]
+      },
+      {
+        "at": "2026-09-06T06:37:12",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.45,
+          "available_gib": 10.39,
+          "anonymous_gib": 10.53,
+          "wired_gib": 28.39,
+          "compressed_gib": 0.8,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.16,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 1.0,
+          "competitors": [
+            {
+              "cpu": 86.7,
+              "command": "spotlightknowled"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 7.67,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.82,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": [
+          "spotlightknowled is using 87% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+        ]
+      },
+      {
+        "at": "2026-09-06T06:55:00",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 0.86,
+          "available_gib": 8.94,
+          "anonymous_gib": 10.72,
+          "wired_gib": 29.63,
+          "compressed_gib": 0.79,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 35
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.53,
+          "cores": 14,
+          "gpu_percent": 82,
+          "server_cpu": 1.0,
+          "competitors": [
+            {
+              "cpu": 86.3,
+              "command": "spotlightknowled"
+            }
+          ]
+        },
+        "largest": [
+          {
+            "gib": 7.67,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.83,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.47,
+            "command": "claude"
+          },
+          {
+            "gib": 0.43,
+            "command": "Code Helper (Renderer)"
+          }
+        ],
+        "docker": null,
+        "pressure": [
+          "spotlightknowled is using 86% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap activity, so this does not show up in any memory figure"
+        ]
+      }
+    ]
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [
+    "test/wiring.spec.ts"
+  ],
+  "files_declared": 10,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": false,
+    "repairs": 10,
+    "skipped": null,
+    "gate_scaffold_added": []
+  },
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failed": 0,
+    "passed": 2,
+    "total": 2,
+    "failing": []
+  },
+  "failures": [
+    {
+      "phase": "gate",
+      "exit": null,
+      "reason": "typecheck still failing after 2 repairs"
+    },
+    {
+      "phase": "host",
+      "exit": null,
+      "reason": "memory pressure during 5 of 12 samples: corespotlightd is using 133% CPU. Throughput was measured halving \u2014 10.5 to 4 tok/s \u2014 with memory clean and no swap acti. Throughput here is the machine's, not the model's."
+    }
+  ],
+  "phases": [
+    {
+      "label": "plan",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 1524,
+      "completion_tokens": 4818,
+      "reasoning_chars": 11835,
+      "content_chars": 8859,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 449.6,
+      "server_seconds": 449.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "01-queues.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3472,
+      "completion_tokens": 154,
+      "reasoning_chars": 376,
+      "content_chars": 164,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 41.0,
+      "server_seconds": 40.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 3.8,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "02-retry.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3632,
+      "completion_tokens": 491,
+      "reasoning_chars": 1665,
+      "content_chars": 227,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 58.0,
+      "server_seconds": 58.0,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 8.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/common/queues.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "03-retry.processor.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3639,
+      "completion_tokens": 1126,
+      "reasoning_chars": 4131,
+      "content_chars": 561,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 115.8,
+      "server_seconds": 115.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/common/queues.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "04-notifications.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3803,
+      "completion_tokens": 318,
+      "reasoning_chars": 1083,
+      "content_chars": 303,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 43.6,
+      "server_seconds": 43.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 7.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.module.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/common/queues.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "05-notifications.service.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3887,
+      "completion_tokens": 966,
+      "reasoning_chars": 3485,
+      "content_chars": 657,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 103.3,
+      "server_seconds": 103.3,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/common/queues.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.processor.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "06-users.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3466,
+      "completion_tokens": 650,
+      "reasoning_chars": 2520,
+      "content_chars": 338,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 71.1,
+      "server_seconds": 71.1,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "07-export.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3466,
+      "completion_tokens": 631,
+      "reasoning_chars": 2363,
+      "content_chars": 224,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 69.4,
+      "server_seconds": 69.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "08-app.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 4187,
+      "completion_tokens": 263,
+      "reasoning_chars": 580,
+      "content_chars": 431,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 40.6,
+      "server_seconds": 40.5,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 6.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.module.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/users/users.module.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/export/export.module.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.module.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "09-wiring.spec.ts-cases",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 4373,
+      "completion_tokens": 4060,
+      "reasoning_chars": 15624,
+      "content_chars": 3155,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 389.9,
+      "server_seconds": 389.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/common/queues.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.processor.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "09-wiring.spec.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 5205,
+      "completion_tokens": 6855,
+      "reasoning_chars": 24531,
+      "content_chars": 3926,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 672.8,
+      "server_seconds": 672.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.2,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/common/queues.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.processor.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/09-wiring.spec.ts-cases.txt"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "10-DIAGNOSIS.md",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3483,
+      "completion_tokens": 2271,
+      "reasoning_chars": 3362,
+      "content_chars": 6780,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 219.0,
+      "server_seconds": 218.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-retry.processor.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4384,
+      "completion_tokens": 3267,
+      "reasoning_chars": 11914,
+      "content_chars": 661,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 317.1,
+      "server_seconds": 317.0,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-users.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4378,
+      "completion_tokens": 1527,
+      "reasoning_chars": 5627,
+      "content_chars": 347,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 157.6,
+      "server_seconds": 157.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-export.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4378,
+      "completion_tokens": 1257,
+      "reasoning_chars": 5014,
+      "content_chars": 204,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 132.6,
+      "server_seconds": 132.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-notifications.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4384,
+      "completion_tokens": 1196,
+      "reasoning_chars": 4579,
+      "content_chars": 286,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 127.3,
+      "server_seconds": 127.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-wiring.spec.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4378,
+      "completion_tokens": 4959,
+      "reasoning_chars": 17500,
+      "content_chars": 2619,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 473.6,
+      "server_seconds": 473.5,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-app.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4375,
+      "completion_tokens": 1019,
+      "reasoning_chars": 3802,
+      "content_chars": 411,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 110.7,
+      "server_seconds": 110.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.2,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-retry.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4384,
+      "completion_tokens": 1791,
+      "reasoning_chars": 6771,
+      "content_chars": 440,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 181.7,
+      "server_seconds": 181.7,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-users.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 3568,
+      "completion_tokens": 701,
+      "reasoning_chars": 2460,
+      "content_chars": 258,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 76.4,
+      "server_seconds": 76.3,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.2,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-export.module.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 3568,
+      "completion_tokens": 1505,
+      "reasoning_chars": 5957,
+      "content_chars": 336,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 149.5,
+      "server_seconds": 149.5,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-wiring.spec.ts",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 3568,
+      "completion_tokens": 3783,
+      "reasoning_chars": 13021,
+      "content_chars": 1984,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 358.3,
+      "server_seconds": 358.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.6,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}

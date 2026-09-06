@@ -1,0 +1,92 @@
+
+===== ft-go invocation, 2026-09-06 10:33 UTC =====
+problem   15-wiring-boot-failure
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+workspace seeded from fixtures/api (21 files)
+  api-fast is the loader variant; its cycle is already broken
+
+[plan] in 1524/32768  out 4818/16384  think 11835c  450s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (8892 bytes)
+
+manifest: 10 files
+  src/common/queues.ts
+  src/retry/retry.module.ts   <- src/common/queues.ts
+  src/retry/retry.processor.ts   <- src/common/queues.ts
+  src/notifications/notifications.module.ts   <- src/retry/retry.module.ts, src/common/queues.ts
+  src/notifications/notifications.service.ts   <- src/common/queues.ts, src/retry/retry.processor.ts
+  src/users/users.module.ts   <- src/export/export.module.ts
+  src/export/export.module.ts   <- src/export/export.service.ts
+  src/app.module.ts   <- src/notifications/notifications.module.ts, src/users/users.module.ts, src/export/export.module.ts, src/retry/retry.module.ts
+  test/wiring.spec.ts   <- src/app.module.ts, src/common/queues.ts, src/notifications/notifications.service.ts, src/export/export.service.ts, src/retry/retry.processor.ts
+  DIAGNOSIS.md
+
+[01-queues.ts] in 3472/32768  out 154/16384  think 376c  41s  3.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/common/queues.ts (155 bytes)
+[02-retry.module.ts] in 3632/32768  out 491/16384  think 1665c  58s  8.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.module.ts (210 bytes)
+[03-retry.processor.ts] in 3639/32768  out 1126/16384  think 4131c  116s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.processor.ts (552 bytes)
+[04-notifications.module.ts] in 3803/32768  out 318/16384  think 1083c  44s  7.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.module.ts (286 bytes)
+[05-notifications.service.ts] in 3887/32768  out 966/16384  think 3485c  103s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.service.ts (648 bytes)
+[06-users.module.ts] in 3466/32768  out 650/16384  think 2520c  71s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/users/users.module.ts (329 bytes)
+[07-export.module.ts] in 3466/32768  out 631/16384  think 2363c  69s  9.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/export/export.module.ts (207 bytes)
+[08-app.module.ts] in 4187/32768  out 263/16384  think 580c  41s  6.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (422 bytes)
+[09-wiring.spec.ts-cases] in 4373/32768  out 4060/16384  think 15624c  390s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/steps/09-wiring.spec.ts-cases.txt (3176 bytes)
+[09-wiring.spec.ts] in 5205/32768  out 6855/16384  think 24531c  673s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/wiring.spec.ts (3913 bytes)
+[10-DIAGNOSIS.md] in 3483/32768  out 2271/16384  think 3362c  219s  10.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/DIAGNOSIS.md (6779 bytes)
+
+files written: 10/10
+
+[gate] installing dependencies
+[gate] typecheck failed (15 errors)
+[gate] repairing 7 file(s), loading 1 definition(s) read-only
+[repair1-retry.processor.ts] in 4384/32768  out 3267/16384  think 11914c  317s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/jobs/retry.processor.ts (644 bytes)
+[repair1-users.module.ts] in 4378/32768  out 1527/16384  think 5627c  158s  9.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/users/users.module.ts (338 bytes)
+[repair1-export.module.ts] in 4378/32768  out 1257/16384  think 5014c  133s  9.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/export/export.module.ts (195 bytes)
+[repair1-notifications.module.ts] in 4384/32768  out 1196/16384  think 4579c  127s  9.4 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/notifications/notifications.module.ts (277 bytes)
+[repair1-wiring.spec.ts] in 4378/32768  out 4959/16384  think 17500c  474s  10.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/wiring.spec.ts (2602 bytes)
+[repair1-app.module.ts] in 4375/32768  out 1019/16384  think 3802c  111s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/app.module.ts (402 bytes)
+[repair1-retry.module.ts] in 4384/32768  out 1791/16384  think 6771c  182s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/retry/retry.module.ts (431 bytes)
+[gate] typecheck failed (4 errors)
+[gate] repairing 3 file(s)
+[repair2-users.module.ts] in 3568/32768  out 701/16384  think 2460c  76s  9.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/users/users.module.ts (249 bytes)
+[repair2-export.module.ts] in 3568/32768  out 1505/16384  think 5957c  150s  10.1 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/src/export/export.module.ts (327 bytes)
+[repair2-wiring.spec.ts] in 3568/32768  out 3783/16384  think 13021c  358s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/test/wiring.spec.ts (1975 bytes)
+[gate] typecheck failed (4 errors)
+[tests] 2 of 2 passing
+[gate] cleaned install artifacts from the workspace
+
+wall 73.6 min   requests 22   in 85502   out 43608   10.0 tok/s
+generation 72.6 min   model loads 0s   gate+io 1.0 min
+REVISED x10 by the model itself — not a pass; read this run first
+HOST UNDER PRESSURE in 5/12 samples — throughput here is not comparable
+
+failures (2):
+  gate: typecheck still failing after 2 repairs
+  host: memory pressure during 5 of 12 samples: corespotlightd is using 133% CPU. Throughput was measured halving — 10.5 to 4 tok/s — with memory clean and no swap acti. Throughput here is the machine's, not the model's.
+
+artifacts in problems/15-wiring-boot-failure/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

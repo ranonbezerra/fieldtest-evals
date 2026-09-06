@@ -21,3 +21,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-05 08:58 | 11-behavior-preserving-refactor | a | **2 failure(s)**: typecheck still failing after 2 repairs | 63.8 min | 38725 | 10.2 | 8 | 6/6 | no |
 | 2026-09-06 08:07 | 13-legacy-characterization-tests | a | **1 failure(s)**: test file overflowed at reasoning_effort=low, the lowest set | 61.9 min | 38745 | 10.5 | 0 | 2/2 | yes |
 | 2026-09-06 09:19 | 14-code-review-planted-bugs | a | **1 failure(s)**: typecheck still failing after 2 repairs | 72.3 min | 46030 | 10.7 | 4 | 1/1 | yes |
+| 2026-09-06 10:33 | 15-wiring-boot-failure | a | **2 failure(s)**: typecheck still failing after 2 repairs | 73.6 min | 43608 | 10.0 | 10 | 10/10 | no |

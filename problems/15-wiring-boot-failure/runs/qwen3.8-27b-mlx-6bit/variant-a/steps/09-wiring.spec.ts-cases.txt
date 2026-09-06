@@ -1,0 +1,15 @@
+- compiles the full AppModule DI graph — every provider in every module is resolvable within its own scope and across import boundaries; fails if any `@Inject`/constructor param has no matching provider in the module or its direct imports, if a module missing from `AppModule.imports` leaves a service unregistered, or if a file-level circular import (the original `QUEUES` TDZ) makes a module class `undefined` at decorator-evaluation time
+
+- resolves NotificationsService from the compiled root module — proves the specific provider named in the original stack trace is constructible end-to-end under its own class token; fails if `NotificationsService` is absent from `NotificationsModule.providers`, if it is registered under a custom string token instead of the class, or if `NotificationsModule` is dropped from `AppModule.imports`
+
+- UsersModule in isolation injects ExportService — proves the `UsersModule → ExportModule` boundary is correct on both sides (users imports export, export exports the service); fails if `ExportModule` is missing from `UsersModule.imports`, if `ExportService` is absent from `ExportModule.exports`, or if `ExportService` is not in `ExportModule.providers`; testing the module in isolation (not through AppModule) rules out a transitive path masking a missing direct import
+
+- NotificationsModule in isolation injects RetryProcessor — proves the `NotificationsModule → RetryModule` boundary is correct on both sides; fails if `RetryModule` is missing from `NotificationsModule.imports`, if `RetryProcessor` is absent from `RetryModule.exports`, or if it is not in `RetryModule.providers`; same isolation rationale as above
+
+- QUEUES is a structural leaf with zero feature imports — importing `src/common/queues.ts` pulls in no module, service, or processor file; fails if `QUEUES` is re-homed into a feature file (e.g. `retry.processor.ts`) that transitively imports another feature, re-introducing the cycle that caused the original `ReferenceError`; also fails if `queues.ts` itself gains an import from under `src/`
+
+- each cross-module service is a singleton in the full graph — `module.get(ExportService) === module.get(ExportService)` and the instance identity matches across scopes; fails if `ExportService` (or `RetryProcessor`) is accidentally listed in the `providers` of two modules that are both loaded, creating two independent instances that would silently diverge at runtime
+
+- resolved services are the real classes, not `useValue`/`useClass` substitutes — `module.get(NotificationsService) instanceof NotificationsService`; fails if a provider was swapped for a stub object or a different class to silence a DI error, which is the constraint the task explicitly forbids but which `compile()` alone cannot detect (a stub satisfies the token and compiles cleanly)
+
+Deliberately not testing: HTTP request handling, business-logic return values, Prisma query execution, queue-broker dispatch, or concurrent/duplicate-delivery behaviour — these are outside the wiring contract; the check proves the object graph is *constructible and correctly scoped*, nothing about what the objects *do* once constructed.
