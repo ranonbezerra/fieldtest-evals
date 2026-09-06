@@ -310,6 +310,54 @@ throughput implied.
 first byte arriving — rather than inferring it from two numbers that measure different
 spans.
 
+### 2.6 The server caches prompt prefixes, and the prefill curve on record was measuring that
+
+Two measurements, both against the live server, model flushed first.
+
+**Prefix caching, with a control.** A ~30k-token prefix sent cold, sent again, then a
+*different* prefix of the same size, then the first again:
+
+| request | prompt tokens | seconds |
+|---|--:|--:|
+| prefix A, cold | 30,385 | **259.0** |
+| prefix A again | 30,385 | **20.5** |
+| prefix B, same size | 30,399 | **258.0** |
+| prefix A, third time | 30,385 | **20.3** |
+
+The control is what makes it a finding. A repeated prefix costs 8% of cold; a different
+prefix of the same size costs full price. That is not the model being warm — it is KV
+reuse on the shared prefix, and `ft-flush` exists because the server accumulates it.
+
+**Uncached prefill is linear at ~120 tok/s.** Three sizes, a fresh random prefix each
+time so nothing can hit the cache:
+
+| prompt tokens | seconds | rate |
+|--:|--:|--:|
+| 3,134 | 25.1 | 125 tok/s |
+| 9,178 | 71.6 | 128 tok/s |
+| 30,287 | 262.8 | 115 tok/s |
+
+*What this corrects.* `harness/README.md` justified the 32,768-token window with a
+staged probe reading `9,117 → 17.5s`, `36,417 → 17.4s`, `~72,000 → 341.4s`, and
+concluded that 32,768 sat "inside the flat part of that curve". At 120 tok/s, 9,117
+tokens take 76 seconds, not 17.5. **The flat part was the cache.** That probe reused
+its prefix between stages, so every stage after the first was a cache hit, and the
+"20× the time for 2× the tokens" cliff at 72k was simply the first measurement large
+enough to miss.
+
+The window stays at 32,768 — nothing in this harness sends more than a few thousand
+tokens — but the reason on record was wrong, and it was wrong in the direction that
+makes a larger window look cheap.
+
+*What it opens.* An agentic loop was ruled out in §3.1 on the grounds that context
+growth is unaffordable. With prefix caching that arithmetic changes: a turn that
+appends to an unchanged conversation pays prefill on the **new** tokens only, at 120
+tok/s, and not on the history. What still costs full price is any turn that edits
+earlier context — a summarisation, a dropped file, a reordering — which invalidates the
+prefix and re-prefills everything. Whether a given agentic tool does that constantly or
+rarely is the question that decides whether the loop is affordable here, and it is
+answerable with `ft-aider`, which already exists.
+
 ## 3. The harness
 
 ### 3.1 An agentic loop cannot be used, and neither can a single request

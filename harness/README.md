@@ -66,19 +66,26 @@ server's own guard agrees — refusing a ~144k-token prompt it priced at
 `KV+SDPA 10.64 GB` against a `metal_cap` of `35.57 GB`, where the arithmetic above
 predicts 9.44 GB of KV plus workspace.
 
-**Time, which binds first.** A staged prefill probe against the live server:
+**Time, which binds first.** Prefill runs at a roughly constant rate, measured with a
+fresh random prefix each time so nothing can be served from cache:
 
-| prompt tokens | seconds | |
-|--:|--:|---|
-| 9,117 | 17.5 | |
-| 36,417 | 17.4 | |
-| ~72,000 | 341.4 | 20× the time for 2× the tokens |
-| ~144,000 | — | refused by the memory guard |
+| prompt tokens | seconds | rate |
+|--:|--:|--:|
+| 3,134 | 25.1 | 125 tok/s |
+| 9,178 | 71.6 | 128 tok/s |
+| 30,287 | 262.8 | 115 tok/s |
 
-Between 36k and 72k the prefill stops being roughly free and starts costing minutes.
-Nothing here needs a window that large: every phase is one file with its declared
-dependencies, and the largest is a few thousand tokens. **32,768 sits inside the flat
-part of that curve with the memory limit far away.**
+**~120 tokens per second, linear.** A full 32,768-token prompt would cost about four
+and a half minutes before the first output token. Every phase in this harness sends a
+few thousand tokens, so 25–70 seconds, which is what the run telemetry shows.
+
+*Correcting an earlier version of this file.* It reported a staged probe as
+`9,117 → 17.5s` and `36,417 → 17.4s` — the same time for four times the tokens — and
+concluded there was a flat region that 32,768 sat inside. There is no flat region. That
+probe reused its prefix between stages and was measuring **prefix cache hits**: the
+server keeps KV across requests, and a repeated prefix returns in about 8% of the cold
+time. See FINDINGS §2.6. The window is still 32,768, and the honest reason is that
+nothing here needs more, not that more would have been free.
 
 Two consequences worth stating plainly:
 
