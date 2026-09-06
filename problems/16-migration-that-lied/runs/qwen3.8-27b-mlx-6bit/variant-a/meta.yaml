@@ -1,0 +1,573 @@
+{
+  "model": "Qwen3.8-27B-MLX-6bit",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "16-migration-that-lied",
+  "variant": "variant-a",
+  "date": "2026-09-06T10:56:33+00:00",
+  "wall_seconds": 993,
+  "wall_minutes": 16.5,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": 16384,
+    "context_window": 32768,
+    "reasoning": {
+      "effort": "medium",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "runner": "api",
+  "spec_source": "model",
+  "manifest": {
+    "declared": 4,
+    "built": 4,
+    "truncated": false
+  },
+  "requests": 5,
+  "resumed": false,
+  "requests_this_invocation": 5,
+  "tokens": {
+    "prompt_total": 13879,
+    "completion_total": 9906,
+    "completion_this_invocation": 9906,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 10.2,
+    "output_tokens_per_second_overall": 10.3,
+    "generation_seconds": 966,
+    "model_load_seconds": 0,
+    "overhead_seconds": 27
+  },
+  "revisions": {
+    "self_repairs": 0,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 6,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": 37.44,
+    "ceiling_gib_max": 37.44,
+    "swap_used_gib_max": 2.94,
+    "free_percent_min": 37,
+    "trace": [
+      {
+        "at": "2026-09-06T07:39:56",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.58,
+          "available_gib": 23.05,
+          "anonymous_gib": 34.74,
+          "wired_gib": 3.27,
+          "compressed_gib": 0.79,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 91
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.4,
+          "cores": 14,
+          "gpu_percent": 1,
+          "server_cpu": 0.9,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.87,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.45,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T07:40:00",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.58,
+          "available_gib": 23.04,
+          "anonymous_gib": 34.73,
+          "wired_gib": 3.27,
+          "compressed_gib": 0.79,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 91
+        },
+        "swap_rate": {
+          "swapins_per_sec": 3.7,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.53,
+          "cores": 14,
+          "gpu_percent": 0,
+          "server_cpu": 1.5,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.87,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.45,
+            "command": "claude"
+          },
+          {
+            "gib": 0.44,
+            "command": "Code Helper (Plugin)"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T07:44:18",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.72,
+          "available_gib": 10.16,
+          "anonymous_gib": 10.6,
+          "wired_gib": 28.33,
+          "compressed_gib": 0.79,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.2,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.87,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.45,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.45,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T07:49:50",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.67,
+          "available_gib": 9.73,
+          "anonymous_gib": 10.38,
+          "wired_gib": 28.91,
+          "compressed_gib": 0.79,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 37
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.28,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.87,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.46,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.45,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T07:52:26",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 1.86,
+          "available_gib": 10.04,
+          "anonymous_gib": 10.41,
+          "wired_gib": 28.46,
+          "compressed_gib": 0.79,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 0.0,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 1.86,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 1.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.88,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.46,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.45,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      },
+      {
+        "at": "2026-09-06T07:54:53",
+        "memory": {
+          "total_gib": 48.0,
+          "free_gib": 2.03,
+          "available_gib": 10.29,
+          "anonymous_gib": 10.45,
+          "wired_gib": 28.22,
+          "compressed_gib": 0.79,
+          "swap_used_gib": 2.94,
+          "swap_total_gib": 4.0,
+          "free_percent": 38
+        },
+        "swap_rate": {
+          "swapins_per_sec": 1.3,
+          "swapouts_per_sec": 0.0
+        },
+        "server": {
+          "reachable": true,
+          "loaded": true,
+          "ceiling_gib": 37.44,
+          "resident_gib": 22.27,
+          "headroom_gib": 15.17
+        },
+        "contention": {
+          "load1": 2.66,
+          "cores": 14,
+          "gpu_percent": 99,
+          "server_cpu": 0.0,
+          "competitors": []
+        },
+        "largest": [
+          {
+            "gib": 7.6,
+            "command": "omlx-server"
+          },
+          {
+            "gib": 0.88,
+            "command": "node"
+          },
+          {
+            "gib": 0.53,
+            "command": "Python"
+          },
+          {
+            "gib": 0.46,
+            "command": "Code Helper (Plugin)"
+          },
+          {
+            "gib": 0.45,
+            "command": "claude"
+          }
+        ],
+        "docker": null,
+        "pressure": []
+      }
+    ]
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 4,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": false,
+    "repairs": 0,
+    "skipped": null,
+    "gate_scaffold_added": [
+      "tsconfig.json"
+    ]
+  },
+  "tests": {
+    "ran": false
+  },
+  "failures": [
+    {
+      "phase": "gate",
+      "exit": null,
+      "reason": "typecheck still failing after 2 repairs"
+    }
+  ],
+  "phases": [
+    {
+      "label": "plan",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 1442,
+      "completion_tokens": 2649,
+      "reasoning_chars": 3398,
+      "content_chars": 7330,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 253.2,
+      "server_seconds": 253.1,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.5,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/variants/variant-a.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "01-RUNBOOK.md",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3101,
+      "completion_tokens": 3327,
+      "reasoning_chars": 8670,
+      "content_chars": 5473,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 327.3,
+      "server_seconds": 327.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.2,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "02-verify.sh",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3109,
+      "completion_tokens": 1557,
+      "reasoning_chars": 4479,
+      "content_chars": 1076,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 151.0,
+      "server_seconds": 151.0,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "03-00NN_fix_document_embeddings.sql",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3111,
+      "completion_tokens": 1467,
+      "reasoning_chars": 5531,
+      "content_chars": 636,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 143.0,
+      "server_seconds": 142.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.3,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "04-00NN_fix_search_key_backfill.sql",
+      "model": "Qwen3.8-27B-MLX-6bit",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": 16384,
+      "context_window": 32768,
+      "thinking": true,
+      "reasoning_effort": "medium",
+      "prompt_tokens": 3116,
+      "completion_tokens": 906,
+      "reasoning_chars": 3539,
+      "content_chars": 253,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 91.5,
+      "server_seconds": 91.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 9.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}

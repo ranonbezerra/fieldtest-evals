@@ -1,0 +1,45 @@
+
+===== ft-go invocation, 2026-09-06 10:56 UTC =====
+problem   16-migration-that-lied
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+workspace seeded from fixtures/service (13 files)
+  needs Docker. Start it for this problem and shut it down afterwards
+
+[plan] in 1442/32768  out 2649/16384  think 3398c  253s  10.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (7365 bytes)
+
+manifest: 4 files
+  RUNBOOK.md
+  scripts/verify.sh
+  migrations/00NN_fix_document_embeddings.sql
+  migrations/00NN_fix_search_key_backfill.sql
+
+[01-RUNBOOK.md] in 3101/32768  out 3327/16384  think 8670c  327s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/RUNBOOK.md (5476 bytes)
+[02-verify.sh] in 3109/32768  out 1557/16384  think 4479c  151s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/scripts/verify.sh (1065 bytes)
+[03-00NN_fix_document_embeddings.sql] in 3111/32768  out 1467/16384  think 5531c  143s  10.3 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/migrations/00NN_fix_document_embeddings.sql (626 bytes)
+[04-00NN_fix_search_key_backfill.sql] in 3116/32768  out 906/16384  think 3539c  91s  9.9 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/migrations/00NN_fix_search_key_backfill.sql (243 bytes)
+
+files written: 4/4
+[gate] supplied by the harness, not the model: tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (1 errors)
+[gate] cleaned install artifacts from the workspace
+
+wall 16.5 min   requests 5   in 13879   out 9906   10.3 tok/s
+generation 16.1 min   model loads 0s   gate+io 0.5 min
+
+failures (1):
+  gate: typecheck still failing after 2 repairs
+
+artifacts in problems/16-migration-that-lied/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md
