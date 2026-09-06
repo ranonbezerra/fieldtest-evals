@@ -249,6 +249,53 @@ Both discards are documented in [`FINDINGS.md`](FINDINGS.md) §0 rather than del
 five runs at the wrong temperature, and three where the planning phase overflowed its
 ceiling and the harness silently fell back to a lower reasoning effort.
 
+### What running it locally costs
+
+Every run's own telemetry, and beside it what the same tokens would have cost through
+OpenRouter's hosted `qwen/qwen3.8-27b` at $0.42 in / $3.00 out per million.
+
+| # | problem | hours | reqs | in | out | hosted |
+|---|---|--:|--:|--:|--:|--:|
+| 16 | migration that lied | 0.3 | 5 | 13,879 | 9,906 | $0.04 |
+| 08 | infra debug | 0.4 | 6 | 23,259 | 15,955 | $0.06 |
+| 13 | legacy characterization tests | 1.0 | 5 | 16,364 | 38,745 | $0.12 |
+| 11 | behavior-preserving refactor | 1.1 | 16 | 58,046 | 38,725 | $0.14 |
+| 14 | code review, planted bugs | 1.2 | 6 | 15,085 | 46,030 | $0.14 |
+| 15 | wiring boot failure | 1.2 | 22 | 85,502 | 43,608 | $0.17 |
+| 10 | adapt existing screen | 1.7 | 13 | 56,974 | 62,359 | $0.21 |
+| 02 | reconciliation resend | 1.7 | 14 | 74,946 | 58,593 | $0.21 |
+| 17 | token rotation reuse | 1.8 | 12 | 62,740 | 66,782 | $0.23 |
+| 04 | grounded llm product | 2.4 | 18 | 83,246 | 82,510 | $0.28 |
+| 09 | feature in conventions | 2.8 | 27 | 162,227 | 100,074 | $0.37 |
+| 18 | timing-equal enumeration | 2.9 | 23 | 109,414 | 104,232 | $0.36 |
+| 05 | on-chain anchoring | 2.9 | 25 | 149,748 | 100,054 | $0.36 |
+| 01 | payout outbox | 3.1 | 25 | 173,279 | 110,036 | $0.40 |
+| 06 | multi-tenant isolation | 4.8 | 51 | 323,765 | 163,945 | $0.63 |
+| 07 | ingredient classification | 6.3 | 69 | 431,433 | 218,160 | $0.84 |
+| 03 | read model projection | 7.7 | 54 | 353,270 | 269,975 | $0.96 |
+| | **total** | **43.2** | **391** | **2,193,177** | **1,529,689** | **$5.51** |
+
+**43.2 hours of machine against $5.51.** Those hours are generation only — wall-clock
+was longer, with the gate, `pnpm install`, and waiting for memory to free up. The mean
+problem is two and a half hours and thirty-two cents.
+
+Three things this table says that the pass/fail column does not.
+
+**Cost is a symptom, not an investment.** The two cheapest runs, problems 16 and 08,
+are the two best in the campaign. The most expensive, problem 03, failed four of its
+six must-haves. What drives cost is the repair loop, and the repair loop only runs
+when something is already wrong.
+
+**The scarce resource is the machine, not the model.** A 22 GiB model on a 48 GB
+laptop means the machine is unusable for anything heavy while a run is going, and runs
+go for hours. Half the harness — `ft-vitals`, `ft-flush`, the pressure gate, the
+margin arithmetic — exists to manage that and nothing else.
+
+**The hosted figure is a floor, not a quote.** It assumes the same token counts. A
+hosted model with a 131,072-token output ceiling instead of this server's 16,384 may
+spend far more per phase, and output pricing includes reasoning tokens. Held at the
+same ceiling the estimate is close; uncapped it could triple.
+
 ### About the machine and the instruments
 
 | | Finding | What it changed |
