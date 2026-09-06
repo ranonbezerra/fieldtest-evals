@@ -404,8 +404,15 @@ def main():
             say(f"files written: {len(written)}")
             manifest_declared = len(written)
             manifest = []
+            # There is no manifest to scope the gate by, and there does not need to
+            # be: in this shape the model wrote the whole workspace, so everything
+            # in it is its own work and its own responsibility.
+            declared = {str(q.relative_to(ws)) for q in written}
+            empty = [q for q in written if q.stat().st_size == 0]
         else:
             manifest_declared = 0
+            declared = set()
+            empty = []
 
         # Everything from here to the gate is the phased shape: a plan, then a
         # file per request. `--shape single` has already written the workspace
@@ -693,7 +700,8 @@ def main():
             # `workspace.json` says "review only … never edits these". Counting
             # those as gate inputs made the typecheck fail on planted bugs and the
             # repair loop rewrite the code under review.
-            declared = {str(it["path"]) for it in manifest}
+            if manifest:
+                declared = {str(it["path"]) for it in manifest}
             sources = [q for q in ws.rglob("*.ts")
                        if "node_modules" not in q.parts and q.name != "tsconfig.json"
                        and str(q.relative_to(ws)) in declared]
@@ -798,7 +806,14 @@ def main():
                     for name in tests["failing"][:5]:
                         say(f"         {name}")
                 else:
+                elif tests.get("total"):
                     say(f"[tests] {tests.get('passed')} of {tests.get('total')} passing")
+                else:
+                    # A suite that neither passed nor failed did not run to a summary
+                    # — it failed to load. Saying "None of None passing" reads as a
+                    # result; it is the absence of one.
+                    say(f"[tests] the suite did not run to a summary (exit "
+                        f"{tests.get('exit')}); see GATE.md")
             elif specs:
                 say("[tests] a suite exists but dependencies were not installed; "
                     "not run")

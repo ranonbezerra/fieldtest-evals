@@ -132,8 +132,9 @@ def wait_for_host():
         waited += SETTLE_POLL_S
 
 
-def already_done(prob, vslug, slug):
-    ws = prob / "runs" / slug / vslug / "workspace"
+def already_done(prob, vslug, slug, shape="phased"):
+    rslug = vslug if shape == "phased" else f"{vslug}-{shape}"
+    ws = prob / "runs" / slug / rslug / "workspace"
     return ws.is_dir() and any(f for f in ws.rglob("*") if f.is_file())
 
 
@@ -213,9 +214,16 @@ def commit(prob, vslug, rc):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variants", default="a")
+    ap.add_argument("--shape", choices=["phased", "single"], default="phased",
+                    help="passed through to ft-go; `single` sends each problem in "
+                         "one request and writes to variant-<v>-single")
     ap.add_argument("--problems", default="")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--max-hours", type=float, default=0, help="0 means no limit")
+    ap.add_argument("--max-spend", type=float, default=0, metavar="USD",
+                    help="stop before the run that would take spend past this. "
+                         "Measured against the provider's own accounting, not an "
+                         "estimate. 0 means no limit.")
     a = ap.parse_args()
 
     model = os.environ.get("OMLX_MODEL", "unknown").removeprefix("openai/")
@@ -227,7 +235,7 @@ def main():
 
     queue = [(p, f"variant-{v.strip()}") for v in a.variants.split(",")
              for p in problems if (p / "variants" / f"variant-{v.strip()}.md").is_file()]
-    todo = [(p, v) for p, v in queue if not already_done(p, v, slug)]
+    todo = [(p, v) for p, v in queue if not already_done(p, v, slug, a.shape)]
 
     say(f"model {model}")
     say(f"queue {len(queue)} run(s), {len(queue) - len(todo)} already done, {len(todo)} to run")
@@ -239,10 +247,43 @@ def main():
 
     started = time.time()
     done = 0
+
+    # The spend ceiling is read from the provider's own books, not from summing our
+    # per-request numbers: what is billed is what counts, and a run that fails
+    # halfway still spent what it spent.
+    def spent_usd():
+        rc, out = sh([str(HARNESS / "ft-budget"), "--json"], timeout=60)
+        if rc != 0:
+            return None
+        try:
+            return json.loads(out).get("usage_usd")
+        except json.JSONDecodeError:
+            return None
+
+    spend_at_start = spent_usd() if a.max_spend else None
+    if a.max_spend and spend_at_start is None:
+        say("--max-spend was given and the provider's usage could not be read; "
+            "refusing to start rather than run without the ceiling")
+        return 1
+    if a.max_spend:
+        say(f"spend ceiling ${a.max_spend:.2f}; the key has used "
+            f"${spend_at_start:.2f} so far, and that is the zero mark")
     for prob, vslug in todo:
         if a.max_hours and (time.time() - started) / 3600 > a.max_hours:
             say(f"reached --max-hours {a.max_hours}; stopping cleanly")
             break
+
+        if a.max_spend:
+            now = spent_usd()
+            if now is None:
+                say("cannot read spend; stopping rather than running blind")
+                break
+            used = now - spend_at_start
+            if used >= a.max_spend:
+                say(f"spent ${used:.2f} of the ${a.max_spend:.2f} ceiling; "
+                    f"stopping before the next run")
+                break
+            say(f"spent ${used:.2f} of ${a.max_spend:.2f}")
 
         say("")
         say(f"=== {prob.name} {vslug}  ({done + 1}/{len(todo)}) ===")
@@ -258,6 +299,8 @@ def main():
             sh([str(HARNESS / "ft-flush"), "--if-above", "26"], timeout=300)
 
         cmd = [str(HARNESS / "ft-go"), prob.name, vslug[-1]]
+        if a.shape != "phased":
+            cmd += ["--shape", a.shape]
         if state == "ignore":
             cmd.append("--ignore-pressure")
         # Tee to a file as well: if this orchestrator is killed mid-run, the child
