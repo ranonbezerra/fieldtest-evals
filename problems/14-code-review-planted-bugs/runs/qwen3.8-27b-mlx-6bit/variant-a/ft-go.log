@@ -1,0 +1,49 @@
+
+===== ft-go invocation, 2026-09-06 09:19 UTC =====
+problem   14-code-review-planted-bugs
+variant   variant-a
+model     Qwen3.8-27B-MLX-6bit
+runner    api
+spec      model
+run dir   problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a
+
+workspace seeded from fixtures/transfers (3 files)
+  review only — the run produces REVIEW.md, never edits these
+
+[plan] in 1473/32768  out 1584/16384  think 2421c  155s  10.2 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a/PLAN.md (4485 bytes)
+
+manifest: 1 files
+  REVIEW.md   <- fixtures/transfers/transfers.service.ts, fixtures/transfers/accounts.repository.ts, fixtures/transfers/serializer.ts
+
+[01-REVIEW.md] in 2329/32768  out 4454/16384  think 10477c  423s  10.5 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/REVIEW.md (8827 bytes)
+
+files written: 1/1
+[gate] supplied by the harness, not the model: package.json, tsconfig.json
+
+[gate] installing dependencies
+[gate] typecheck failed (12 errors)
+[gate] repairing 2 file(s)
+[repair1-transfers.service.ts] in 2698/32768  out 13814/16384  think 42401c  1304s  10.6 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/transfers.service.ts (5733 bytes)
+[repair1-accounts.repository.ts] in 2695/32768  out 10137/16384  think 34287c  939s  10.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/accounts.repository.ts (2177 bytes)
+[gate] typecheck failed (9 errors)
+[gate] repairing 2 file(s), loading 1 definition(s) read-only
+[repair2-transfers.service.ts] in 3291/32768  out 12663/16384  think 45556c  1184s  10.7 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/transfers.service.ts (5674 bytes)
+[repair2-accounts.repository.ts] in 2599/32768  out 3378/16384  think 12440c  312s  10.8 tok/s  stop
+         wrote /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a/workspace/accounts.repository.ts (923 bytes)
+[gate] typecheck failed (3 errors)
+[gate] cleaned install artifacts from the workspace
+
+wall 72.3 min   requests 6   in 15085   out 46030   10.7 tok/s
+generation 72.0 min   model loads 0s   gate+io 0.3 min
+REVISED x4 by the model itself — not a pass; read this run first
+
+failures (1):
+  gate: typecheck still failing after 2 repairs
+
+artifacts in problems/14-code-review-planted-bugs/runs/qwen3.8-27b-mlx-6bit/variant-a
+next: run the variant's own tests, then judge with harness/judge-prompt.md

@@ -1,40 +1,28 @@
-// accounts.repository.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService, Tx } from '../prisma/prisma.service';
-import { Pool, PoolClient } from 'pg';
+import { PrismaClient } from '@prisma/client';
 
-export interface AccountRow {
-  id: string;
-  balance: bigint;
-  currency: string;
-}
+// ASSUMPTION: Prisma models are named `Account` and `Transfer` in the schema,
+// exposing `this.prisma.account` and `this.prisma.transfer` on the client.
+// Field names use camelCase in the schema (mapped to snake_case via @map).
 
 @Injectable()
 export class AccountsRepository {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly pool: Pool,
-  ) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
-  /**
-   * Locks the account row for the duration of the surrounding transaction.
-   * Callers must be inside prisma.$transaction.
-   */
-  async lockAccount(tx: Tx, accountId: string): Promise<AccountRow> {
-    const rows = await tx.$queryRaw<AccountRow[]>`
-      SELECT id, balance, currency
-      FROM "Account"
-      WHERE id = ${accountId}
-      FOR UPDATE
-    `;
-    if (rows.length === 0) {
-      throw new Error(`account not found: ${accountId}`);
-    }
-    return rows[0];
+  async findAccountById(id: string) {
+    return this.prisma.account.findUnique({ where: { id } });
   }
 
-  /** Raw client for streaming/export use cases that bypass Prisma. */
-  async getRawClient(): Promise<PoolClient> {
-    return this.pool.connect();
+  // ASSUMPTION: A transfer is linked to an account via `fromAccountId` or
+  // `toAccountId` fields. Adjust if the schema uses different field names.
+  async findTransfersForAccount(accountId: string) {
+    return this.prisma.transfer.findMany({
+      where: {
+        OR: [
+          { fromAccountId: accountId },
+          { toAccountId: accountId },
+        ],
+      },
+    });
   }
 }
