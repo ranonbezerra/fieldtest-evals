@@ -349,30 +349,52 @@ That is a second dimension of the matrix rather than a patch to this one, and it
 one variant rather than eighteen. It is the single most decision-relevant thing this
 campaign could do next.
 
-## 9. Run the same model hosted, before running a different one
+## 9. Separate quantization from the ceiling, in that order
 
-`qwen/qwen3.8-27b` is on OpenRouter: **the same weights this campaign measured
-locally at 6-bit**, served with a 131,072-token output ceiling against our 16,384 and
-a 1M context against our 32,768.
+The campaign's open question — is *"builds beside instead of changing"* (§1.6) the
+model or this harness's shape? — is confounded three ways: 6-bit quantization, a
+16,384-token output ceiling, and the one-file-per-request design that exists because
+of that ceiling. Two runs separate them, and the order matters.
 
-That is a better first hosted run than any frontier model, because it separates three
-things this campaign could not:
+### 9a. The same model at 8-bit, locally — but the margin is thin
 
-- **quantization** — 6-bit MLX here against whatever precision the provider serves
-- **the output ceiling** — every phase design decision in §1.1 and §3.1 follows from
-  16,384, and 131,072 removes the constraint entirely
-- **the phase shape** — one file per request exists *because* of the ceiling; with
-  room to spare, the same problem can be posed as one request
+An 8-bit MLX build exists ([mlx-community](https://huggingface.co/mlx-community/Qwen3.8-27B-8bit),
+[lmstudio-community](https://huggingface.co/lmstudio-community/Qwen3.8-27B-MLX-8bit)),
+quantized group-size 64 affine like ours, at **8.501 effective bits per weight**.
 
-The campaign's central open question is whether *"builds beside instead of changing"*
-(§1.6) is the model or this harness's shape. Running the same model without the
-ceiling answers it directly: if the boundary failures disappear, they were ours.
+| | weights | `MODEL_NEEDS_GIB` | guard wants available |
+|---|--:|--:|--:|
+| 6-bit, measured | 22.27 GiB | 25.3 | 31.3 |
+| 8-bit | **27.47 GiB** | ~30.5 | **~36.5** |
+| BF16 | 50.3 GiB | — | does not fit under a 37.44 ceiling |
 
-Two runs settle it — one at our ceiling to confirm the hosted setup reproduces what we
-measured, one uncapped to see what the constraint was costing. Compare against
-`problems/10` and `problems/11`, where the failure is cleanest.
+The best this machine has shown after `ft-flush` with the browser closed is **36.0 GiB
+available**. So 8-bit lands on the line or a little under, and the server's ceiling is
+not a constant — 37.44, 36.48 and 32.36 GiB were all observed in one session. At
+32.36, a 30.5 GiB model leaves 1.9 GiB, which is where §2.2 says the server stops
+answering rather than slowing down.
 
-*Cost, for planning:* $0.42 per million in, $3.00 per million out. This campaign spent
-1,529,689 output tokens across seventeen problems, so a full hosted pass at those rates
-is roughly **$5**, plus input. The comparison is cheap; the machine time was the
-expensive part all along.
+**Runnable, fragile.** It would want an idle machine, and a forty-hour campaign at that
+margin would lose runs. Worth one or two problems to see whether 6-bit was costing
+anything, not a full pass.
+
+### 9b. The same model hosted, with the ceiling removed
+
+`qwen/qwen3.8-27b` is on OpenRouter with a 131,072-token output ceiling against our
+16,384 and a 1M context against our 32,768.
+
+**One caveat, stated because it changes what the run proves:** the precision the
+provider serves is not published. At $0.42/$3.00 per million it is mid-tier — neither
+aggressive FP8 pricing nor dedicated BF16. So a hosted run mixes an unknown precision
+with a removed ceiling, which is exactly why 9a comes first: fix what quantization
+costs locally, and whatever the hosted run shows beyond that is the ceiling and the
+phase design.
+
+Two hosted runs settle it — one capped at 16,384 to confirm the setup reproduces what
+we measured, one uncapped to see what the constraint was costing. Compare against
+problems 10 and 11, where the boundary failure is cleanest.
+
+*Cost:* this campaign spent 1,529,689 output tokens over seventeen problems. At $3.00
+per million that is about **$5** for a full hosted pass, plus input. The machine time
+was always the expensive part.
+
