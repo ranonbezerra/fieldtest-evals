@@ -626,8 +626,16 @@ def main():
             # inputs were found" — which was recorded as a failed gate. README has
             # always named the exception in prose; this implements it. A gate that
             # cannot apply is skipped, not failed.
+            # What the gate judges is what the model was asked to produce. A
+            # workspace seeded from a fixture is full of TypeScript the model never
+            # wrote and, in problem 14, is explicitly forbidden from touching —
+            # `workspace.json` says "review only … never edits these". Counting
+            # those as gate inputs made the typecheck fail on planted bugs and the
+            # repair loop rewrite the code under review.
+            declared = {str(it["path"]) for it in manifest}
             sources = [q for q in ws.rglob("*.ts")
-                       if "node_modules" not in q.parts and q.name != "tsconfig.json"]
+                       if "node_modules" not in q.parts and q.name != "tsconfig.json"
+                       and str(q.relative_to(ws)) in declared]
             if (ws / "tsconfig.json").exists() and not sources:
                 say("\n[gate] the workspace has no TypeScript; typecheck does not "
                     "apply to this deliverable and is skipped")
@@ -647,7 +655,13 @@ def main():
                         gate["passed"] = False
                         break
                     bad = {Path(m.group("file").strip()) for m in TS_ERR.finditer(out)}
-                    bad = [ws / b for b in bad if (ws / b).is_file()]
+                    # Only what the manifest declared. Everything else in the
+                    # workspace came from a fixture, and repairing it means editing
+                    # code the model was not asked to write — and in problem 14, was
+                    # told not to. Problem 11 is unaffected: the files it edits on
+                    # purpose are in its manifest.
+                    bad = [ws / b for b in bad
+                           if (ws / b).is_file() and str(b) in declared]
                     if not bad:
                         gate["passed"] = False
                         break

@@ -2,7 +2,7 @@
   "model": "Qwen3.8-27B-MLX-6bit",
   "model_repo": "Qwen/Qwen3.8-27B",
   "quantization": "6-bit MLX, group_size 64, affine",
-  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "architecture": "64 layers, hidden 5120 — 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
   "modality": "natively multimodal; text path only",
   "server": "oMLX",
   "harness": "fieldtest ft-go",
@@ -243,25 +243,20 @@
   "files_declared": 1,
   "files_empty": [],
   "gate": {
-    "ran": true,
-    "passed": false,
-    "repairs": 4,
-    "skipped": null,
+    "ran": false,
+    "passed": null,
+    "repairs": 0,
+    "skipped": "no manifest-declared TypeScript — the deliverable is REVIEW.md",
     "gate_scaffold_added": [
       "package.json",
       "tsconfig.json"
-    ]
+    ],
+    "note": "Originally passed:false after 4 repairs. The gate typechecked the fixture -- the code under review, with its planted bugs -- and its repair loop rewrote transfers.service.ts and accounts.repository.ts, which workspace.json marks 'review only, never edits these'. The files were restored from the fixture and the gate corrected: it judges what the manifest declares, and this manifest declares one markdown file."
   },
   "tests": {
     "ran": false
   },
-  "failures": [
-    {
-      "phase": "gate",
-      "exit": null,
-      "reason": "typecheck still failing after 2 repairs"
-    }
-  ],
+  "failures": [],
   "phases": [
     {
       "label": "plan",
