@@ -585,6 +585,41 @@ for, left in place into a case it was never true of. Here the assumption was *ev
 problem delivers TypeScript*, which was true of the first seven problems and is
 documented as false of two more.
 
+### 4.12 A shim written so fixtures could typecheck alone shadowed the real types in every run
+
+Fixtures ship `_shims.d.ts`, a hand-written `declare module 'vitest'`. Its own header
+states the arrangement:
+
+    // Copied verbatim into each fixture so it typechecks on its own, without
+    // node_modules. The run workspace installs the real packages.
+
+The workspace does install them. Nothing removed the shim on the way in, and an ambient
+`declare module` overrides a package's own types even when the package is present. So
+every run seeded from a fixture typechecked its tests against four functions and three
+matchers instead of vitest.
+
+Problem 12 drew **15 of its 23 errors** from it — `vitest has no exported member 'vi'`,
+`toHaveLength does not exist`, `toBeDefined does not exist` — for writing ordinary
+vitest. Six more were packages the scaffold does not supply. **Twenty-one of
+twenty-three errors were the environment**, and the run was recorded as the model
+failing a gate.
+
+*Why it took twelve runs to surface.* Three problems carry a shim. Problem 11's tests
+use only `describe`, `it` and `expect().toBe` — inside the declared surface — and drew
+zero. It fires only when a model reaches past the shim's edge, so it looked like
+nothing was wrong until a run wrote a richer suite.
+
+*Changed:* `ft-go` deletes every `_shims.d.ts` from the workspace immediately after
+seeding it from the fixture, and says so in the log. Problem 12 is discarded; its gate
+log and the shim are in `experiments/shim-shadowing/`.
+
+*The pattern this belongs to.* Three times now the harness has documented an intention
+in prose and not implemented it: the README named problem 08's typecheck exception
+(§4.11), the shim's header names this one, and `README.md` names running the suite
+(§3.7). **A comment describing what the code should do is not a test that it does.**
+Every one of the three was found by a run failing for a reason that had nothing to do
+with the model.
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was

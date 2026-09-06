@@ -274,6 +274,18 @@ def main():
                 src, ws, dirs_exist_ok=True,
                 ignore=shutil.ignore_patterns("node_modules", "dist", ".git",
                                               "*.tsbuildinfo", "coverage"))
+            # The fixture ships `_shims.d.ts` so it can typecheck standalone, and
+            # its own header says the run workspace installs the real packages. It
+            # was never removed on the way in, and an ambient `declare module
+            # 'vitest'` shadows the real types even after pnpm install. Problem 12
+            # lost 15 of its 23 errors to it: `vitest has no exported member 'vi'`,
+            # `toHaveLength does not exist`. The shim declares four functions and
+            # three matchers; anything past that surface is reported as the model's
+            # mistake.
+            for shim in list(ws.rglob("_shims.d.ts")):
+                shim.unlink()
+                say(f"removed {shim.relative_to(ws)} — the gate installs the real "
+                    f"packages and the shim shadows their types")
             n = sum(1 for _ in ws.rglob("*") if _.is_file())
             say(f"workspace seeded from {src_rel} ({n} files)")
             if spec.get("_note"):
