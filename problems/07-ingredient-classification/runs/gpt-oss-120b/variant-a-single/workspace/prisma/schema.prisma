@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  banned
+  restricted
+  watch
+}
+
+model Ingredient {
+  id        Int        @id @default(autoincrement())
+  name      String
+  synonyms  Synonym[]
+  @@map("ingredients")
+}
+
+model Synonym {
+  id           Int        @id @default(autoincrement())
+  name         String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId Int
+  @@map("synonyms")
+}
+
+model MethodologyVersion {
+  id        Int      @id @default(autoincrement())
+  version   String
+  createdAt DateTime @default(now())
+  rules     Rule[]
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id                    Int                @id @default(autoincrement())
+  methodologyVersion    MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+  methodologyVersionId  Int
+  ingredient            Ingredient         @relation(fields: [ingredientId], references: [id])
+  ingredientId          Int
+  severity              Severity
+  sourceCitation        String
+  @@map("rules")
+}
+
+model Profile {
+  id        Int               @id @default(autoincrement())
+  name      String
+  overrides ProfileOverride[]
+  @@map("profiles")
+}
+
+model ProfileOverride {
+  id           Int        @id @default(autoincrement())
+  profile      Profile    @relation(fields: [profileId], references: [id])
+  profileId    Int
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId Int
+  severity     Severity
+  @@map("profile_overrides")
+}
+
+model Product {
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  ingredientEntries  ProductIngredient[]
+  @@map("products")
+}
+
+model ProductIngredient {
+  id        Int     @id @default(autoincrement())
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  raw       String
+  order     Int
+  @@map("product_ingredients")
+}
+
+model ClassificationResult {
+  id                     Int                      @id @default(autoincrement())
+  product                Product                  @relation(fields: [productId], references: [id])
+  productId              Int
+  methodologyVersion    MethodologyVersion       @relation(fields: [methodologyVersionId], references: [id])
+  methodologyVersionId  Int
+  confidence             Float
+  disclaimer             String
+  findings               ClassificationFinding[]
+  createdAt              DateTime @default(now())
+  @@map("classification_results")
+}
+
+model ClassificationFinding {
+  id                       Int                     @id @default(autoincrement())
+  classificationResult    ClassificationResult   @relation(fields: [classificationResultId], references: [id])
+  classificationResultId  Int
+  ingredient               Ingredient?            @relation(fields: [ingredientId], references: [id])
+  ingredientId             Int?
+  raw                      String
+  recognized               Boolean
+  severity                 Severity?
+  sourceCitation           String?
+  flagged                  Boolean
+  @@map("classification_findings")
+}
