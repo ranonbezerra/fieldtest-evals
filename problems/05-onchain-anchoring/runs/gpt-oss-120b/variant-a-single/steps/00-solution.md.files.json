@@ -1,0 +1,12 @@
+[
+  "prisma/schema.prisma",
+  "src/anchor/anchor.controller.ts",
+  "src/anchor/anchor.module.ts",
+  "src/anchor/anchor.repository.ts",
+  "src/anchor/anchor.service.ts",
+  "src/anchor/chain-client.interface.ts",
+  "src/anchor/fake-chain-client.service.ts",
+  "src/app.module.ts",
+  "src/prisma.service.ts",
+  "test/anchor.spec.ts"
+]

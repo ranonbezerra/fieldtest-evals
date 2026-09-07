@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Anchor {
+  id           Int      @id @default(autoincrement())
+  documentId   String   @map("document_id")
+  version      Int
+  txId         String   @map("tx_id")
+  contentHash  String   @map("content_hash")
+  status       String   @default("pending") // pending, broadcasted, confirmed
+  blockNumber  Int?     @map("block_number")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt   @map("updated_at")
+
+  @@unique([documentId, version], name: "anchor_document_version_unique")
+}
