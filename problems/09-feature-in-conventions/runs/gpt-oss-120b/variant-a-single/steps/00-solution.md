@@ -1,0 +1,3 @@
+REQUEST FAILED
+
+HTTP 400: {"error":{"message":"Provider returned error","code":400,"metadata":{"raw":"{\"error\":{\"code\":\"context_length_exceeded\",\"message\":\"This model's maximum context length is 131072 tokens. However, your messages resulted in 136221 tokens. Please reduce the length of the messages.\",\"param\":\"messages\",\"type\":\"invalid_request_error\"},\"request_id\":\"dafkkdtiohuophpn1m7g\"}\n","provider_name":"Mara","is_byok":false,"provider_error_code":"context_length_exceeded"}},"user_id":"user_3IxqsURjzNaoHuNztTkkm8MIcsy"}

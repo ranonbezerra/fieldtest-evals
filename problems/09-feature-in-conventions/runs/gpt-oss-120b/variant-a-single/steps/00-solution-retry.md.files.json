@@ -1,0 +1,13 @@
+[
+  "drizzle/schema.ts",
+  "src/app.module.ts",
+  "src/modules/trips/dto/create-trip.dto.ts",
+  "src/modules/trips/dto/invite.dto.ts",
+  "src/modules/trips/entities/invite.entity.ts",
+  "src/modules/trips/entities/trip.entity.ts",
+  "src/modules/trips/trips.controller.ts",
+  "src/modules/trips/trips.module.ts",
+  "src/modules/trips/trips.repository.ts",
+  "src/modules/trips/trips.service.spec.ts",
+  "src/modules/trips/trips.service.ts"
+]
