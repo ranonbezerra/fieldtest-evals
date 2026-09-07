@@ -769,7 +769,11 @@ def main():
                     for f in bad:
                         rel = f.relative_to(ws)
                         gate["repairs"] += 1
-                        reads = [variant, plan_md] + [e for e in extra if e != f]
+                        # The single shape has no PLAN.md, and passing a path that
+                        # does not exist makes the runner refuse — which showed up
+                        # as every repair failing at once.
+                        base = [variant] + ([plan_md] if plan_md.is_file() else [])
+                        reads = base + [e for e in extra if e != f]
                         rlabel = f"repair{attempt+1}-{f.name}"
                         rmsg = (rtmpl.replace("{{PATH}}", str(rel))
                                      .replace("{{ERRORS}}", out[-4000:]))

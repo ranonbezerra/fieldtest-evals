@@ -1,0 +1,307 @@
+{
+  "model": "qwen/qwen3.8-27b",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "02-reconciliation-resend",
+  "variant": "variant-a",
+  "date": "2026-09-07T01:20:56+00:00",
+  "wall_seconds": 5,
+  "wall_minutes": 0.1,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": {
+    "total_usd": 0.2348,
+    "per_1k_output_usd": 0.0021
+  },
+  "runner": "api",
+  "spec_source": "model",
+  "shape": "single",
+  "asked_again_after_empty": false,
+  "manifest": {
+    "declared": 16,
+    "built": 0,
+    "truncated": true
+  },
+  "requests": 2,
+  "resumed": false,
+  "requests_this_invocation": 20,
+  "tokens": {
+    "prompt_total": 2502,
+    "completion_total": 109493,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 0,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 43.3,
+    "output_tokens_per_second_overall": 42.8,
+    "generation_seconds": 2556,
+    "model_load_seconds": 0,
+    "overhead_seconds": -2551
+  },
+  "revisions": {
+    "self_repairs": 20,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [
+    "solution"
+  ],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": false,
+    "repairs": 20,
+    "skipped": null,
+    "gate_scaffold_added": []
+  },
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failed": 1,
+    "passed": 10,
+    "total": 11,
+    "failing": [
+      "payouts: execute + reconcile > re-sends a proven-absent order, reusing the same deterministic txid"
+    ]
+  },
+  "failures": [
+    {
+      "phase": "repair1-payouts.controller.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-app.module.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-payouts.spec.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-main.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-payouts.module.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-bank.module.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-all-exceptions.filter.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-bank.client.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-payouts.job.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair1-payouts.service.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-payouts.controller.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-app.module.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-payouts.spec.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-main.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-payouts.module.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-bank.module.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-all-exceptions.filter.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-bank.client.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-payouts.job.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "repair2-payouts.service.ts",
+      "exit": 3,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "gate",
+      "exit": null,
+      "reason": "typecheck still failing after 2 repairs"
+    }
+  ],
+  "phases": [
+    {
+      "label": "repair1-payouts.controller.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-app.module.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-payouts.spec.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-main.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-payouts.module.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-bank.module.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-all-exceptions.filter.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-bank.client.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-payouts.job.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-payouts.service.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-payouts.controller.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-app.module.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-payouts.spec.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-main.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-payouts.module.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-bank.module.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-all-exceptions.filter.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-bank.client.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-payouts.job.ts",
+      "exit": 3,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-payouts.service.ts",
+      "exit": 3,
+      "runner": "api"
+    }
+  ]
+}
