@@ -1,0 +1,5 @@
+[
+  "drizzle/0003_document_embeddings.sql",
+  "drizzle/0004_backfill_search_key.sql",
+  "scripts/verify.sh"
+]
