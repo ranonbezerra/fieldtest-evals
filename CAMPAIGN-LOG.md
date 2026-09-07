@@ -49,3 +49,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 23:07 | 04-grounded-llm-product | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 23:14 | 05-onchain-anchoring | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 23:30 | 06-multi-tenant-isolation | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-07 23:35 | 07-ingredient-classification | a | **no meta** (exit 0) | – | – | – | – | – | – |

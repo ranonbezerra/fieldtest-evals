@@ -1,3 +1,20 @@
+# repair2-classification.controller.ts
+
+## reasoning
+
+```
+We need to rewrite controller fixing imports and optional param order. Likely controller should import ClassificationService from './classification.service' (but file missing). However we only edit controller; other files missing cause errors but maybe they exist but path wrong? Probably need to adjust import path to correct relative location: maybe services are in same folder so './classification.service' is correct. The error says cannot find module, meaning file doesn't exist. Might need to import from '../classification.service'? but we cannot create files. So assume service exists at '../../classification.service'? Not known. Use placeholder import with // ASSUMPTION.
+
+Also error: required param after optional. Likely method signature has optional profileId then required something. We'll define method classify(@Param('productId') productId: string, @Query('profileId') profileId?: string). That's fine.
+
+Implement controller with NestJS decorators, injecting service.
+
+We'll add assumptions about missing files.
+```
+
+## reply
+
+```ts
 import {
   Controller,
   Get,
@@ -43,3 +60,4 @@ export class ClassificationController {
     }
   }
 }
+```

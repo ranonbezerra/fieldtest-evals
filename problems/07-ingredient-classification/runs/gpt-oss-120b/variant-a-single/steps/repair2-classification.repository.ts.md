@@ -1,3 +1,30 @@
+# repair2-classification.repository.ts
+
+## reasoning
+
+```
+We need to write repository file that imports PrismaService correctly path. Probably prisma.service is at src/prisma.service.ts. So import { PrismaService } from '../../prisma.service'; correct relative from src/classification folder: ../../prisma.service.ts exists. Also export class ClassificationRepository with methods maybe stub. Since other files missing, but compile errors only about missing module. We just need to create file that exports class and uses Injectable. Also need to import Injectable from @nestjs/common. Provide constructor(private prisma: PrismaService). No other errors.
+
+Also controller error: required param after optional, but not our file.
+
+We just fix repository file.
+
+Write:
+
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma.service';
+import { Ingredient, Rule, Product, ClassificationResult } from '@prisma/client'; maybe needed types. But we can just not import.
+
+Define class with methods signatures used by service? Unknown. We'll just export empty class.
+
+Add placeholder methods: getProductIngredients(productId: number) etc.
+
+Implement minimal.
+```
+
+## reply
+
+```typescript
 // src/classification/classification.repository.ts
 
 import { Injectable } from '@nestjs/common';
@@ -79,3 +106,4 @@ export class ClassificationRepository {
     });
   }
 }
+```

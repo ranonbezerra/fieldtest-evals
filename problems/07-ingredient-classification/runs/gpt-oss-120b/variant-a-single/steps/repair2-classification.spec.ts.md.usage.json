@@ -1,0 +1,33 @@
+{
+  "label": "repair2-classification.spec.ts",
+  "model": "gpt-oss-120b",
+  "provider": "openrouter",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": null,
+  "context_window": 1000000,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 1388,
+  "completion_tokens": 506,
+  "reasoning_chars": 1981,
+  "content_chars": 602,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 3.6,
+  "server_seconds": 3.6,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 140.6,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/variants/variant-a.md"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": [],
+  "cost_usd": 0.0004751,
+  "upstream_cost_usd": 0.0004751,
+  "reasoning_tokens": null,
+  "cached_tokens": null,
+  "generation_id": "gen-1788824091-r6dvnLny8Ub8j5rCoUKN",
+  "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial"
+}
