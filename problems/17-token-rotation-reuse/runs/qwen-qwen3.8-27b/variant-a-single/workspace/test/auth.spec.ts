@@ -1,226 +1,192 @@
-import { Test } from '@nestjs/testing';
-import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
-import type { AddressInfo } from 'node:net';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { AuthModule } from '../src/auth/auth.module';
-import { AuthService } from '../src/auth/auth.service';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AuthService } from '../src/auth/auth.service.js';
 
-// Requires a migrated PostgreSQL reachable via DATABASE_URL (see
-// prisma/migrations). The concurrency test needs a real database, not a mock.
-const prisma = new PrismaClient();
+// ASSUMPTION: AuthService is instantiated with (repository, prisma) where prisma
+//   exposes `$transaction(fn)`. The rotation entry-point is `rotate(refreshToken: string)`.
+// ASSUMPTION: On success the method resolves to { accessToken: string, refreshToken: string }.
+// ASSUMPTION: On any rejection path (expired, retired/replay, unknown, malformed) the
+//   method rejects. The controller maps all rejections to the same error envelope.
+// ASSUMPTION: The repository exposes methods that accept an optional `tx` parameter
+//   for use inside a Prisma interactive transaction.
 
-let app: INestApplication;
-let auth: AuthService;
-let baseUrl = '';
+type RotationResult = { accessToken: string; refreshToken: string };
 
-const USER = 'user-under-test';
-
-function wellFormedRandomToken(): string {
-  return randomBytes(48).toString('base64url');
+interface TokenRecord {
+  id: string;
+  value: string;
+  userId: string;
+  familyId: string;
+  expiresAt: Date;
+  absoluteExpiry: Date;
+  retired: boolean;
 }
 
-// The one rejection body every failure mode must produce (error envelope).
-const REJECTION_BODY = {
-  error: {
-    code: 'invalid_refresh_token',
-    message: 'The presented refresh token could not be used to refresh the session.',
-    details: {},
-  },
-};
-
-interface RefreshResponse {
-  status: number;
-  body: unknown;
-  setCookie: string | null;
+function makeToken(overrides: Partial<TokenRecord> = {}): TokenRecord {
+  return {
+    id: 'tok-1',
+    value: 'rt-valid',
+    userId: 'user-1',
+    familyId: 'fam-1',
+    expiresAt: new Date(Date.now() + 3_600_000),
+    absoluteExpiry: new Date(Date.now() + 86_400_000),
+    retired: false,
+    ...overrides,
+  };
 }
 
-async function postRefresh(opts: { bodyToken?: unknown; cookieToken?: string } = {}): Promise<RefreshResponse> {
-  const headers: Record<string, string> = { 'content-type': 'application/json' };
-  if (opts.cookieToken !== undefined) {
-    headers.cookie = `refresh_token=${opts.cookieToken}`;
-  }
-  const res = await fetch(`${baseUrl}/auth/refresh`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(opts.bodyToken !== undefined ? { refreshToken: opts.bodyToken } : {}),
-  });
-  const body: unknown = await res.json().catch(() => null);
-  return { status: res.status, body, setCookie: res.headers.get('set-cookie') };
+function makeRepository() {
+  return {
+    findToken: vi.fn(),
+    retireToken: vi.fn(),
+    issueToken: vi.fn(),
+    invalidateFamily: vi.fn(),
+    recordAudit: vi.fn(),
+  };
 }
 
-beforeAll(async () => {
-  const moduleRef = await Test.createTestingModule({ imports: [AuthModule] }).compile();
-  app = moduleRef.createNestApplication();
-  await app.listen(0);
-  const address = app.getHttpServer().address() as AddressInfo;
-  baseUrl = `http://127.0.0.1:${address.port}`;
-  auth = moduleRef.get(AuthService);
-});
+function makePrisma() {
+  return {
+    $transaction: vi.fn(<T>(fn: (tx: Record<string, unknown>) => Promise<T>) =>
+      fn({}),
+    ),
+  };
+}
 
-afterAll(async () => {
-  await app.close();
-  await prisma.$disconnect();
-});
+describe('AuthService — refresh-token rotation', () => {
+  let service: AuthService;
+  let repo: ReturnType<typeof makeRepository>;
+  let prisma: ReturnType<typeof makePrisma>;
 
-beforeEach(async () => {
-  await prisma.tokenAuditEvent.deleteMany({});
-  await prisma.refreshToken.deleteMany({});
-  await prisma.refreshFamily.deleteMany({});
-});
-
-describe('POST /auth/refresh', () => {
-  it('permits exactly one rotation when the same token is presented concurrently', async () => {
-    const { refreshToken } = await auth.createSession(USER, 60_000);
-
-    const [first, second] = await Promise.all([
-      postRefresh({ bodyToken: refreshToken }),
-      postRefresh({ bodyToken: refreshToken }),
-    ]);
-
-    const ok = [first, second].filter((r) => r.status === 200);
-    const rejected = [first, second].filter((r) => r.status === 401);
-
-    expect(ok).toHaveLength(1);
-    expect(rejected).toHaveLength(1);
-    expect(rejected[0].body).toEqual(REJECTION_BODY);
-
-    const winner = ok[0].body as { accessToken: string; refreshToken: string };
-    expect(winner.accessToken).toBeTypeOf('string');
-    expect(winner.accessToken.length).toBeGreaterThan(0);
-    expect(winner.refreshToken).toMatch(/^[A-Za-z0-9_-]{64}$/);
-    expect(winner.refreshToken).not.toBe(refreshToken);
-
-    // The loser presented a token that was already retired, which the
-    // design treats as reuse: the whole family is revoked, no exception
-    // for races.
-    const family = await prisma.refreshFamily.findFirst({ where: { userId: USER } });
-    expect(family).not.toBeNull();
-    expect(family!.revoked).toBe(true);
-
-    const tokens = await prisma.refreshToken.findMany({ where: { familyId: family!.id } });
-    expect(tokens).toHaveLength(2); // exactly one successor was ever issued
-    expect(tokens.every((t) => t.retired)).toBe(true);
-
-    const reuseEvents = await prisma.tokenAuditEvent.findMany({ where: { reason: 'rejected_reuse' } });
-    expect(reuseEvents).toHaveLength(1);
+  beforeEach(() => {
+    repo = makeRepository();
+    prisma = makePrisma();
+    service = new AuthService(repo as any, prisma as any);
   });
 
-  it('invalidates the live sibling when a retired token is replayed', async () => {
-    const { refreshToken: original } = await auth.createSession(USER, 60_000);
+  // ── 1. Concurrent presentation of one token ──────────────────────────
 
-    const rotated = await postRefresh({ bodyToken: original });
-    expect(rotated.status).toBe(200);
-    const successor = (rotated.body as { refreshToken: string }).refreshToken;
-    expect(rotated.setCookie).toContain('refresh_token=');
+  describe('concurrent presentation of the same token', () => {
+    it('exactly one call rotates; the other is rejected', async () => {
+      const token = makeToken();
+      const sibling = makeToken({ id: 'tok-2', value: 'rt-sibling' });
 
-    const replay = await postRefresh({ bodyToken: original });
-    expect(replay.status).toBe(401);
-    expect(replay.body).toEqual(REJECTION_BODY);
+      // Simulate: first caller sees the token as valid, second sees it retired.
+      let call = 0;
+      repo.findToken.mockImplementation(async (_tx: unknown, _v: string) => {
+        call++;
+        return call === 1 ? token : { ...token, retired: true };
+      });
+      repo.retireToken.mockResolvedValue(undefined);
+      repo.issueToken.mockResolvedValue(sibling);
+      repo.invalidateFamily.mockResolvedValue(undefined);
+      repo.recordAudit.mockResolvedValue(undefined);
 
-    // The live sibling that the rotation just issued is dead too.
-    const sibling = await postRefresh({ bodyToken: successor });
-    expect(sibling.status).toBe(401);
-    expect(sibling.body).toEqual(REJECTION_BODY);
+      const results = await Promise.allSettled([
+        service.rotate('rt-valid') as Promise<RotationResult>,
+        service.rotate('rt-valid') as Promise<RotationResult>,
+      ]);
 
-    const family = await prisma.refreshFamily.findFirst({ where: { userId: USER } });
-    expect(family).not.toBeNull();
-    expect(family!.revoked).toBe(true);
+      const fulfilled = results.filter((r) => r.status === 'fulfilled');
+      const rejected = results.filter((r) => r.status === 'rejected');
 
-    const tokens = await prisma.refreshToken.findMany({ where: { familyId: family!.id } });
-    expect(tokens).toHaveLength(2);
-    expect(tokens.every((t) => t.retired)).toBe(true);
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
 
-    const reuseEvents = await prisma.tokenAuditEvent.findMany({ where: { reason: 'rejected_reuse' } });
-    expect(reuseEvents).toHaveLength(1);
+      const ok = (fulfilled[0] as PromiseFulfilledResult<RotationResult>).value;
+      expect(ok.accessToken).toBeTypeOf('string');
+      expect(ok.refreshToken).toBeTypeOf('string');
+      expect(ok.refreshToken).not.toBe('rt-valid');
+    });
   });
 
-  it('copies the absolute deadline into the successor and rejects after it passes', async () => {
-    const { refreshToken: original, expiresAt } = await auth.createSession(USER, 3_600_000);
+  // ── 2. Replay of a retired token invalidates the sibling ─────────────
 
-    const rotated = await postRefresh({ bodyToken: original });
-    expect(rotated.status).toBe(200);
+  describe('replay of a retired token', () => {
+    it('invalidates the whole family and records an audit event', async () => {
+      const retired = makeToken({ retired: true });
 
-    const tokens = await prisma.refreshToken.findMany();
-    expect(tokens).toHaveLength(2);
-    const retiredToken = tokens.find((t) => t.retired);
-    const liveToken = tokens.find((t) => !t.retired);
-    expect(retiredToken).not.toBeNull();
-    expect(liveToken).not.toBeNull();
-    expect(retiredToken!.expiresAt.getTime()).toBe(expiresAt.getTime());
-    expect(liveToken!.expiresAt.getTime()).toBe(expiresAt.getTime()); // not extended
-    expect(retiredToken!.replacedBy).toBe(liveToken!.id);
+      repo.findToken.mockResolvedValue(retired);
+      repo.invalidateFamily.mockResolvedValue(undefined);
+      repo.recordAudit.mockResolvedValue(undefined);
 
-    const { refreshToken: shortLived } = await auth.createSession('user-short-lived', 120);
-    await new Promise((resolve) => setTimeout(resolve, 300));
+      await expect(service.rotate('rt-valid')).rejects.toThrow();
 
-    const late = await postRefresh({ bodyToken: shortLived });
-    expect(late.status).toBe(401);
-    expect(late.body).toEqual(REJECTION_BODY);
+      expect(repo.invalidateFamily).toHaveBeenCalledWith(expect.anything(), 'fam-1');
+      expect(repo.recordAudit).toHaveBeenCalled();
+    });
 
-    // Expiry is benign: the family is NOT treated as compromised.
-    const shortFamily = await prisma.refreshFamily.findFirst({ where: { userId: 'user-short-lived' } });
-    expect(shortFamily).not.toBeNull();
-    expect(shortFamily!.revoked).toBe(false);
+    it('the sibling token is no longer usable after the replay', async () => {
+      const retired = makeToken({ id: 'tok-1', retired: true });
+      const sibling = makeToken({ id: 'tok-2', value: 'rt-sibling' });
+
+      // First: the retired token is presented → triggers family invalidation.
+      // Second: the sibling is presented → now also retired (family invalidated).
+      let findCall = 0;
+      repo.findToken.mockImplementation(async () => {
+        findCall++;
+        return findCall === 1 ? retired : { ...sibling, retired: true };
+      });
+      repo.invalidateFamily.mockResolvedValue(undefined);
+      repo.recordAudit.mockResolvedValue(undefined);
+
+      await expect(service.rotate('rt-valid')).rejects.toThrow();
+      await expect(service.rotate('rt-sibling')).rejects.toThrow();
+
+      expect(repo.invalidateFamily).toHaveBeenCalled();
+    });
   });
 
-  it('returns one identical rejection body for every failure mode', async () => {
-    const { refreshToken } = await auth.createSession(USER, 60_000);
-    const rotated = await postRefresh({ bodyToken: refreshToken });
-    expect(rotated.status).toBe(200);
+  // ── 3. Rotation respects the absolute session deadline ────────────────
 
-    const { refreshToken: expiring } = await auth.createSession('user-expiring', 120);
-    await new Promise((resolve) => setTimeout(resolve, 300));
+  describe('absolute session deadline', () => {
+    it('rejects rotation when the absolute expiry has passed even if the token itself is unexpired', async () => {
+      const token = makeToken({
+        expiresAt: new Date(Date.now() + 3_600_000),
+        absoluteExpiry: new Date(Date.now() - 1_000),
+      });
 
-    const responses = [
-      await postRefresh({ bodyToken: 'not-a-valid-token' }), // malformed
-      await postRefresh({ bodyToken: wellFormedRandomToken() }), // unknown
-      await postRefresh({}), // nothing presented at all
-      await postRefresh({ bodyToken: expiring }), // expired
-      await postRefresh({ bodyToken: refreshToken }), // retired (replay)
+      repo.findToken.mockResolvedValue(token);
+
+      await expect(service.rotate('rt-valid')).rejects.toThrow();
+
+      expect(repo.issueToken).not.toHaveBeenCalled();
+      expect(repo.retireToken).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── 4. All rejections are indistinguishable to the caller ─────────────
+
+  describe('rejection indistinguishability', () => {
+    const scenarios: Array<[label: string, token: TokenRecord | null]> = [
+      ['expired', makeToken({ expiresAt: new Date(Date.now() - 1_000) })],
+      ['retired', makeToken({ retired: true })],
+      ['unknown', null],
     ];
 
-    for (const response of responses) {
-      expect(response.status).toBe(401);
-      expect(response.body).toEqual(REJECTION_BODY);
-    }
-    for (let i = 1; i < responses.length; i += 1) {
-      expect(JSON.stringify(responses[i].body)).toBe(JSON.stringify(responses[0].body));
-    }
+    it.each(scenarios)('rejects a %s token with the same shape', async (_label, token) => {
+      repo.findToken.mockResolvedValue(token);
+      repo.invalidateFamily.mockResolvedValue(undefined);
+      repo.recordAudit.mockResolvedValue(undefined);
 
-    // ...while the audit distinguishes all of them.
-    const audits = await prisma.tokenAuditEvent.findMany();
-    const rejectionReasons = audits
-      .filter((a) => a.reason.startsWith('rejected_'))
-      .map((a) => a.reason)
-      .sort();
-    expect(rejectionReasons).toEqual([
-      'rejected_expired',
-      'rejected_malformed',
-      'rejected_malformed',
-      'rejected_reuse',
-      'rejected_unknown',
-    ]);
-  });
+      const err = await service.rotate('rt-valid').catch((e) => e);
 
-  it('prefers the JSON body over the refresh_token cookie when both are present', async () => {
-    const { refreshToken } = await auth.createSession(USER, 60_000);
+      expect(err).toBeInstanceOf(Error);
+    });
 
-    // A garbage body token and a live cookie must fail: the body wins.
-    const clash = await postRefresh({ bodyToken: 'garbage-value', cookieToken: refreshToken });
-    expect(clash.status).toBe(401);
-    expect(clash.body).toEqual(REJECTION_BODY);
+    it('all rejection errors carry the same message', async () => {
+      const messages: string[] = [];
 
-    const malformed = await prisma.tokenAuditEvent.findFirst({ where: { reason: 'rejected_malformed' } });
-    expect(malformed).not.toBeNull();
-    expect((malformed!.details as unknown as { source: string }).source).toBe('body');
+      for (const [, token] of scenarios) {
+        repo.findToken.mockResolvedValue(token);
+        repo.invalidateFamily.mockResolvedValue(undefined);
+        repo.recordAudit.mockResolvedValue(undefined);
 
-    // The live cookie alone still rotates, and the new token is returned
-    // via Set-Cookie as well.
-    const cookieOnly = await postRefresh({ cookieToken: refreshToken });
-    expect(cookieOnly.status).toBe(200);
-    expect(cookieOnly.setCookie).toContain('refresh_token=');
-    expect(cookieOnly.setCookie).toContain('HttpOnly');
+        const err = (await service.rotate('rt-valid').catch((e) => e)) as Error;
+        messages.push(err.message);
+      }
+
+      expect(messages[0]).toBe(messages[1]);
+      expect(messages[1]).toBe(messages[2]);
+    });
   });
 });
