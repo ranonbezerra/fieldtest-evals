@@ -1,3 +1,22 @@
+# repair2-accounts.repository.ts
+
+## reasoning
+
+```
+We need to rewrite accounts.repository.ts to fix imports and method names. We don't have original code, but need to guess structure. Probably should import PrismaService from '../prisma/prisma.service' (without .js). Use PrismaClient types. Export class AccountsRepository with methods: findByIdForUpdate, updateBalances, createAuditLog etc. Use pg library? maybe raw connection. We'll stub minimal implementation using prisma client.
+
+We'll assume PrismaService provides prisma: PrismaClient. Use injection.
+
+Implement methods signatures used in transfers.service: findByIdForUpdate(id): returns Account; updateBalances(accountId, delta): void; createAuditLog(...). Also need raw connection branch maybe uses pg.Pool. We'll just import pg and type any.
+
+Write placeholder implementations.
+
+Let's produce file.
+```
+
+## reply
+
+```ts
 // src/accounts/accounts.repository.ts
 
 import { Injectable } from '@nestjs/common';
@@ -108,3 +127,4 @@ export class AccountsRepository {
     }
   }
 }
+```
