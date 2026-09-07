@@ -104,3 +104,13 @@ its own import statements as it writes them, it made the mistake **zero** times.
 
 `reference_gap` is not a property of this model. It is a property of asking this model
 for one file at a time.
+
+> **Corrected after judging problem 09.** That last sentence is too strong. Problem 09
+> hosted lost the same convention on sixteen imports inside a single reply. Across the
+> thirteen hosted runs that chose NodeNext: six — this one among them — held the
+> convention across 145 relative imports with zero misses; one chose the wrong
+> convention and applied it uniformly; four lost it partway through the reply. The
+> single request does not remove the defect. It changes its rate. Locally this problem
+> lost the extension on seventeen of eighteen files, uniformly, because no request
+> could see the one before it. **The decomposition converted an occasional drift into a
+> certainty; the drift itself is the model's.**
