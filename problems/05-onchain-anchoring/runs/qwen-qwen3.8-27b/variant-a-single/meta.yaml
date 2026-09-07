@@ -2,7 +2,7 @@
   "model": "qwen/qwen3.8-27b",
   "model_repo": "Qwen/Qwen3.8-27B",
   "quantization": "6-bit MLX, group_size 64, affine",
-  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "architecture": "64 layers, hidden 5120 — 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
   "modality": "natively multimodal; text path only",
   "server": "oMLX",
   "harness": "fieldtest ft-go",
@@ -86,7 +86,15 @@
   "tests": {
     "ran": true,
     "exit": 1,
-    "failing": []
+    "failed": 4,
+    "passed": 11,
+    "total": 15,
+    "failing": [
+      "anchorDocument > persists the anchor intent (with tx identity) before broadcasting, then the confirmation worker advances it to confirmed",
+      "anchorDocument > recovers a broadcast timeout that DID land by confirming from the receipt, without re-broadcasting",
+      "anchorDocument > survives a process crash between broadcast and confirmation: the recovery sweep queries the chain first and keeps exactly one on-chain anchor",
+      "verify > returns the anchoring proof for matching content, and a mismatch report otherwise"
+    ]
   },
   "failures": [],
   "phases": [

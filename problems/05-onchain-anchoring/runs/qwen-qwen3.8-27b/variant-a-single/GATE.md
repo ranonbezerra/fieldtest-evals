@@ -77,3 +77,124 @@ Error: DATABASE_URL must point at a PostgreSQL instance to run the test suite.
 
 
 
+
+$ vitest run -> 1
+
+ RUN  v2.1.9 /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/05-onchain-anchoring/runs/qwen-qwen3.8-27b/variant-a-single/workspace
+
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 46ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "ft_anchoring", schema "public" at "127.0.0.1:5432"
+
+1 migration found in prisma/migrations
+
+Applying migration `20250601000000_init`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20250601000000_init/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+ ❯ test/anchoring.spec.ts (15 tests | 4 failed) 830ms
+   ✓ canonicalization > pins the canonical text and hash of a flat object 424ms
+   × anchorDocument > persists the anchor intent (with tx identity) before broadcasting, then the confirmation worker advances it to confirmed 109ms
+     → expected 1000n to be an instance of BigInt
+   × anchorDocument > survives a process crash between broadcast and confirmation: the recovery sweep queries the chain first and keeps exactly one on-chain anchor 30ms
+     → expected 'broadcast_sent' to be 'confirmed' // Object.is equality
+   × anchorDocument > recovers a broadcast timeout that DID land by confirming from the receipt, without re-broadcasting 46ms
+     → expected 1000n to be an instance of BigInt
+   × verify > returns the anchoring proof for matching content, and a mismatch report otherwise 18ms
+     → expected 201 to be 200 // Object.is equality
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 11 passed (15)
+   Start at  04:38:55
+   Duration  2.92s (transform 53ms, setup 0ms, collect 267ms, tests 830ms, environment 0ms, prepare 36ms)
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.3 -> 8.0.0-rc.13                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/anchoring.spec.ts > anchorDocument > persists the anchor intent (with tx identity) before broadcasting, then the confirmation worker advances it to confirmed
+AssertionError: expected 1000n to be an instance of BigInt
+ ❯ test/anchoring.spec.ts:154:40
+    152|       const confirmedRow = row as Anchor;
+    153|       expect(confirmedRow.status).toBe('confirmed');
+    154|       expect(confirmedRow.blockNumber).toBeInstanceOf(BigInt);
+       |                                        ^
+    155|       expect(confirmedRow.confirmedAt).toBeInstanceOf(Date);
+    156| 
+ ❯ withApp test/anchoring.spec.ts:75:5
+ ❯ test/anchoring.spec.ts:124:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/anchoring.spec.ts > anchorDocument > survives a process crash between broadcast and confirmation: the recovery sweep queries the chain first and keeps exactly one on-chain anchor
+AssertionError: expected 'broadcast_sent' to be 'confirmed' // Object.is equality
+
+Expected: "confirmed"
+Received: "broadcast_sent"
+
+ ❯ test/anchoring.spec.ts:199:38
+    197|       const row = await prisma.anchor.findUnique({ where: whereFor('do…
+    198|       expect(row).not.toBeNull();
+    199|       expect((row as Anchor).status).toBe('confirmed');
+       |                                      ^
+    200|       expect((row as Anchor).blockNumber).toBeInstanceOf(BigInt);
+    201| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/anchoring.spec.ts > anchorDocument > recovers a broadcast timeout that DID land by confirming from the receipt, without re-broadcasting
+AssertionError: expected 1000n to be an instance of BigInt
+ ❯ test/anchoring.spec.ts:296:31
+    294|       const row = (await prisma.anchor.findUnique({ where: whereFor('d…
+    295|       expect(row.status).toBe('confirmed');
+    296|       expect(row.blockNumber).toBeInstanceOf(BigInt);
+       |                               ^
+    297|       expect(chain.broadcasts).toHaveLength(1); // no re-broadcast: th…
+    298|       expect(chain.distinctTxIds()).toHaveLength(1);
+ ❯ withApp test/anchoring.spec.ts:75:5
+ ❯ test/anchoring.spec.ts:282:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/anchoring.spec.ts > verify > returns the anchoring proof for matching content, and a mismatch report otherwise
+AssertionError: expected 201 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 201
+
+ ❯ test/anchoring.spec.ts:379:24
+    377|         content: { b: { c: 2 }, a: 1 },
+    378|       });
+    379|       expect(v.status).toBe(200);
+       |                        ^
+    380|       expect(v.body.match).toBe(true);
+    381|       expect(v.body.confirmed).toBe(false);
+ ❯ withApp test/anchoring.spec.ts:75:5
+ ❯ test/anchoring.spec.ts:365:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
