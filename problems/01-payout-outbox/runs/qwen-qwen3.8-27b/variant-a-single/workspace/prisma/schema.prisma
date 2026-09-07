@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id              String        @id @default(cuid())
+  // Minor units (int8). Never floating point.
+  settledBalance  BigInt        @default(0) @map("settled_balance")
+  reservedBalance BigInt        @default(0) @map("reserved_balance")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  payouts         Payout[]
+  ledgerEntries   LedgerEntry[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                  String        @id @default(cuid())
+  accountId           String        @map("account_id")
+  idempotencyKey      String        @unique @map("idempotency_key")
+  destinationAddress  String        @map("destination_address")
+  amount              BigInt
+  status              PayoutStatus  @default(created)
+  txHash              String?       @map("tx_hash")
+  // Set the moment we are about to call the provider; used to detect an
+  // in-flight attempt whose outcome was never recorded (crash safety).
+  providerAttemptedAt DateTime?     @map("provider_attempted_at")
+  failureReason       String?       @map("failure_reason")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+  account             Account       @relation(fields: [accountId], references: [id])
+  ledgerEntries       LedgerEntry[]
+  messages            OutboxMessage[]
+
+  @@index([accountId], map: "payouts_account_id_idx")
+  @@map("payouts")
+}
+
+model OutboxMessage {
+  id            String       @id @default(cuid())
+  kind          OutboxKind
+  refId         String       @map("ref_id")
+  status        OutboxStatus @default(pending)
+  retryCount    Int          @default(0) @map("retry_count")
+  nextAttemptAt DateTime     @default(now()) @map("next_attempt_at")
+  lastError     String?      @map("last_error")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  payout        Payout       @relation(fields: [refId], references: [id])
+
+  @@index([status, nextAttemptAt], map: "outbox_messages_status_next_attempt_idx")
+  @@map("outbox_messages")
+}
+
+model LedgerEntry {
+  id        String       @id @default(cuid())
+  payoutId  String?      @map("payout_id")
+  accountId String       @map("account_id")
+  bucket    LedgerBucket
+  side      LedgerSide
+  // Always a positive magnitude; direction is carried by `side`.
+  amount    BigInt
+  createdAt DateTime     @default(now()) @map("created_at")
+  payout    Payout?      @relation(fields: [payoutId], references: [id])
+  account   Account      @relation(fields: [accountId], references: [id])
+
+  @@index([accountId], map: "ledger_entries_account_id_idx")
+  @@index([payoutId], map: "ledger_entries_payout_id_idx")
+  @@map("ledger_entries")
+}
+
+enum PayoutStatus {
+  created
+  processing
+  sent
+  completed
+  failed
+  needs_review
+}
+
+enum OutboxStatus {
+  pending
+  processing
+  done
+  dead
+}
+
+enum OutboxKind {
+  payout_transfer
+  payout_finalize
+}
+
+enum LedgerBucket {
+  available
+  reserved
+  in_transit
+  settled_out
+}
+
+enum LedgerSide {
+  debit
+  credit
+}
