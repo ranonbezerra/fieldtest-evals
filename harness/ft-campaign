@@ -108,7 +108,14 @@ def vitals():
 
 
 def wait_for_host():
-    """Poll until the machine can produce a comparable measurement, or time out."""
+    """Poll until the machine can produce a comparable measurement, or time out.
+
+    Only meaningful for a model on this machine. For a hosted one the check is
+    whether the key works and has credit, which `server_up` already answers; this
+    laptop's free memory has nothing to do with it.
+    """
+    if os.environ.get("FT_PROVIDER", "omlx") != "omlx":
+        return True if server_up() else False
     waited = 0
     while True:
         if not server_up() and not restart_server():
