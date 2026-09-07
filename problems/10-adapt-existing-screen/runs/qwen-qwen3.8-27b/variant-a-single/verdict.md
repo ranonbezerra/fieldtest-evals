@@ -109,3 +109,20 @@ editing just enough of the original (`types.ts`, `client.ts`, `main.tsx`) to bre
 `decision_overload` was named in the local campaign for a model that answers a larger
 question than the one asked. Given room to answer in full, in one request, with no
 ceiling forcing it to stop, it answered a much larger one.
+
+---
+
+## Read this run as blind
+
+`ft-go`'s single shape passed the model only the variant brief. The fixture seeded
+into the workspace was never handed to it, and `single-shot.md` tells the model it has
+no filesystem and gets no second request. **On this problem the fixture is the task**,
+and the model was working from the brief's prose description of code it could not see.
+
+That does not make the verdict wrong — what was delivered is what was delivered — but
+it relocates the cause. This is a harness defect, now fixed: the single request carries
+every seeded file, and the instruction says they are the real codebase.
+
+The comparison against the local run is not clean on this problem, because the phased
+shape never had the hole: a file phase resolves the plan's `reads:` entries against the
+workspace, so a fixture file the plan names is handed over.
