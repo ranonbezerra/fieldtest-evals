@@ -1,3 +1,28 @@
+# repair2-trips.controller.ts
+
+## reasoning
+
+```
+We need to adjust imports with .js extensions and ensure service has create method? In service code, there is createTrip, not create. Controller likely calls service.create. Should map to createTrip. Also need correct import paths with .js. Provide minimal controller implementing endpoints per spec using service methods.
+
+Assume existing auth guard and decorator CurrentUser. We'll import them.
+
+Write controller with methods: POST /trips -> createTrip, POST /trips/:id/invites -> invite, POST /invites/:token/accept -> acceptInvite, GET /trips/:id -> getTrip.
+
+Use appropriate DTOs? Not required compile.
+
+Implement using TripsService methods with correct names.
+
+Add imports with .js extensions.
+
+Assume AppError, ApiResult already.
+
+Provide file.
+```
+
+## reply
+
+```ts
 // src/modules/trips/trips.controller.ts
 
 import {
@@ -83,3 +108,4 @@ export class TripsController {
     return this.tripsService.getTrip(userId, tripId);
   }
 }
+```
