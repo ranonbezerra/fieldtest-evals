@@ -2,7 +2,7 @@
   "model": "qwen/qwen3.8-27b",
   "model_repo": "Qwen/Qwen3.8-27B",
   "quantization": "6-bit MLX, group_size 64, affine",
-  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "architecture": "64 layers, hidden 5120 — 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
   "modality": "natively multimodal; text path only",
   "server": "oMLX",
   "harness": "fieldtest ft-go",
@@ -86,7 +86,10 @@
   "tests": {
     "ran": true,
     "exit": 1,
-    "failing": []
+    "failed": 5,
+    "passed": 3,
+    "total": 8,
+    "note": "Run against a disposable Postgres 14 after the fact; the harness's test step has no database and the suite's own globalSetup refuses to run without DATABASE_URL. All five failures are one defect: make_interval(msecs => ...), a named parameter PostgreSQL's make_interval does not have in any version — its smallest unit is secs, double precision."
   },
   "failures": [],
   "phases": [
