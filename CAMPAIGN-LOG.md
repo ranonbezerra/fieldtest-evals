@@ -28,3 +28,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 00:30 | 01-payout-outbox | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 01:13 | 02-reconciliation-resend | a | **no meta** (exit 1) | – | – | – | – | – | – |
 | 2026-09-07 02:40 | 03-read-model-projection | a | **no meta** (exit 1) | – | – | – | – | – | – |
+| 2026-09-07 02:54 | 04-grounded-llm-product | a | **no meta** (exit 0) | – | – | – | – | – | – |
