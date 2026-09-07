@@ -1,0 +1,33 @@
+{
+  "label": "solution",
+  "model": "qwen/qwen3.8-27b",
+  "provider": "openrouter",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": null,
+  "context_window": 1000000,
+  "thinking": true,
+  "reasoning_effort": "model default",
+  "prompt_tokens": 1269,
+  "completion_tokens": 17923,
+  "reasoning_chars": 59065,
+  "content_chars": 15233,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 1549.2,
+  "server_seconds": 1549.2,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 11.6,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/14-code-review-planted-bugs/variants/variant-a.md"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": [],
+  "cost_usd": 0.03603635,
+  "upstream_cost_usd": 0.03603635,
+  "reasoning_tokens": null,
+  "cached_tokens": null,
+  "generation_id": "gen-1788761193-ee2ujFC1SB4KZzJUrJrU",
+  "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial"
+}
