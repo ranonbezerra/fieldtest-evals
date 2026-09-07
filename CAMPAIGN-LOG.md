@@ -54,3 +54,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 23:47 | 10-adapt-existing-screen | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 23:48 | 11-behavior-preserving-refactor | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 23:54 | 12-orm-migration | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-07 23:55 | 13-legacy-characterization-tests | a | **no meta** (exit 0) | – | – | – | – | – | – |
