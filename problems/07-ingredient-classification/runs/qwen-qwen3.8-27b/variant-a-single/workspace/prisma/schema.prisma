@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  BANNED @map("banned")
+  RESTRICTED @map("restricted")
+  WATCH @map("watch")
+}
+
+enum MethodologyStatus {
+  DRAFT @map("draft")
+  ACTIVE @map("active")
+}
+
+// Canonical ingredient. `name` is stored pre-normalized (lowercase,
+// accent-free, whitespace-collapsed) so lookups are exact matches.
+model Ingredient {
+  id        String    @id @default(uuid()) @map("id")
+  name      String    @unique @map("name")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  synonyms Synonym[]
+
+  @@map("ingredients")
+}
+
+// A raw spelling (case, accent, OCR typo) that resolves to a canonical
+// ingredient. Resolution normalizes each side before comparison.
+model Synonym {
+  id           String     @id @default(uuid()) @map("id")
+  ingredientId String     @map("ingredient_id")
+  value        String     @map("value")
+
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([ingredientId, value])
+  @@map("synonyms")
+}
+
+// Immutable once published: the API offers no mutation for ACTIVE versions.
+model MethodologyVersion {
+  id          String            @id @default(uuid()) @map("id")
+  version     String            @unique @map("version")
+  status      MethodologyStatus @default(DRAFT) @map("status")
+  publishedAt DateTime?         @map("published_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  rules   Rule[]
+  results ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+// One base rule per ingredient per methodology version.
+model Rule {
+  id          String   @id @default(uuid()) @map("id")
+  severity    Severity @map("severity")
+  flag        String   @map("flag")
+  source      String   @map("source")
+
+  methodologyVersionId String             @map("methodology_version_id")
+  ingredientId         String             @map("ingredient_id")
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+  ingredient           Ingredient         @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([methodologyVersionId, ingredientId])
+  @@map("rules")
+}
+
+// A family profile (e.g. child under 3, pregnancy) that tightens rules.
+model Profile {
+  id        String   @id @default(uuid()) @map("id")
+  name      String   @unique @map("name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  modifiers ProfileModifier[]
+
+  @@map("profiles")
+}
+
+// Contextual modifier: for the target ingredient it takes precedence over
+// the base rule of the active methodology (it only ever tightens).
+model ProfileModifier {
+  id         String  @id @default(uuid()) @map("id")
+  severity   Severity @map("severity")
+  flag       String  @map("flag")
+  source     String  @map("source")
+
+  profileId    String  @map("profile_id")
+  ingredientId String  @map("ingredient_id")
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, ingredientId])
+  @@map("profile_modifiers")
+}
+
+model Product {
+  id        String   @id @default(uuid()) @map("id")
+  name      String   @map("name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ingredients ProductIngredient[]
+  results     ClassificationResult[]
+
+  @@map("products")
+}
+
+// Raw INCI entry exactly as listed, in list order (`position`).
+model ProductIngredient {
+  id        String  @id @default(uuid()) @map("id")
+  rawName   String  @map("raw_name")
+  position  Int     @map("position")
+
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, rawName, position])
+  @@map("product_ingredients")
+}
+
+// Stored base (profile-independent) classification, keyed by
+// (product, methodologyVersion). Profile views are derived at read time
+// and are not stored per profile.
+model ClassificationResult {
+  id          String  @id @default(uuid()) @map("id")
+  confidence  Float   @map("confidence")
+  disclaimer  String  @map("disclaimer")
+  findingsJson Json   @map("findings_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  productId              String             @map("product_id")
+  methodologyVersionId   String             @map("methodology_version_id")
+  product                Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  methodologyVersion     MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, methodologyVersionId])
+  @@map("classification_results")
+}
