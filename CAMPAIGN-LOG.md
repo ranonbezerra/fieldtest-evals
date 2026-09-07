@@ -56,3 +56,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 23:54 | 12-orm-migration | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 23:55 | 13-legacy-characterization-tests | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 23:59 | 14-code-review-planted-bugs | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-07 23:59 | 15-wiring-boot-failure | a | **no meta** (exit 0) | – | – | – | – | – | – |

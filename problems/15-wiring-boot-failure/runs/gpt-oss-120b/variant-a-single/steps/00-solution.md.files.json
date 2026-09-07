@@ -1,0 +1,9 @@
+[
+  "src/app.module.ts",
+  "src/jobs/queues.const.ts",
+  "src/notifications/notifications.module.ts",
+  "src/notifications/notifications.service.ts",
+  "src/users/users.module.ts",
+  "src/wiring/wiring-check.module.ts",
+  "src/wiring/wiring-check.service.ts"
+]
