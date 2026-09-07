@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id             String   @id @default(uuid())
+  customerEmail  String   @map("customer_email")
+  providerStatus String   @map("provider_status")
+  amountCents    Int      @map("amount_cents")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("orders")
+}
+
+model Payout {
+  id             String    @id @default(uuid())
+  merchantId     String    @map("merchant_id")
+  providerStatus String    @map("provider_status")
+  amountCents    Int       @map("amount_cents")
+  settledAt      DateTime? @map("settled_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@map("payouts")
+}
