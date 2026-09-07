@@ -432,9 +432,26 @@ def main():
                 # with a different one.
                 say(f"resume: {len(already)} file(s) already written; not asking again")
             instruction = (HARNESS / "instructions" / "single-shot.md").read_text()
+            # A seeded workspace has to be handed over, not merely mentioned. The
+            # instruction tells the model it has no filesystem, and for problems
+            # 09-16 the fixture is the task: review this code, refactor this
+            # module, characterize this calculator. Passing only the variant left
+            # the model to invent what it was asked to work on, and it did —
+            # problem 14's reply says so outright, "Since I don't have the actual
+            # fixture code". The phased shape never had this hole: a file phase
+            # resolves `reads:` against the workspace.
+            seed_reads = sorted(
+                (q for q in already
+                 if q.suffix in (".ts", ".tsx", ".js", ".jsx", ".prisma", ".sql",
+                                 ".json", ".md", ".yaml", ".yml", ".css", ".html")
+                 and q.name != "_shims.d.ts"),
+                key=lambda q: str(q))
+            if seed_reads:
+                say(f"handing the model the {len(seed_reads)} seeded file(s) it is "
+                    f"asked to work on")
             rc = 0 if skip_ask else ft_run(
                 "solution", instruction, steps / "00-solution.md",
-                reads=[variant], system=cheatsheet, files_into=ws)
+                reads=[variant, *seed_reads], system=cheatsheet, files_into=ws)
             if rc != 0:
                 # Nobody reads an empty reply and moves on. A developer asks again,
                 # and a field test that does not is measuring patience nobody has.
@@ -443,7 +460,8 @@ def main():
                 say("the request produced no files; asking again, as a person would")
                 rc = ft_run("solution-retry", instruction,
                             steps / "00-solution-retry.md",
-                            reads=[variant], system=cheatsheet, files_into=ws)
+                            reads=[variant, *seed_reads], system=cheatsheet,
+                            files_into=ws)
                 retried_single = True
             if rc != 0:
                 say("the second request produced nothing either; recorded as a "

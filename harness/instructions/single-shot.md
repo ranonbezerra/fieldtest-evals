@@ -3,6 +3,11 @@ Build the whole solution in one reply.
 The task is above. Everything you can know is above: you have no tools, no shell and
 no filesystem, and there will be no second request.
 
+If files are given above the task, they are the existing codebase and they are real.
+Work against them as they are written — their names, their types, their conventions.
+Do not restate a file you are not changing, and do not invent a replacement for one
+you were shown.
+
 - Deliver every file the solution needs, complete, first line to last. Never a
   fragment, never an "unchanged" comment, never a diff.
 - Decide the file layout yourself. Nothing here dictates one.
