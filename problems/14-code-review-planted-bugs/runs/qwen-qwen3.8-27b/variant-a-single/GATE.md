@@ -63,3 +63,22 @@ accounts.repository.ts(2,24): error TS2305: Module '"@prisma/client"' has no exp
 transfers.service.ts(5,10): error TS2305: Module '"./serializer.js"' has no exported member 'formatMoney'.
 transfers.service.ts(80,54): error TS7006: Parameter 'row' implicitly has an 'any' type.
 
+
+---
+
+## Correction: the deliverable was never written, and the code under review was
+
+Two harness defects, both fixed today.
+
+`extract_files` matched only three-backtick fences. This reply opened its deliverable
+with ````markdown — which is correct, because REVIEW.md contains three-backtick code
+blocks — so nothing was extracted and the run committed a workspace with no REVIEW.md
+in it. The parser now accepts a fence of three or more backticks (or tildes) and
+requires the closing fence to be at least as long. The 179-line REVIEW.md has been
+recovered from the transcript.
+
+The gate then scoped itself to every file in the workspace, so its four repair rounds
+rewrote `transfers.service.ts` (214 lines) and `accounts.repository.ts` (66 lines) —
+the code `workspace.json` says is `review only … never edits these`. Both restored
+from `fixtures/transfers`. The gate is now scoped to the paths the reply carried, and
+on this problem that is one markdown file, so the typecheck would not have run at all.

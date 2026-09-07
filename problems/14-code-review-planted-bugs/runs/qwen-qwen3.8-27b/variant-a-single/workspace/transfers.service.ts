@@ -1,93 +1,161 @@
-import { randomUUID } from 'node:crypto';
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { AccountsRepository } from './accounts.repository.js';
-// ASSUMPTION: compiler TS2305 — './serializer.js' has no `serializeMoney` export; assumed the equivalent existing export to be `formatMoney(value, currency)`, and hardcoded 'EUR' as the audit currency since it could not be recovered from what was given.
-import { formatMoney } from './serializer.js';
-// ASSUMPTION: compiler TS2305 — '@prisma/client' exports no `Prisma` namespace in this workspace; the tx argument to the repository calls is typed with the local `TransactionClient` placeholder.
-// ASSUMPTION: compiler TS2339 — `lockAccount`, `getAccount`, `applyDebit`, `applyCredit` and `fetchRawBalances` were reported missing on `AccountsRepository`, but ./accounts.repository.ts declares all of them; trusted that file and left the import untouched.
+// transfers.service.ts
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { AccountsRepository } from './accounts.repository';
+import { RiskClient } from '../risk/risk.client';
+import { NotificationsService } from '../notifications/notifications.service';
+import { serializeResponse } from './serializer';
 
-type TransactionClient = Record<string, unknown>;
-
-interface RiskDecision {
-  decision: 'ACCEPT' | 'REVIEW' | 'REJECT';
-  reason?: string;
-}
+const LARGE_TRANSFER_THRESHOLD = 1_000_000n; // minor units
 
 @Injectable()
 export class TransfersService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly accounts: AccountsRepository,
-    // ASSUMPTION: compiler TS2307 — '../prisma/prisma.service.js' does not exist in this workspace; parameter is a structural stand-in for `private readonly prisma: PrismaService`; only `$transaction` is called on it.
-    private readonly prisma: {
-      $transaction: (fn: (tx: TransactionClient) => Promise<void>) => Promise<void>;
-    },
-    // ASSUMPTION: compiler TS2307 — '../risk/risk.client.js' does not exist in this workspace; parameter is a structural stand-in for `private readonly risk: RiskClient`; the call itself is kept unchanged.
-    private readonly risk: (request: { from: string; to: string; value: number }) => Promise<RiskDecision>,
-    // ASSUMPTION: compiler TS2307 — '../notifications/notifications.service.js' does not exist in this workspace; parameter is a structural stand-in for `private readonly notifications: NotificationsService`; every call site, including the un-awaited ones, is kept unchanged.
-    private readonly notifications: (event: { type: string; payload: Record<string, unknown> }) => Promise<void>,
+    private readonly risk: RiskClient,
+    private readonly notifications: NotificationsService,
   ) {}
 
-  async transfer(sender: string, receiver: string, amount: number): Promise<{ id: string; value: number }> {
-    if (!sender || !receiver || sender === receiver) throw new HttpException({ error: { code: 'validation_error', message: 'sender and receiver must both be set and differ', details: {} } }, HttpStatus.BAD_REQUEST);
-    if (!Number.isFinite(amount) || amount <= 0) throw new HttpException({ error: { code: 'invalid_amount', message: 'amount must be a finite number greater than zero', details: { amount } } }, HttpStatus.BAD_REQUEST);
+  async transfer(
+    fromAccountId: string,
+    toAccountId: string,
+    amount: bigint,
+    idempotencyKey: string,
+  ) {
+    if (amount <= 0n) throw new BadRequestException('amount must be positive');
 
-    const id = randomUUID();
+    const result = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.transfer.findUnique({ where: { idempotencyKey } });
+      if (existing) return existing;
 
-    // risk screening deliberately happens outside the transaction boundary
-    const decision = await this.risk({ from: sender, to: receiver, value: amount });
-    if (decision.decision === 'REVIEW') {
-      this.notifications({ type: 'risk.review', payload: { sender, receiver, value: amount, reason: decision.reason } });
-    }
-    if (decision.decision !== 'ACCEPT') throw new HttpException({ error: { code: 'risk_rejected', message: `transfer rejected by risk engine (${decision.reason ?? 'no reason given'})`, details: { verdict: decision.decision, sender, receiver, value: amount } } }, HttpStatus.UNPROCESSABLE_ENTITY);
+      const from = await this.accounts.lockAccount(tx, fromAccountId);
+      const to = await this.accounts.lockAccount(tx, toAccountId);
 
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        // locks are taken in request order — a crossing receiver→sender transfer deadlocks against ours
-        await this.accounts.lockAccount(sender, tx);
-        await this.accounts.lockAccount(receiver, tx);
-        // only the sender is existence-checked here; receiver relies on the lock above
-        const account_row = await this.accounts.getAccount(sender);
-        if (!account_row) throw new HttpException({ error: { code: 'account_not_found', message: `account ${sender} not found`, details: { account: sender } } }, HttpStatus.NOT_FOUND);
-        if (Number(account_row.balance) < amount) throw new HttpException({ error: { code: 'insufficient_funds', message: `account ${sender} has insufficient funds`, details: { account: sender, available: Number(account_row.balance), requested: amount } } }, HttpStatus.UNPROCESSABLE_ENTITY);
-        // hold both locks so a crossing transfer can queue behind us before we commit
-        await new Promise((resolve) => setTimeout(resolve, 25));
-        // side effect inside the transaction boundary — fires before commit and its promise is not awaited
-        this.notifications({ type: 'transfer.moved', payload: { id, sender, receiver, value: amount } });
-        await this.accounts.applyDebit(sender, amount, tx);
-        await this.accounts.applyCredit(receiver, amount, tx);
-      });
-    } catch (error) {
-      // single retry on failure; the retry applies the balance mutation without a sufficiency re-check, so a depleted row is debited anyway
-      try {
-        await this.prisma.$transaction(async (tx) => {
-          await this.accounts.lockAccount(sender, tx);
-          await this.accounts.lockAccount(receiver, tx);
-          await this.accounts.applyDebit(sender, amount, tx);
-          await this.accounts.applyCredit(receiver, amount, tx);
-        });
-      } catch (second) {
-        if (second instanceof HttpException) throw second;
-        throw new HttpException({ error: { code: 'internal_error', message: 'unexpected error while retrying the balance mutation', details: { original: error instanceof Error ? error.message : String(error), retry: second instanceof Error ? second.message : String(second) } } }, HttpStatus.INTERNAL_SERVER_ERROR);
+      if (from.balance < amount) {
+        throw new BadRequestException('insufficient funds');
       }
+
+      const risk = await this.risk.evaluate({
+        from: from.id,
+        to: to.id,
+        amount: amount.toString(),
+      });
+      if (risk.decision === 'BLOCK') {
+        throw new BadRequestException('transfer blocked by risk policy');
+      }
+
+      await tx.account.update({
+        where: { id: from.id },
+        data: { balance: { decrement: amount } },
+      });
+      await tx.account.update({
+        where: { id: to.id },
+        data: { balance: { increment: amount } },
+      });
+
+      const transfer = await tx.transfer.create({
+        data: {
+          fromAccountId,
+          toAccountId,
+          amount,
+          idempotencyKey,
+          status: 'COMPLETED',
+        },
+      });
+
+      await tx.ledgerEntry.createMany({
+        data: [
+          { transferId: transfer.id, accountId: from.id, delta: -amount },
+          { transferId: transfer.id, accountId: to.id, delta: amount },
+        ],
+      });
+
+      if (amount >= LARGE_TRANSFER_THRESHOLD) {
+        await tx.auditLog.create({
+          data: {
+            kind: 'LARGE_TRANSFER',
+            payload: JSON.stringify({
+              transferId: transfer.id,
+              amount,
+              riskScore: risk.score,
+            }),
+          },
+        });
+      }
+
+      return transfer;
+    });
+
+    this.notifications.sendTransferReceipt(result.id);
+
+    return serializeResponse(result);
+  }
+
+  /** Nightly job: retries transfers that failed on transient errors. */
+  async retryFailedTransfers() {
+    const failed = await this.prisma.transfer.findMany({
+      where: { status: 'FAILED_TRANSIENT' },
+    });
+
+    for (const t of failed) {
+      const from = await this.prisma.account.findUniqueOrThrow({
+        where: { id: t.fromAccountId },
+      });
+      if (from.balance < t.amount) continue;
+
+      await this.prisma.account.update({
+        where: { id: from.id },
+        data: { balance: from.balance - t.amount },
+      });
+      await this.prisma.account.update({
+        where: { id: t.toAccountId },
+        data: { balance: { increment: t.amount } },
+      });
+      await this.prisma.transfer.update({
+        where: { id: t.id },
+        data: { status: 'COMPLETED' },
+      });
     }
+  }
 
-    // completion notification: fired and forgotten — no await, no catch
-    this.notifications({ type: 'transfer.completed', payload: { id, sender, receiver, value: amount } });
+  /** Monthly statement rows for an account. */
+  async buildStatement(accountId: string, month: string) {
+    const transfers = await this.prisma.transfer.findMany({
+      where: { OR: [{ fromAccountId: accountId }, { toAccountId: accountId }], month },
+      orderBy: { createdAt: 'asc' },
+    });
 
-    // audit snapshot: raw balances are read outside the transaction and reformatted to major units
-    try {
-      const rows = await this.accounts.fetchRawBalances([sender, receiver]);
-      const pick = (accountId: string) => rows.find((row) => String(row.id) === accountId);
-      const audit = {
-        id,
-        sender: formatMoney(Number(pick(sender)?.balance ?? 0), 'EUR'),
-        receiver: formatMoney(Number(pick(receiver)?.balance ?? 0), 'EUR'),
-      };
-      this.notifications({ type: 'audit.balances', payload: { ...audit } });
-    } catch {
-      // best-effort audit enrichment; the transfer itself stays alive
-    }
+    const rows = await Promise.all(
+      transfers.map(async (t) => {
+        const entries = await this.prisma.ledgerEntry.findMany({
+          where: { transferId: t.id, accountId },
+        });
+        const counterparty = await this.prisma.account.findUnique({
+          where: { id: t.fromAccountId === accountId ? t.toAccountId : t.fromAccountId },
+        });
+        return {
+          date: t.createdAt,
+          counterparty: counterparty?.id,
+          delta: entries.reduce((s, e) => s + e.delta, 0n),
+        };
+      }),
+    );
 
-    return { id, value: amount };
+    return rows;
+  }
+
+  /** CSV export of the full ledger, streamed via the raw pg client. */
+  async exportLedger(accountId: string): Promise<string> {
+    const client = await this.accounts.getRawClient();
+    const res = await client.query(
+      'SELECT * FROM "LedgerEntry" WHERE "accountId" = $1 ORDER BY "createdAt"',
+      [accountId],
+    );
+    const csv = res.rows
+      .map((r) => `${r.createdAt.toISOString()},${r.transferId},${r.delta}`)
+      .join('\n');
+    client.release();
+    return csv;
   }
 }

@@ -83,8 +83,14 @@ def strip_stray_fences(text):
     return "\n".join(lines)
 
 
+# The fence may be longer than three backticks, and has to be when the file itself
+# contains fenced blocks — a markdown deliverable, a REVIEW.md quoting code. Problem
+# 14 opened its review with ````markdown, which is correct, and the three-backtick
+# pattern matched nothing at all: the run committed a workspace with no deliverable
+# in it. The closing fence must be at least as long as the opening one.
 MULTI = re.compile(
-    r"^###[ \t]+`?([\w./+-]+)`?[ \t]*\r?\n+```[\w+-]*\r?\n(.*?)\r?\n```",
+    r"^###[ \t]+`?([\w./+-]+)`?[ \t]*\r?\n+(`{3,}|~{3,})[\w+-]*\r?\n"
+    r"(.*?)\r?\n\2\2*[ \t]*(?:\r?\n|$)",
     re.S | re.M)
 
 
@@ -96,7 +102,7 @@ def extract_files(text):
     properly should land the second version.
     """
     out = {}
-    for path, body in MULTI.findall(text):
+    for path, _fence, body in MULTI.findall(text):
         p = path.strip().lstrip("./")
         if p:
             out[p] = strip_stray_fences(body.rstrip("\n")) + "\n"
