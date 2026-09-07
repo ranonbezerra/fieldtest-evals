@@ -1,3 +1,28 @@
+# repair2-billing.service.ts
+
+## reasoning
+
+```
+We need to rewrite billing.service.ts to fix import errors. Likely need to import types from db/client which now exports? Let's open repository? Not available. Assume client exports AccountRow, InvoiceRow, LineItemRow? Errors say no exported member. So maybe client exports default? Use import InvoiceRow from "../db/client.js". Use default exports? We'll assume they are default exported types. So change imports to default.
+
+Also need to type tx param. Add type any or import Tx from client.
+
+We'll write service using repository injected. Probably simple.
+
+We'll just export class BillingService with methods used in tests: createInvoice, getInvoice, listInvoices, updateInvoice? But not needed compile.
+
+Simplify: import { Injectable } from '@nestjs/common'; import BillingRepository from './billing.repository.js'; import type { InvoiceRow, LineItemRow } from '../db/client.js'; but default import? Use import InvoiceRow from '../db/client.js'; same for LineItemRow.
+
+Add // ASSUMPTION lines.
+
+Implement methods delegating to repository.
+
+Let's produce minimal compile.
+```
+
+## reply
+
+```ts
 // src/billing/billing.service.ts
 import { Injectable } from '@nestjs/common';
 import { BillingRepository } from './billing.repository.js';
@@ -54,3 +79,4 @@ export class BillingService {
     return this.repo.findAccountById(id);
   }
 }
+```

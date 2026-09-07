@@ -1,0 +1,11 @@
+[
+  "MIGRATION_NOTES.md",
+  "package.json",
+  "src/billing/billing.repository.ts",
+  "src/billing/billing.service.ts",
+  "src/billing/types.ts",
+  "src/db/client.ts",
+  "src/db/schema.ts",
+  "test/billing.spec.ts",
+  "test/billing.transaction.spec.ts"
+]

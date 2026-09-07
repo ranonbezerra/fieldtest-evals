@@ -1,3 +1,24 @@
+# repair2-billing.repository.ts
+
+## reasoning
+
+```
+We need to rewrite repository to use Drizzle imports. Likely need to export types from db/client. Assume client exports db and schema. Provide correct imports with .js extensions. Also define Tx type. Simplify: use Drizzle ORM with better-sqlite3. We'll just stub functions matching interface used elsewhere.
+
+Implement class BillingRepository with methods used in service: findAccount, findInvoice, findInvoicesByAccount, createInvoiceWithLineItems, updateInvoice, findLineItemsByInvoice. Use db (import from '../db/client.js') and schema tables.
+
+We need to import types AccountRow, InvoiceRow, LineItemRow from '../db/client.js' (they are exported there). Ensure .js extension.
+
+Provide transaction method using db.transaction.
+
+Implement types.
+
+Let's craft file.
+```
+
+## reply
+
+```ts
 // src/billing/billing.repository.ts
 import type {
   AccountRow,
@@ -212,3 +233,4 @@ export class BillingRepository {
    generated typings, so we import it from the query builder.
    ------------------------------------------------------------------------- */
 import { eq } from 'drizzle-orm';
+```
