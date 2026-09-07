@@ -1,0 +1,15 @@
+[
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/main.ts",
+  "src/payout/dto/create-payout.dto.ts",
+  "src/payout/message.processor.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "src/provider/crypto.provider.ts",
+  "test/payout.spec.ts"
+]

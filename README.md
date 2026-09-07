@@ -113,6 +113,29 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 
 <!-- results:start -->
 
+### gpt-oss-120b
+
+| # | Problem | A | B | C | L2 | What you can hand it |
+|---|---|:-:|:-:|:-:|:-:|---|
+| 01 | payout outbox | – | – | – | – | *not yet run* |
+| 02 | reconciliation resend | – | – | – | – | *not yet run* |
+| 03 | read model projection | – | – | – | – | *not yet run* |
+| 04 | grounded llm product | – | – | – | – | *not yet run* |
+| 05 | onchain anchoring | – | – | – | – | *not yet run* |
+| 06 | multi tenant isolation | – | – | – | – | *not yet run* |
+| 07 | ingredient classification | – | – | – | – | *not yet run* |
+| 08 | infra debug | – | – | – | – | *not yet run* |
+| 09 | feature in conventions | – | – | – | – | *not yet run* |
+| 10 | adapt existing screen | – | – | – | – | *not yet run* |
+| 11 | behavior preserving refactor | – | – | – | – | *not yet run* |
+| 12 | orm migration | – | – | – | – | *not yet run* |
+| 13 | legacy characterization tests | – | – | – | – | *not yet run* |
+| 14 | code review planted bugs | – | – | – | – | *not yet run* |
+| 15 | wiring boot failure | – | – | – | – | *not yet run* |
+| 16 | migration that lied | – | – | – | – | *not yet run* |
+| 17 | token rotation reuse | – | – | – | – | *not yet run* |
+| 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+
 ### qwen-qwen3.8-27b
 
 | # | Problem | A | B | C | L2 | What you can hand it |
@@ -151,7 +174,7 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 09 | feature in conventions | ✗<br><sub>M2</sub> | – | – | – | Reads the codebase's conventions well, then infers the wrong rule from a failure and applies it to a whole file. |
 | 10 | adapt existing screen | ✗<br><sub>M1, M4</sub> | – | – | – | Builds the whole feature correctly beside the application and never connects it to anything. |
 | 11 | behavior preserving refactor | ✗<br><sub>M3, M4, M5</sub> | – | – | – | Turns three copies into four, and the suite stays green because the tests still point at the copies it left alone. |
-| 12 | orm migration | – | – | – | – | *not yet run* |
+| 12 | orm migration | ✗<br><sub>M4</sub> | – | – | – | It wrote a Drizzle implementation beside the Prisma one instead of in place of it, and every covered test stayed green because every covered test is still talking to Prisma. |
 | 13 | legacy characterization tests | ✗<br><sub>M2, M3, M5, M6</sub> | – | – | – | Writes a characterization suite and a bug report for a module it never opened, and presents invented code as the evidence. |
 | 14 | code review planted bugs | ~ | – | – | – | Finds every critical plant and rates one of them minor. |
 | 15 | wiring boot failure | ✗<br><sub>M1, M2, M3</sub> | – | – | – | Diagnoses the wiring correctly and then builds a new module rather than fixing the one that is broken. |

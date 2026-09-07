@@ -1,0 +1,59 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Account {
+  id               String        @id @default(uuid())
+  settledBalance   BigInt        @map("settled_balance")
+  reservedBalance  BigInt        @map("reserved_balance")
+  payouts          Payout[]
+  ledgerEntries    LedgerEntry[]
+}
+
+model Payout {
+  id                 String        @id @default(uuid())
+  accountId          String        @map("account_id")
+  amount             BigInt
+  destinationAddress String        @map("destination_address")
+  status             PayoutStatus  @default(CREATED)
+  txHash             String?       @map("tx_hash")
+  idempotencyKey    String        @unique @map("idempotency_key")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  account            Account       @relation(fields: [accountId], references: [id])
+  outboxMessage      OutboxMessage?
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+model LedgerEntry {
+  id          String   @id @default(uuid())
+  accountId   String   @map("account_id")
+  amount      BigInt
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  account     Account  @relation(fields: [accountId], references: [id])
+}
+
+model OutboxMessage {
+  id           String   @id @default(uuid())
+  payoutId     String   @unique @map("payout_id")
+  attemptCount Int      @default(0) @map("attempt_count")
+  lastError    String?  @map("last_error")
+  lockedAt     DateTime? @map("locked_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  payout       Payout   @relation(fields: [payoutId], references: [id])
+}
