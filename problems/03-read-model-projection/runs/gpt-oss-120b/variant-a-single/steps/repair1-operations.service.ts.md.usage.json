@@ -1,0 +1,33 @@
+{
+  "label": "repair1-operations.service.ts",
+  "model": "gpt-oss-120b",
+  "provider": "openrouter",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": null,
+  "context_window": 1000000,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 1937,
+  "completion_tokens": 2542,
+  "reasoning_chars": 9039,
+  "content_chars": 3633,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 35.3,
+  "server_seconds": 35.3,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 72.0,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/03-read-model-projection/variants/variant-a.md"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": [],
+  "cost_usd": 0.001056085,
+  "upstream_cost_usd": 0.001056085,
+  "reasoning_tokens": null,
+  "cached_tokens": null,
+  "generation_id": "gen-1788821762-ZFkKtjJeXwFBGvvUosw7",
+  "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial"
+}

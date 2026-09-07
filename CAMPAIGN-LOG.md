@@ -45,3 +45,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 08:00 | 18-timing-equal-enumeration | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 22:49 | 01-payout-outbox | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 22:52 | 02-reconciliation-resend | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-07 23:02 | 03-read-model-projection | a | **no meta** (exit 0) | – | – | – | – | – | – |

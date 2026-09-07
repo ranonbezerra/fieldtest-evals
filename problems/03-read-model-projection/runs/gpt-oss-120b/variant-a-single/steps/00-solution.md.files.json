@@ -1,0 +1,13 @@
+[
+  "prisma/schema.prisma",
+  "src/operations/dto/operation.dto.ts",
+  "src/operations/dto/pagination.dto.ts",
+  "src/operations/operations.controller.ts",
+  "src/operations/operations.drift.service.ts",
+  "src/operations/operations.hooks.service.ts",
+  "src/operations/operations.module.ts",
+  "src/operations/operations.rederivation.service.ts",
+  "src/operations/operations.repository.ts",
+  "src/operations/operations.service.ts",
+  "test/operations.spec.ts"
+]

@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// ----------------------------------------------------------
+/// Core write models (simplified for this exercise)
+/// ----------------------------------------------------------
+model Order {
+  id            Int      @id @default(autoincrement())
+  company_id    Int
+  worker_id     Int
+  amount_cents  Int
+  status        String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model Event {
+  id         Int      @id @default(autoincrement())
+  order_id   Int
+  type       String
+  payload    Json
+  created_at DateTime @default(now())
+
+  @@map("events")
+}
+
+model Worker {
+  id        Int    @id @default(autoincrement())
+  name      String
+  company_id Int
+
+  @@map("workers")
+}
+
+/// ----------------------------------------------------------
+/// Projection tables
+/// ----------------------------------------------------------
+model OperationProjection {
+  id            Int      @id @default(autoincrement())
+  order_id      Int      @unique
+  company_id    Int
+  worker_id     Int
+  amount_cents  Int
+  status        String
+  created_at    DateTime
+  updated_at    DateTime
+
+  @@index([company_id, status, created_at], name: "idx_company_status_created")
+  @@index([created_at], name: "idx_created_at_desc")
+  @@map("operation_projections")
+}
+
+model CompanyTotals {
+  company_id   Int    @id
+  total_cents  Int    @default(0)
+  updated_at   DateTime @updatedAt
+
+  @@map("company_totals")
+}
