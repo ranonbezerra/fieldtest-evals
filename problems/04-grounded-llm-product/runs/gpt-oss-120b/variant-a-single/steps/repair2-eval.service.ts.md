@@ -1,3 +1,24 @@
+# repair2-eval.service.ts
+
+## reasoning
+
+```
+We need to write eval.service.ts with correct imports. Likely other files missing. We assume paths: answer.service.ts, fake-llm-client.service.ts, llm-client.interface.ts. We can create placeholder imports? Just import types? Provide minimal implementation to compile.
+
+Implement class EvalService with methods per description: evaluate(question, sources, expectedFacts, falseFacts, mode). Use answer service and maybe LLM client. We'll just import AnswerService from './answer.service'; import FakeLlmClientService? maybe not needed. Provide simple logic.
+
+Assume AnswerService has method answer(question, sources, mode). We'll call it.
+
+Implement evaluate returning score number.
+
+Add necessary exports.
+
+Write file.
+```
+
+## reply
+
+```ts
 // src/answer/eval.service.ts
 
 import { Injectable } from '@nestjs/common';
@@ -124,3 +145,4 @@ export class EvalService {
     return containsRedaction && notRefusal ? 1 : 0;
   }
 }
+```
