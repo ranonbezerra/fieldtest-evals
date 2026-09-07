@@ -30,3 +30,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 02:40 | 03-read-model-projection | a | **no meta** (exit 1) | – | – | – | – | – | – |
 | 2026-09-07 02:54 | 04-grounded-llm-product | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 03:22 | 05-onchain-anchoring | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-07 03:52 | 06-multi-tenant-isolation | a | **no meta** (exit 0) | – | – | – | – | – | – |
