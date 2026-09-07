@@ -32,3 +32,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 03:22 | 05-onchain-anchoring | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 03:52 | 06-multi-tenant-isolation | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 04:08 | 07-ingredient-classification | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-07 04:19 | 08-infra-debug | a | **no meta** (exit 0) | – | – | – | – | – | – |
