@@ -1,0 +1,8 @@
+[
+  "src/answer/answer.module.ts",
+  "src/answer/answer.service.ts",
+  "src/answer/eval.service.ts",
+  "src/answer/fake-llm-client.service.ts",
+  "src/answer/llm-client.interface.ts",
+  "test/answer.spec.ts"
+]
