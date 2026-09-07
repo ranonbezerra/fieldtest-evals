@@ -389,12 +389,30 @@ def main():
         # The phase design below exists because no single reply fits under 16,384
         # tokens (FINDINGS 3.1). A model with room does not need it, and asking it
         # one file at a time measures this harness's shape as much as the model.
+        # Everything the capture and the gate read must exist in both shapes. Three
+        # of these were found one crash at a time — `empty`, then `manifest`, then
+        # `plan_md`, each after a run had finished its work and lost it at the last
+        # step. Initialised together so the next one cannot happen quietly.
+        plan_md = rundir / "PLAN.md"
+        manifest = []
+        manifest_declared = 0
+        declared = set()
+        empty = []
         retried_single = False
         if a.shape == "single":
             say("\nshape: single — the whole solution in one reply, no plan phase")
+            already = [q for q in ws.rglob("*")
+                       if q.is_file() and "node_modules" not in q.parts]
+            skip_ask = bool(a.resume and already)
+            if skip_ask:
+                # The reply already landed; a resume is here for what came after it.
+                # Asking again would pay twice for the same answer and replace it
+                # with a different one.
+                say(f"resume: {len(already)} file(s) already written; not asking again")
             instruction = (HARNESS / "instructions" / "single-shot.md").read_text()
-            rc = ft_run("solution", instruction, steps / "00-solution.md",
-                        reads=[variant], system=cheatsheet, files_into=ws)
+            rc = 0 if skip_ask else ft_run(
+                "solution", instruction, steps / "00-solution.md",
+                reads=[variant], system=cheatsheet, files_into=ws)
             if rc != 0:
                 # Nobody reads an empty reply and moves on. A developer asks again,
                 # and a field test that does not is measuring patience nobody has.
@@ -422,10 +440,7 @@ def main():
             # in it is its own work and its own responsibility.
             declared = {str(q.relative_to(ws)) for q in written}
             empty = [q for q in written if q.stat().st_size == 0]
-        else:
-            manifest_declared = 0
-            declared = set()
-            empty = []
+
 
         # Everything from here to the gate is the phased shape: a plan, then a
         # file per request. `--shape single` has already written the workspace
