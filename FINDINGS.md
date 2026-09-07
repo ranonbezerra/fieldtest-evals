@@ -758,6 +758,50 @@ in prose and not implemented it: the README named problem 08's typecheck excepti
 Every one of the three was found by a run failing for a reason that had nothing to do
 with the model.
 
+### 3.8 Given the compiler settings, it picks the one where its own imports are correct
+
+The first hosted run wrote its own `tsconfig.json`, because the single-request shape
+asks for a whole project and a project has one. It chose:
+
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true
+
+Then the same workspace, byte for byte:
+
+| tsconfig | errors |
+|---|--:|
+| the model's own (`Bundler`) | **0** |
+| the harness's (`NodeNext`) | **49** |
+
+Its 28 relative imports carry no `.js` extension — 0 of 28, the same convention that
+cost problems 03, 05, 06 and 18 their gates locally. Under `NodeNext` that is 49
+errors. Under the resolver it chose, it is correct code.
+
+**It did not weaken the check.** `strict` stayed `true`; it changed the module
+resolver, not the strictness. `bundler` with `strict` is an ordinary modern TypeScript
+configuration, and a developer starting a project picks it freely. `NodeNext` was the
+harness's choice, made once, and every local run was judged under it.
+
+*What this settles about §3.6.* The extension convention was never the model failing to
+know something. Given the choice it writes extensionless imports and selects the
+resolver in which they are right — consistently, 28 for 28. What the local campaign
+measured there was a disagreement between the model's convention and ours, scored
+entirely against the model.
+
+*What it opens, and it is uncomfortable.* `SECOND-PASS.md` §7 argues that letting the
+model own `tsconfig.json` makes the gate self-scoring, and that is still true: nothing
+stops a run from setting `strict: false` and reporting a clean typecheck. This run did
+not, and one run is not a habit. **The gate and the configuration cannot both belong to
+the same party, and in the single-request shape they do.** Recording the delivered
+`tsconfig` and diffing it against a reference is the cheapest guard, and it is not
+built.
+
+*What it costs the comparison.* The hosted runs are not comparable to the local ones on
+the typecheck axis, and saying they are would be the campaign's worst error. Local runs
+were checked under a configuration they did not choose; hosted runs choose their own.
+Every other axis — must-haves, tests, the domain reasoning — is unaffected.
+
 ### 3.5 The gate roughly doubles a run, and the repair loop is why
 
 With the gate armed for the first time, problem 02 wrote all ten of its files and was
