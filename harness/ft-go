@@ -440,11 +440,18 @@ def main():
             # problem 14's reply says so outright, "Since I don't have the actual
             # fixture code". The phased shape never had this hole: a file phase
             # resolves `reads:` against the workspace.
+            # Lockfiles are not source. `pnpm-lock.yaml` is 84 KB of the 97 KB
+            # problem 09 seeds, and sending it pushed the first request to 136,221
+            # tokens against gpt-oss-120b's 131,072 limit — the whole attempt lost
+            # to a file no model needs to read.
+            SKIP = {"_shims.d.ts", "pnpm-lock.yaml", "package-lock.json",
+                    "yarn.lock", "bun.lockb", ".DS_Store"}
             seed_reads = sorted(
                 (q for q in already
                  if q.suffix in (".ts", ".tsx", ".js", ".jsx", ".prisma", ".sql",
                                  ".json", ".md", ".yaml", ".yml", ".css", ".html")
-                 and q.name != "_shims.d.ts"),
+                 and q.name not in SKIP
+                 and q.stat().st_size <= 200_000),
                 key=lambda q: str(q))
             if seed_reads:
                 say(f"handing the model the {len(seed_reads)} seeded file(s) it is "
