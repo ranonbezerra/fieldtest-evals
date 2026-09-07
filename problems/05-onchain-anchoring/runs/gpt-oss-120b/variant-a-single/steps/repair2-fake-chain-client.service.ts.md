@@ -1,3 +1,16 @@
+# repair2-fake-chain-client.service.ts
+
+## reasoning
+
+```
+We need to write the file. Likely missing imports. Assume interface defined at src/anchor/chain-client.interface.ts with methods prepare, broadcast, getReceipt. We'll implement FakeChainClientService that implements that interface. Provide simple in-memory store. Export as Injectable. Use NestJS.
+
+Let's craft.
+```
+
+## reply
+
+```ts
 // src/anchor/fake-chain-client.service.ts
 
 import { Injectable } from '@nestjs/common';
@@ -84,3 +97,4 @@ export class FakeChainClientService implements ChainClient {
     return `tx_${Math.abs(hash)}`;
   }
 }
+```

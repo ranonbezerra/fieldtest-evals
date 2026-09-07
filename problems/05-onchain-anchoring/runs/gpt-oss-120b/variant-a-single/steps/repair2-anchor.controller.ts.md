@@ -1,3 +1,18 @@
+# repair2-anchor.controller.ts
+
+## reasoning
+
+```
+We need to create the file with correct imports. Likely other files missing but we just need to write controller that imports AnchorService from './anchor.service'. Since missing, we assume exists. Write minimal controller with NestJS decorator, method anchorDocument etc. Provide placeholder methods. Use appropriate DTOs? Just compile. We'll import AnchorService, use Controller('anchor'), define POST route.
+
+Implement class AnchorController with constructor(private readonly anchorService: AnchorService). Provide methods: anchorDocument, verify maybe. Use @Post etc. Use DTOs definitions inline? Could import but not needed. Just use any.
+
+Write file with proper imports and export.
+```
+
+## reply
+
+```ts
 // src/anchor/anchor.controller.ts
 
 import { Controller, Post, Body, Get, Query } from '@nestjs/common';
@@ -45,3 +60,4 @@ export class AnchorController {
     return { status: 'ok' };
   }
 }
+```

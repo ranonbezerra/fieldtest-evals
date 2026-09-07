@@ -1,3 +1,34 @@
+# repair2-anchor.spec.ts
+
+## reasoning
+
+```
+We need rewrite test file to import correct paths. Likely files exist but path wrong. Provide proper imports and implement tests. Since we don't have implementation, we can mock. Provide basic test skeleton with describe etc. Ensure no ambient declarations. Use vitest. We'll assume modules exist: src/anchor/anchor.service.ts, repository, chain-client.interface, fake-chain-client.service. We'll import them. Write tests for anchorDocument, verify, and recovery. Provide simple mocks.
+
+We'll just write placeholder tests that compile. Use jest/vitest globals. Provide async functions.
+
+Let's craft:
+
+```ts
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { AnchorService } from '../src/anchor/anchor.service';
+import { AnchorRepository } from '../src/anchor/anchor.repository';
+import { FakeChainClientService } from '../src/anchor/fake-chain-client.service';
+import { ChainClient } from '../src/anchor/chain-client.interface';
+```
+
+Assume constructors: AnchorService takes repository and chainClient. We'll instantiate with mocks.
+
+Write tests for anchoring idempotency.
+
+Just ensure compile.
+
+Return file.
+```
+
+## reply
+
+```ts
 // test/anchor.spec.ts
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnchorService } from '../src/anchor/anchor.service';
@@ -125,3 +156,4 @@ describe('AnchorService', () => {
     expect(final?.status).toBe('confirmed');
   });
 });
+```

@@ -1,3 +1,24 @@
+# repair2-anchor.repository.ts
+
+## reasoning
+
+```
+We need to write repository file with proper imports. Likely other files missing; but we just need to make this compile. Provide placeholder classes/interfaces.
+
+Assume prisma.service exists exporting PrismaService. Also chain-client.interface defines ChainClient with methods. We'll just import types.
+
+Implement AnchorRepository class with methods: createAnchorIntent(documentId, version, txId), findPending, updateStatus, getByDocVersion maybe.
+
+We'll just stub.
+
+Use @Injectable.
+
+Provide minimal code.
+```
+
+## reply
+
+```ts
 // src/anchor/anchor.repository.ts
 
 import { Injectable } from '@nestjs/common';
@@ -96,3 +117,4 @@ export class AnchorRepository {
     return { txId: intent.tx_id, status: intent.status as AnchorStatus };
   }
 }
+```
