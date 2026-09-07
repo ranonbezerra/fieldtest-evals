@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @map("created_at") @default(now())
+
+  @@map("companies")
+}
+
+model Event {
+  id        String    @id @default(cuid())
+  name      String
+  startedAt DateTime  @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+
+  @@map("events")
+}
+
+model Worker {
+  id   String @id @default(cuid())
+  name String
+
+  @@map("workers")
+}
+
+// Workflow of the simulated write path: operators create pending orders,
+// then approve or reject them; a rejected order can be reopened.
+enum OrderStatus {
+  pending
+  approved
+  rejected
+}
+
+model PaymentOrder {
+  id        String      @id @default(cuid())
+  companyId String      @map("company_id")
+  workerId  String?     @map("worker_id")
+  eventId   String?     @map("event_id")
+  status    OrderStatus @default(pending)
+  amount    Decimal     @db.Decimal(18, 2)
+  currency  String      @default("USD")
+  createdAt DateTime    @map("created_at") @default(now())
+  updatedAt DateTime    @map("updated_at") @default(now()) @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  worker  Worker? @relation(fields: [workerId], references: [id])
+  event   Event?  @relation(fields: [eventId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([companyId, updatedAt(sort: Desc)])
+  @@map("payment_orders")
+}
+
+// Read-model: one row per payment order with worker/event denormalized in.
+// The dashboard query is a single-table filter/sort/paginate over this row.
+model OperationReadModel {
+  id             String    @id @default(cuid())
+  paymentOrderId String    @unique @map("payment_order_id")
+  companyId      String    @map("company_id")
+  status         OrderStatus
+  workerId       String?   @map("worker_id")
+  workerName     String?   @map("worker_name")
+  eventId        String?   @map("event_id")
+  eventName      String?   @map("event_name")
+  eventStartedAt DateTime? @map("event_started_at")
+  amount         Decimal   @db.Decimal(18, 2)
+  currency       String
+  createdAt      DateTime  @map("created_at")
+  updatedAt      DateTime  @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, status, createdAt(sort: Desc), paymentOrderId(sort: Desc)])
+  @@index([companyId, createdAt(sort: Desc), paymentOrderId(sort: Desc)])
+  @@index([createdAt])
+  @@map("operations_read_model")
+}
+
+// Exact per-company financial totals, maintained by atomic increment updates
+// on the write path and recomputed by re-derivation/drift repair.
+model CompanyOrderTotals {
+  companyId      String   @id @map("company_id")
+  orderCount     Int      @default(0) @map("order_count")
+  approvedCount  Int      @default(0) @map("approved_count")
+  approvedAmount Decimal  @default(0) @db.Decimal(18, 2) @map("approved_amount")
+  totalAmount    Decimal  @default(0) @db.Decimal(18, 2) @map("total_amount")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("company_order_totals")
+}

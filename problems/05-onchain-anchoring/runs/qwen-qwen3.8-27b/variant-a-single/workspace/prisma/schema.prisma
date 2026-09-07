@@ -1,0 +1,38 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// One anchor per (document, version) — the unique constraint is the
+// schema-level enforcement of "exactly one anchor".
+model Anchor {
+  id          String       @id @default(uuid())
+  documentId  String       @map("document_id")
+  version     Int
+  contentHash String       @map("content_hash")
+  txId        String       @map("tx_id")
+  signedTx    String       @map("signed_tx")
+  status      AnchorStatus @default(pending_broadcast)
+  blockNumber BigInt?      @map("block_number")
+  logIndex    Int?         @map("log_index")
+  attempts    Int          @default(0)
+  error       String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  confirmedAt DateTime?    @map("confirmed_at")
+
+  @@unique([documentId, version])
+  @@map("anchor_records")
+}
+
+enum AnchorStatus {
+  pending_broadcast
+  broadcast_sent
+  broadcast_unknown
+  confirmed
+  failed
+}
