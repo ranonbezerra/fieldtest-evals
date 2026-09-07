@@ -1,0 +1,30 @@
+# ASSUMPTION: reconstructed as-found; the only change is the image line.
+# The as-found file pinned the vanilla `postgres:16-alpine`, whose package
+# set does not contain pgvector (no vector.control / vector.so), which is
+# Finding F3 in RUNBOOK.md. The image is now one that ships pgvector so
+# migration 0003 can create the extension. Everything else (service name,
+# database/user/password, port, volume, healthcheck) is assumed to have
+# been as listed.
+services:
+  db:
+    # pgvector/pgvector:pg16 = postgres 16 + pgvector extension installed.
+    # Same major version as before, so the existing data volume carries
+    # over: `docker compose up -d db` on the existing `pgdata` volume is a
+    # zero-downtime-in-data upgrade, and CREATE EXTENSION vector then works.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: fieldtest
+      POSTGRES_USER: fieldtest
+      POSTGRES_PASSWORD: fieldtest
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fieldtest -d fieldtest"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  pgdata:

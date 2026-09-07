@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1700000000000,
+      "tag": "0000_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1700000001000,
+      "tag": "0001_document_embeddings",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1700000002000,
+      "tag": "0002_backfill_search_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1710000000000,
+      "tag": "0003_create_document_embeddings",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1710000001000,
+      "tag": "0004_backfill_search_key",
+      "breakpoints": true
+    }
+  ]
+}
