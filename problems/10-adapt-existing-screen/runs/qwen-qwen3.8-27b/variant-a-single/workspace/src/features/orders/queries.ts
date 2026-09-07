@@ -1,57 +1,56 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-// ASSUMPTION: The orders API functions and their module path are inferred from the project's feature-per-folder convention; the exact export names are chosen to match the mutation/query names used by this file.
-import { getOrders, getOrder, createOrder, cancelOrder, rejectOrder } from '../../api/orders';
-// ASSUMPTION: `Order` and `Page` are assumed to be exported from `../../api/types`; the compiler error about missing `Order` appears only in `OrdersListScreen.tsx`, not here, so the import path for this file is assumed valid.
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../api/client';
 import type { Order, Page } from '../../api/types';
 
-export const ordersKeys = {
+export interface OrderQuery {
+  status?: string;
+  page: number;
+}
+
+export const orderKeys = {
   all: ['orders'] as const,
-  lists: () => [...ordersKeys.all, 'list'] as const,
-  list: (params: Record<string, unknown>) => [...ordersKeys.lists(), params] as const,
-  details: () => [...ordersKeys.all, 'detail'] as const,
-  detail: (id: string) => [...ordersKeys.details(), id] as const,
+  list: (q: OrderQuery) => ['orders', 'list', q] as const,
+  detail: (id: string) => ['orders', 'detail', id] as const,
 };
 
-export function useOrders(params: Record<string, unknown>) {
-  return useQuery({
-    queryKey: ordersKeys.list(params),
-    queryFn: () => getOrders(params),
-  });
+export function useOrders(q: OrderQuery) {
+  return useQuery({ queryKey: orderKeys.list(q), queryFn: () => api.listOrders(q) });
 }
 
 export function useOrder(id: string) {
-  return useQuery({
-    queryKey: ordersKeys.detail(id),
-    queryFn: () => getOrder(id),
-  });
+  return useQuery({ queryKey: orderKeys.detail(id), queryFn: () => api.getOrder(id) });
 }
 
-export function useCreateOrder() {
-  const queryClient = useQueryClient();
+/**
+ * Approve / reject from the detail screen. Both write the returned row straight
+ * into the caches that hold it. Whatever else needs these actions should reuse
+ * this, not re-invalidate the list.
+ */
+export function useApproveOrder() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: unknown) => createOrder(data),
-    onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ordersKeys.all });
-    },
-  });
-}
-
-export function useCancelOrder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => cancelOrder(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ordersKeys.all });
-    },
+    mutationFn: (id: string) => api.approveOrder(id),
+    onSuccess: (updated) => patchOrder(qc, updated),
   });
 }
 
 export function useRejectOrder() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => rejectOrder(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ordersKeys.all });
-    },
+    mutationFn: (id: string) => api.rejectOrder(id),
+    onSuccess: (updated) => patchOrder(qc, updated),
   });
+}
+
+export function patchOrder(qc: ReturnType<typeof useQueryClient>, updated: Order): void {
+  qc.setQueryData(orderKeys.detail(updated.id), updated);
+  qc.setQueriesData<Page<Order>>({ queryKey: ['orders', 'list'] }, (old) => {
+    if (!old) return old;
+    if (!old.items.some((o) => o.id === updated.id)) return old;
+    return { ...old, items: old.items.map((o) => (o.id === updated.id ? updated : o)) };
+  });
+}
+
+export function isActionable(order: Order): boolean {
+  return order.status === 'pending';
 }

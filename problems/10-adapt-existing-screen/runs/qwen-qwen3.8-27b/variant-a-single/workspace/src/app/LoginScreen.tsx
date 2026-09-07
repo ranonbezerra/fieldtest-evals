@@ -1,55 +1,30 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLogin } from '../features/auth/queries';
-import type { LoginPayload } from '../api/types';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '../components/ui/Button';
+import { useAuth } from '../auth/auth-context';
 
 export function LoginScreen() {
+  const { user, login } = useAuth();
+  const [name, setName] = useState('');
   const navigate = useNavigate();
-  const loginMutation = useLogin();
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
+  const location = useLocation() as { state?: { from?: { pathname: string } } };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload: LoginPayload = { identifier, password };
-    loginMutation.mutate(payload, {
-      onSuccess: () => {
-        navigate('/sessions');
-      },
-    });
-  };
+  if (user) return <Navigate to="/sessions" replace />;
 
   return (
-    <div className="login-screen">
-      <h1>Sign in</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Identifier
-          <input
-            type="text"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            required
-          />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
-        <button type="submit" disabled={loginMutation.isPending}>
-          {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-      {loginMutation.isError && (
-        <p role="alert">
-          {loginMutation.error?.message ?? 'Login failed.'}
-        </p>
-      )}
-    </div>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void login(name).then(() => navigate(location.state?.from?.pathname ?? '/sessions', { replace: true }));
+      }}
+    >
+      <label>
+        Name
+        <input value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <Button variant="primary" type="submit">
+        Sign in
+      </Button>
+    </form>
   );
 }

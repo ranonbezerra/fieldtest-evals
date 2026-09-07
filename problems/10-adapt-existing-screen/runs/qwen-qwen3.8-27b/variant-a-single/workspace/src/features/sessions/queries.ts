@@ -1,107 +1,58 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, type SessionQuery } from '../../api/client';
+import type { Page, Session } from '../../api/types';
 
-// ASSUMPTION: `../../api/client` exists but does not export `get`, `post`, or `patch`;
-// using a local fetch-based helper instead.
-
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`/api${path}`);
-  if (!res.ok) throw new Error(`GET ${path} → ${res.status}`);
-  return res.json() as Promise<T>;
-}
-
-async function post<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`POST ${path} → ${res.status}`);
-  return res.json() as Promise<T>;
-}
-
-async function patch<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`PATCH ${path} → ${res.status}`);
-  return res.json() as Promise<T>;
-}
-
-export interface Session {
-  id: string;
-  name: string;
-  status: string;
-  startedAt: string;
-  notes: string;
-}
-
-export interface Page<T> {
-  items: T[];
-  total: number;
-}
-
-export const sessionsKeys = {
+/** Query keys live beside their queries, one factory per feature. */
+export const sessionKeys = {
   all: ['sessions'] as const,
-  lists: () => [...sessionsKeys.all, 'list'] as const,
-  list: (params: Record<string, unknown>) => [...sessionsKeys.lists(), params] as const,
-  details: () => [...sessionsKeys.all, 'detail'] as const,
-  detail: (id: string) => [...sessionsKeys.details(), id] as const,
-  active: () => [...sessionsKeys.all, 'active'] as const,
+  list: (q: SessionQuery) => ['sessions', 'list', q] as const,
+  detail: (id: string) => ['sessions', 'detail', id] as const,
+  active: () => ['sessions', 'active'] as const,
 };
 
-export interface SessionListParams {
-  page: number;
-  pageSize: number;
-  status?: string;
-}
-
-export function useSessionList(params: SessionListParams) {
-  const { page, pageSize, status } = params;
-  const qs = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (status) qs.set('status', status);
-
-  return useQuery({
-    queryKey: sessionsKeys.list(params),
-    queryFn: () => get<Page<Session>>(`/sessions?${qs.toString()}`),
-  });
+export function useSessions(q: SessionQuery) {
+  return useQuery({ queryKey: sessionKeys.list(q), queryFn: () => api.listSessions(q) });
 }
 
 export function useSession(id: string) {
-  return useQuery({
-    queryKey: sessionsKeys.detail(id),
-    queryFn: () => get<Session>(`/sessions/${id}`),
-    enabled: Boolean(id),
-  });
+  return useQuery({ queryKey: sessionKeys.detail(id), queryFn: () => api.getSession(id) });
 }
 
-export function useActiveSession() {
-  return useQuery({
-    queryKey: sessionsKeys.active(),
-    queryFn: () => get<Session | null>(`/sessions/active`),
-  });
-}
-
-export function useUpdateSessionNotes() {
-  const queryClient = useQueryClient();
+export function useUpdateSessionNotes(id: string) {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
-      patch<Session>(`/sessions/${id}`, { notes }),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(sessionsKeys.detail(updated.id), updated);
-      queryClient.invalidateQueries({ queryKey: sessionsKeys.lists() });
+    mutationFn: (notes: string) => api.updateSession(id, { notes }),
+    onSuccess: (updated: Session) => {
+      // Targeted update, not invalidation: the server already returned the row,
+      // and a refetch here would flash the screen back to stale data.
+      qc.setQueryData(sessionKeys.detail(id), updated);
+      patchLists(qc, updated);
     },
   });
 }
 
 export function useCloseSession() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => post<Session>(`/sessions/${id}/close`),
-    onSuccess: () => {
-      queryClient.setQueryData(sessionsKeys.active(), null);
-      queryClient.invalidateQueries({ queryKey: sessionsKeys.lists() });
+    mutationFn: (id: string) => api.closeSession(id),
+    onSuccess: (updated: Session) => {
+      qc.setQueryData(sessionKeys.detail(updated.id), updated);
+      patchLists(qc, updated);
     },
+  });
+}
+
+/**
+ * Write one changed row into every cached list page that holds it.
+ * This is the pattern the app uses everywhere; copy it rather than invalidating.
+ */
+export function patchLists(
+  qc: ReturnType<typeof useQueryClient>,
+  updated: Session,
+): void {
+  qc.setQueriesData<Page<Session>>({ queryKey: ['sessions', 'list'] }, (old) => {
+    if (!old) return old;
+    if (!old.items.some((s) => s.id === updated.id)) return old;
+    return { ...old, items: old.items.map((s) => (s.id === updated.id ? updated : s)) };
   });
 }

@@ -1,6 +1,4 @@
-// ASSUMPTION: 'msw' is not installed in this workspace, so 'msw/browser'
-// cannot be imported or augmented. Browser-side MSW setup is a no-op stub.
+import { setupWorker } from 'msw/browser';
+import { handlers } from './handlers';
 
-export function startMockServiceWorker(): void {
-  // no-op: msw/browser is unavailable
-}
+export const worker = setupWorker(...handlers);

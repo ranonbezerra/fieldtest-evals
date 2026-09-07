@@ -1,46 +1,29 @@
-// ASSUMPTION: src/mocks/db does not export a named `state` member; the test does not need direct access to mock state to verify list-screen behaviour.
-import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SessionsListScreen } from './SessionsListScreen';
-
-// ASSUMPTION: The mock API client at ../../api/client is intercepted via msw handlers; no direct state reset is needed from a db module.
-
-function createQueryClient() {
-  return new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-}
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
+import { state } from '../../mocks/db';
+import { renderApp } from '../../test/render';
 
 describe('SessionsListScreen', () => {
-  it('renders the sessions list from the API', async () => {
-    const client = createQueryClient();
+  it('lists the first page and pages forward', async () => {
+    state.user = { id: 'u-1', name: 'Ada', roles: ['operator'] };
+    renderApp('/sessions');
 
-    render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/sessions']}>
-          <SessionsListScreen />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+    await waitFor(() => expect(screen.getByText('Inspection 1')).toBeInTheDocument());
+    expect(screen.getByText(/Page 1 of 3/)).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('Active Session One')).toBeInTheDocument();
-    });
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(screen.getByText('Inspection 11')).toBeInTheDocument());
   });
 
-  it('shows a loading state before data arrives', async () => {
-    const client = createQueryClient();
+  it('filters by status and resets to the first page', async () => {
+    state.user = { id: 'u-1', name: 'Ada', roles: ['operator'] };
+    renderApp('/sessions');
 
-    render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/sessions']}>
-          <SessionsListScreen />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+    await waitFor(() => expect(screen.getByText('Inspection 1')).toBeInTheDocument());
+    await userEvent.selectOptions(screen.getByLabelText('Filter by status'), 'closed');
 
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/Page 1 of/)).toBeInTheDocument());
+    expect(screen.queryByText('Inspection 1')).not.toBeInTheDocument();
   });
 });

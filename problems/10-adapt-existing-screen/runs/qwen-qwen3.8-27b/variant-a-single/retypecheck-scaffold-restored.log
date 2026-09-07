@@ -1,0 +1,34 @@
+src/auth/auth-context.tsx(3,10): error TS2305: Module '"../api/client"' has no exported member 'api'.
+src/auth/auth-context.tsx(4,15): error TS2305: Module '"../api/types"' has no exported member 'AuthUser'.
+src/features/orders/OrdersListScreen.tsx(52,30): error TS7006: Parameter 'o' implicitly has an 'any' type.
+src/features/orders/queries.ts(2,10): error TS2305: Module '"../../api/client"' has no exported member 'api'.
+src/features/orders/queries.ts(3,15): error TS2305: Module '"../../api/types"' has no exported member 'Order'.
+src/features/orders/queries.ts(3,22): error TS2305: Module '"../../api/types"' has no exported member 'Page'.
+src/features/orders/queries.ts(47,69): error TS7006: Parameter 'old' implicitly has an 'any' type.
+src/features/orders/queries.ts(49,26): error TS7006: Parameter 'o' implicitly has an 'any' type.
+src/features/orders/queries.ts(50,44): error TS7006: Parameter 'o' implicitly has an 'any' type.
+src/features/sessions/queries.ts(2,10): error TS2305: Module '"../../api/client"' has no exported member 'api'.
+src/features/sessions/queries.ts(2,20): error TS2305: Module '"../../api/client"' has no exported member 'SessionQuery'.
+src/features/sessions/queries.ts(3,15): error TS2305: Module '"../../api/types"' has no exported member 'Page'.
+src/features/sessions/queries.ts(53,73): error TS7006: Parameter 'old' implicitly has an 'any' type.
+src/features/sessions/queries.ts(55,26): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/features/sessions/queries.ts(56,44): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/features/sessions/SessionsListScreen.tsx(62,30): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/mocks/browser.ts(1,29): error TS2307: Cannot find module 'msw/browser' or its corresponding type declarations.
+src/mocks/db.ts(1,15): error TS2305: Module '"../api/types"' has no exported member 'Order'.
+src/mocks/db.ts(3,14): error TS2322: Type '{ id: string; name: string; operator: string; status: "open" | "closed" | "paused"; notes: string; startedAt: string; closedAt: string | null; }[]' is not assignable to type 'Session[]'.
+  Property 'started_at' is missing in type '{ id: string; name: string; operator: string; status: "open" | "closed" | "paused"; notes: string; startedAt: string; closedAt: string | null; }' but required in type 'Session'.
+src/mocks/handlers.ts(1,36): error TS2307: Cannot find module 'msw' or its corresponding type declarations.
+src/mocks/handlers.ts(2,15): error TS2305: Module '"../api/types"' has no exported member 'Order'.
+src/mocks/handlers.ts(17,41): error TS7031: Binding element 'request' implicitly has an 'any' type.
+src/mocks/handlers.ts(34,32): error TS7031: Binding element 'request' implicitly has an 'any' type.
+src/mocks/handlers.ts(44,36): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/handlers.ts(51,44): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/handlers.ts(51,52): error TS7031: Binding element 'request' implicitly has an 'any' type.
+src/mocks/handlers.ts(59,43): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/handlers.ts(64,7): error TS2339: Property 'closedAt' does not exist on type 'Session'.
+src/mocks/handlers.ts(69,30): error TS7031: Binding element 'request' implicitly has an 'any' type.
+src/mocks/handlers.ts(77,34): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/handlers.ts(82,43): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/handlers.ts(90,42): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/server.ts(1,29): error TS2307: Cannot find module 'msw/node' or its corresponding type declarations.

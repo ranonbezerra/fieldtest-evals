@@ -1,47 +1,48 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
-// ASSUMPTION: the client module has no named `api` export; it is consumed via a default export.
-import client from '../api/client';
-import type { User, LoginResponse } from '../api/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { api } from '../api/client';
+import type { AuthUser } from '../api/types';
 
-interface AuthContextValue {
-  user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+interface AuthValue {
+  user: AuthUser | null;
+  loading: boolean;
+  login: (name: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const res = (await client.post<LoginResponse>('/auth/login', {
-        email,
-        password,
-      })) as LoginResponse;
-      setUser(res.user);
-      setToken(res.token);
-    },
-    [],
-  );
-
-  const logout = useCallback(() => {
-    setUser(null);
-    setToken(null);
+  useEffect(() => {
+    api
+      .me()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const login = useCallback(async (name: string) => {
+    setUser(await api.login(name));
+  }, []);
+
+  const logout = useCallback(async () => {
+    await api.logout();
+    setUser(null);
+    // Everything cached belonged to that session. Clearing here is why no screen
+    // has to remember to clean up after itself.
+    queryClient.clear();
+  }, [queryClient]);
+
+  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth(): AuthContextValue {
+export function useAuth(): AuthValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  if (!ctx) throw new Error('useAuth outside AuthProvider');
   return ctx;
 }

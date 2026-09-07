@@ -205,3 +205,21 @@ in this run's transcript, which is the state repair2 destroyed.
 
     before restore   208 errors, 189 of them TS1434/TS1005/TS1002 — prose parsed as TSX
     after restore     38 errors, 0 syntax errors
+
+## Second correction: the gate had repaired thirteen files the model never wrote
+
+`ft-go`'s single-shape branch set the gate's scope to every file in the workspace, on
+the assumption that "in this shape the model wrote the whole workspace". That holds
+for problems 01–08 and is false for every scaffold-seeded problem. Here the model's
+reply carried 29 paths; the workspace holds 40. The gate's 22 repair rounds rewrote
+thirteen scaffold files — the orders feature, the auth context, the MSW handlers —
+that the model neither delivered nor was asked to touch.
+
+`ft-run` now records the paths it extracted from a reply to `<raw>.files.json`, and
+`ft-go` scopes the gate to that set instead of to the directory listing.
+
+The thirteen files were restored from `problems/10-adapt-existing-screen/scaffold`.
+
+    as run                     24 errors, against a workspace the gate had rewritten
+    scaffold restored          33 errors, every one of them in a scaffold file,
+                               none in anything the model wrote

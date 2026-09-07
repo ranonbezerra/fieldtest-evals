@@ -1,58 +1,45 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useOrder, orderKeys, useCancelOrder } from './queries';
-import { OrderStatus } from '../../api/types';
+import { useParams } from 'react-router-dom';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { isActionable, useApproveOrder, useOrder, useRejectOrder } from './queries';
 
 export function OrderDetailScreen() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { id = '' } = useParams();
+  const { data: order, isLoading } = useOrder(id);
+  const approve = useApproveOrder();
+  const reject = useRejectOrder();
 
-  const { data: order, isLoading } = useOrder(id ?? undefined);
+  if (isLoading) return <p>Loading…</p>;
+  if (!order) return <p>Order not found.</p>;
 
-  const rejectMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const res = await fetch(`/api/orders/${orderId}/reject`, { method: 'POST' });
-      if (!res.ok) throw new Error('Failed to reject order');
-      return res.json() as Promise<{ id: string; status: OrderStatus }>;
-    },
-    onSuccess: (_data, orderId) => {
-      queryClient.invalidateQueries({ queryKey: orderKeys.all });
-      queryClient.setQueryData(orderKeys.detail(orderId), (old: any) =>
-        old ? { ...old, status: 'rejected' as OrderStatus } : old,
-      );
-    },
-  });
+  const actionable = isActionable(order);
+  const pending = approve.isPending || reject.isPending;
 
-  const cancelOrder = useCancelOrder();
-
-  if (isLoading) return <div>Loading…</div>;
-  if (!order) return <div>Order not found</div>;
+  const actions = (
+    <div className="actions">
+      <Button variant="primary" disabled={!actionable || pending} onClick={() => approve.mutate(order.id)}>
+        Approve
+      </Button>
+      <Button variant="danger" disabled={!actionable || pending} onClick={() => reject.mutate(order.id)}>
+        Reject
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="order-detail">
-      <h1>Order {order.id}</h1>
-      <p>Status: {order.status}</p>
-      <p>Total: {order.total}</p>
+    <section>
+      <h1>{order.reference}</h1>
+      <Badge tone={order.status}>{order.status}</Badge>
+      <p>{order.customer}</p>
 
-      {order.status === 'pending' && (
-        <div className="order-actions">
-          <button
-            onClick={() => rejectMutation.mutate(order.id)}
-            disabled={rejectMutation.isPending}
-          >
-            Reject
-          </button>
-          <button
-            onClick={() => cancelOrder.mutate(order.id)}
-            disabled={cancelOrder.isPending}
-          >
-            Cancel
-          </button>
-        </div>
+      {actionable ? (
+        actions
+      ) : (
+        <Tooltip label={`An order that is ${order.status} cannot be approved or rejected.`}>
+          {actions}
+        </Tooltip>
       )}
-
-      <button onClick={() => navigate(-1)}>Back to list</button>
-    </div>
+    </section>
   );
 }

@@ -316,6 +316,7 @@ def main():
             print(f"ft-run: [{a.label}] no `### path` + fence pairs in the reply; "
                   f"nothing written", file=sys.stderr)
             return 6
+        wrote = []
         for rel, body in sorted(found.items()):
             if ".." in Path(rel).parts or Path(rel).is_absolute():
                 print(f"ft-run: [{a.label}] refusing path outside the workspace: "
@@ -324,9 +325,17 @@ def main():
             dest = root / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(body, encoding="utf-8")
-        print(f"ft-run: [{a.label}] wrote {len(found)} file(s): "
-              f"{', '.join(sorted(found)[:6])}"
-              f"{' …' if len(found) > 6 else ''}")
+            wrote.append(rel)
+        print(f"ft-run: [{a.label}] wrote {len(wrote)} file(s): "
+              f"{', '.join(sorted(wrote)[:6])}"
+              f"{' …' if len(wrote) > 6 else ''}")
+        # The caller needs to know which paths came out of the reply, not which
+        # files are on disk. In a scaffold-seeded workspace those are different
+        # sets, and treating the second as the model's work let the gate repair
+        # code the model never wrote.
+        if a.raw:
+            Path(str(a.raw) + ".files.json").write_text(
+                json.dumps(sorted(wrote), indent=2) + "\n", encoding="utf-8")
 
     if a.file:
         text, fenced = ((strip_stray_fences(content.strip()) + "\n", True)
