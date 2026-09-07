@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  // Never sent; eligible for its first send.
+  pending
+  // Bank accepted the send (or confirmed it as a duplicate); awaiting the statement entry.
+  sent
+  // A send attempt happened with an unknown outcome; awaiting reconciliation.
+  in_flight
+  // Reconciliation proved the send absent from the statements; eligible for a re-send.
+  retryable
+  // A matching statement entry was found; terminal.
+  settled
+  // Parked for manual review (attempt limit or permanent rejection); never auto-reverted.
+  parked
+}
+
+enum ParkReason {
+  attempt_limit
+  permanent_rejection
+}
+
+model Payout {
+  id            String       @id
+  supplierKey   String       @map("supplier_key")
+  amountMinor   Int          @map("amount_minor")
+  effectiveDate DateTime     @db.Date @map("effective_date")
+  status        PayoutStatus @default(pending)
+  attempts      Int          @default(0)
+  txid          String       @unique
+  parkReason    ParkReason?  @map("park_reason")
+  lastAttemptAt DateTime?    @map("last_attempt_at")
+  settledAt     DateTime?    @map("settled_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("payouts")
+}
