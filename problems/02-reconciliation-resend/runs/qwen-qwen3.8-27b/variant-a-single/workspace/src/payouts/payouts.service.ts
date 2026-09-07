@@ -1,315 +1,177 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { createHash, randomUUID } from 'node:crypto';
-import { ParkReason, PayoutStatus } from '@prisma/client';
-import type { Payout } from '@prisma/client';
-import { BankClient, toUtcDate } from '../bank/bank.client';
-import type { BankSendResponse, Settlement } from '../bank/bank.client';
-import { PayoutsRepository } from './payouts.repository';
-import type { PayoutTransitionData } from './payouts.repository';
+import { Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import { BankClient, SendResponse, Settlement } from '../bank/bank.client';
+// ASSUMPTION: BankClient exposes `send({txid, amount, key}): Promise<SendResponse>` and `getStatement(date: Date): Promise<Settlement[]>`.
+// ASSUMPTION: SendResponse is `{ status: 'accepted' | 'duplicate' | 'error'; error?: { code?: string; message?: string } }`.
+// ASSUMPTION: Settlement is `{ txid: string; amount: number; settledAt: Date }`.
+import { PayoutsRepository, PayoutOrder } from './payouts.repository';
+// ASSUMPTION: PayoutOrder is `{ id: string; amount: number; key: string; effectiveDate: Date; attempts: number; status: string }`.
+// ASSUMPTION: PayoutsRepository exposes: findPending, findSent, findPendingWithAttempts, markSent, markSettled, markPermanentRejection, incrementAttempts, markManualReview.
 
-/** DI token for the payout configuration (see PayoutsModule). */
-export const PAYOUTS_CONFIG = 'PAYOUTS_CONFIG';
+const MAX_ATTEMPTS = 5;
+const PUBLISHING_LAG_MS = 30 * 60 * 1000;
 
-export interface PayoutsConfig {
-  /** How long the bank may lag before a settlement is visible in its statements. */
-  publishingLagMs: number;
-  /** Maximum orders sent per executePayments() invocation. */
-  sendBatchSize: number;
-}
+type SendClassification = 'accepted' | 'duplicate' | 'transient_error' | 'permanent_rejection';
 
-/** An order is sent at most this many times; beyond that it is parked for manual review. */
-export const MAX_SEND_ATTEMPTS = 5;
-
-/** How far the reconcile window looks back; it overlaps the previous run by half. */
-const RECONCILE_WINDOW_MS = 30 * 60_000;
-
-export type SendClassification = 'accepted' | 'duplicate' | 'transient' | 'permanent';
-
-export interface CreatePayoutInput {
-  supplierKey: string;
-  amountMinor: number;
-  effectiveDate: Date;
-}
-
-export interface ReconcileWindow {
-  from: Date;
-  to: Date;
-}
-
-export interface ExecutePaymentsResult {
-  attempted: number;
-  accepted: number;
-  duplicates: number;
-  transient: number;
-  permanent: number;
-  parked: number;
-}
-
-export interface ReconcileResult {
-  from: Date;
-  to: Date;
-  statementDatesFetched: number;
-  settled: number;
-  provenAbsent: number;
-  parked: number;
-  discrepancies: number;
-  unmatchedEntries: number;
-}
-
-const SENDABLE_STATES: PayoutStatus[] = [PayoutStatus.pending, PayoutStatus.retryable];
-
-const SETTLE_FROM_STATES: PayoutStatus[] = [
-  PayoutStatus.pending,
-  PayoutStatus.sent,
-  PayoutStatus.in_flight,
-  PayoutStatus.retryable,
-  PayoutStatus.parked,
-];
-
-const CLASSIFICATION_COUNT_KEY: Record<SendClassification, 'accepted' | 'duplicates' | 'transient' | 'permanent'> = {
-  accepted: 'accepted',
-  duplicate: 'duplicates',
-  transient: 'transient',
-  permanent: 'permanent',
-};
-
-/**
- * Classifies a raw bank send response:
- *  - accepted: the bank took the payment;
- *  - duplicate: the bank already processed this txid (a prior attempt went through);
- *  - transient: the outcome is unknown (network failure, timeout, bank unavailable);
- *  - permanent: the bank explicitly rejected it; it must never be auto-retried.
- * // ASSUMPTION: the bank signals duplicates via HTTP 409 or the codes
- * // 'DUPLICATE_TXID' / 'DUPLICATE'.
- * Anything that is not a confirmed acceptance, a duplicate, or an explicit
- * rejection is treated as transient: resending is only safe because the txid is
- * deterministic and the bank dedupes on it.
- */
-export function classifySendResponse(response: { status: number; code?: string }): SendClassification {
-  const { status, code } = response;
-  if (status === 409 || code === 'DUPLICATE_TXID' || code === 'DUPLICATE') return 'duplicate';
-  if (status === 0 || status === 408 || status === 429 || (status >= 500 && status <= 599)) return 'transient';
-  if (status >= 200 && status <= 299) return 'accepted';
-  if (status >= 400 && status <= 499) return 'permanent';
-  return 'transient';
-}
-
-/** Deterministic txid: the same order and effective date always yield the same txid. */
-export function deriveTxid(orderId: string, effectiveDate: Date | string): string {
-  return createHash('sha256').update(`${orderId}:${toUtcDate(effectiveDate)}`).digest('hex');
-}
+const PERMANENT_ERROR_CODES = new Set([
+  'INSUFFICIENT_FUNDS',
+  'INVALID_KEY',
+  'INVALID_AMOUNT',
+  'ACCOUNT_CLOSED',
+  'UNREACHABLE',
+]);
 
 @Injectable()
 export class PayoutsService {
+  private readonly logger = new Logger(PayoutsService.name);
+
   constructor(
-    private readonly payouts: PayoutsRepository,
     private readonly bank: BankClient,
-    @Inject(PAYOUTS_CONFIG) private readonly config: PayoutsConfig,
+    private readonly repo: PayoutsRepository,
   ) {}
 
-  createOrder(input: CreatePayoutInput): Promise<Payout> {
-    const id = randomUUID();
-    return this.payouts.create({
-      id,
-      supplierKey: input.supplierKey,
-      amountMinor: input.amountMinor,
-      effectiveDate: input.effectiveDate,
-      txid: deriveTxid(id, input.effectiveDate),
-    });
+  /**
+   * Derives a deterministic txid from the order id and effective date.
+   * The same order on the same effective date always produces the same txid,
+   * guaranteeing idempotency at the bank level.
+   */
+  private deriveTxid(order: PayoutOrder): string {
+    const dateStr = order.effectiveDate.toISOString().slice(0, 10);
+    return createHash('sha256').update(`${order.id}:${dateStr}`).digest('hex').slice(0, 32);
   }
 
   /**
-   * Sends every order that is eligible to be sent: `pending` (never sent) and
-   * `retryable` (reconciliation proved it absent from the statements).
-   * `in_flight`, `sent`, `parked` and `settled` orders are never (re)sent from
-   * here, which is what makes double payment impossible.
+   * Classifies a bank.send response into one of four handling categories.
    */
-  async executePayments(): Promise<ExecutePaymentsResult> {
-    const result: ExecutePaymentsResult = {
-      attempted: 0,
-      accepted: 0,
-      duplicates: 0,
-      transient: 0,
-      permanent: 0,
-      parked: 0,
-    };
-    for (;;) {
-      const batch = await this.payouts.findToSend(this.config.sendBatchSize);
-      if (batch.length === 0) break;
-      for (const payout of batch) {
-        result.attempted += 1;
-        const { classification, parked } = await this.sendOnce(payout);
-        result[CLASSIFICATION_COUNT_KEY[classification]] += 1;
-        if (parked) result.parked += 1;
-      }
-      // Every send moves the order out of a sendable state, so this terminates.
-      if (batch.length < this.config.sendBatchSize) break;
+  private classify(response: SendResponse): SendClassification {
+    if (response.status === 'accepted') return 'accepted';
+    if (response.status === 'duplicate') return 'duplicate';
+    if (response.status === 'error') {
+      const code = (response.error?.code ?? '').toUpperCase();
+      if (PERMANENT_ERROR_CODES.has(code)) return 'permanent_rejection';
+      return 'transient_error';
     }
-    return result;
+    // Unknown status — treat as transient to be safe
+    return 'transient_error';
   }
 
   /**
-   * Reconciles the given window (or, when none is given, the default job window
-   * [now - lag - 30min, now - lag], which overlaps the previous run):
-   * 1. A statement entry matching an order's txid settles the order.
-   * 2. Once the window end is past the publishing lag, an unknown-outcome order
-   *    whose txid is absent from the fetched statements is proven absent and
-   *    becomes eligible for a re-send (or is parked when the attempt cap is hit).
-   * Every transition is state-guarded, so overlapping windows are safe.
+   * Sends all pending payout orders to the bank via the instant-payment API.
+   * Each order is sent with a deterministic txid so that retries are idempotent.
    */
-  async reconcile(window: ReconcileWindow | undefined): Promise<ReconcileResult> {
-    const resolved = window ?? this.defaultWindow();
-    this.assertValidWindow(resolved);
+  async executePayments(): Promise<void> {
+    const pending = await this.repo.findPending();
+    this.logger.log(`executePayments: ${pending.length} pending order(s)`);
 
-    const dates = utcDatesCovering(resolved);
-    const statements = await Promise.all(dates.map((date) => this.bank.getStatement(date)));
-
-    const settlementsByTxid = new Map<string, Settlement>();
-    for (const settlement of statements.flat()) {
-      settlementsByTxid.set(settlement.txid, settlement);
-    }
-
-    const result: ReconcileResult = {
-      from: resolved.from,
-      to: resolved.to,
-      statementDatesFetched: dates.length,
-      settled: 0,
-      provenAbsent: 0,
-      parked: 0,
-      discrepancies: 0,
-      unmatchedEntries: 0,
-    };
-
-    // 1) Settlement matching: the statement is authoritative. Settling an order
-    //    whose txid we see in it (even one we never sent) is what prevents a
-    //    double payment.
-    const candidates = await this.payouts.findUnsettledByTxids([...settlementsByTxid.keys()]);
-    let matchedEntries = 0;
-    for (const payout of candidates) {
-      const settlement = settlementsByTxid.get(payout.txid);
-      if (!settlement) continue;
-      matchedEntries += 1;
-      if (settlement.amount !== payout.amountMinor) {
-        // Never auto-settle (or auto-resend) on an amount mismatch; flag for humans.
-        result.discrepancies += 1;
-        continue;
+    for (const order of pending) {
+      const txid = this.deriveTxid(order);
+      try {
+        const response = await this.bank.send({ txid, amount: order.amount, key: order.key });
+        this.handleSendResult(order, txid, response);
+      } catch (err: unknown) {
+        // Network timeout or unexpected exception — treat as transient
+        await this.repo.incrementAttempts(order.id);
+        this.logger.warn(
+          `executePayments: order ${order.id} transient failure: ${String(err)}`,
+        );
       }
-      const applied = await this.payouts.transition(payout.id, SETTLE_FROM_STATES, {
-        status: PayoutStatus.settled,
-        settledAt: settlement.settledAt,
-      });
-      if (applied) result.settled += 1;
     }
-    result.unmatchedEntries = settlementsByTxid.size - matchedEntries;
+  }
 
-    // 2) Absence proof: only valid once the statement is fully published, i.e.
-    //    the window end is at least `publishingLagMs` in the past.
-    const absenceProvable = resolved.to.getTime() <= Date.now() - this.config.publishingLagMs;
-    if (absenceProvable) {
-      const fetchedDates = new Set(dates.map(toUtcDate));
-      const unknowns = await this.payouts.findInFlightAttemptedBefore(resolved.to);
-      for (const payout of unknowns) {
-        // Seen in the statement (settled above, or amount mismatch) -> not absent.
-        if (settlementsByTxid.has(payout.txid)) continue;
-        // We only fetched statements for the dates covered by the window.
-        if (payout.lastAttemptAt === null || !fetchedDates.has(toUtcDate(payout.lastAttemptAt))) continue;
-        const to = payout.attempts >= MAX_SEND_ATTEMPTS ? PayoutStatus.parked : PayoutStatus.retryable;
-        const data: PayoutTransitionData = { status: to };
-        if (to === PayoutStatus.parked) data.parkReason = ParkReason.attempt_limit;
-        const applied = await this.payouts.transition(payout.id, [PayoutStatus.in_flight], data);
-        if (applied) {
-          if (to === PayoutStatus.parked) result.parked += 1;
-          else result.provenAbsent += 1;
+  /**
+   * Reconciles a date window against the bank statement.
+   *
+   * - Advances `sent` orders to `settled` when their txid appears in the statement.
+   * - For `pending` orders (attempts > 0) whose txid is absent from the statement
+   *   and whose window is past the publishing lag, parks them for manual review
+   *   if attempts are exhausted. Otherwise they remain pending for the next
+   *   executePayments cycle (resend with the same txid).
+   *
+   * Safe to invoke repeatedly over overlapping windows: all transitions are
+   * idempotent (state is only ever advanced forward).
+   */
+  async reconcile(window: { start: Date; end: Date }): Promise<void> {
+    const now = Date.now();
+    const canProveAbsence = now - window.end.getTime() >= PUBLISHING_LAG_MS;
+
+    // Collect all settlements across the window (one statement per calendar day)
+    const settledTxids = new Set<string>(
+      await this.collectSettlementTxids(window.start, window.end),
+    );
+
+    // 1. Advance sent → settled for orders confirmed in the statement
+    const sentOrders = await this.repo.findSent(window.start, window.end);
+    for (const order of sentOrders) {
+      const txid = this.deriveTxid(order);
+      if (settledTxids.has(txid)) {
+        await this.repo.markSettled(order.id);
+        this.logger.log(`reconcile: order ${order.id} settled (txid=${txid})`);
+      }
+    }
+
+    // 2. Handle pending orders that were previously attempted
+    if (canProveAbsence) {
+      const stuckOrders = await this.repo.findPendingWithAttempts(window.start, window.end);
+      for (const order of stuckOrders) {
+        const txid = this.deriveTxid(order);
+        if (settledTxids.has(txid)) {
+          // The payment went through despite a lost response
+          await this.repo.markSettled(order.id);
+          this.logger.log(`reconcile: order ${order.id} found settled (txid=${txid})`);
+        } else if (order.attempts >= MAX_ATTEMPTS) {
+          // Proven absent and no retries remaining — park for manual review
+          await this.repo.markManualReview(order.id);
+          this.logger.warn(
+            `reconcile: order ${order.id} parked for manual review (attempts=${order.attempts})`,
+          );
         }
+        // Otherwise: proven absent with retries remaining → stays pending,
+        // next executePayments will resend with the same txid.
       }
     }
-
-    return result;
   }
 
-  private async sendOnce(
-    payout: Payout,
-  ): Promise<{ classification: SendClassification; parked: boolean }> {
-    let response: BankSendResponse;
-    try {
-      response = await this.bank.send({
-        txid: payout.txid,
-        amount: payout.amountMinor,
-        key: payout.supplierKey,
-      });
-    } catch {
-      // BankClient already maps network failures to status 0; this is a
-      // defensive net so that any throw means "outcome unknown".
-      response = { status: 0, code: 'NETWORK_ERROR' };
-    }
+  // ─── Private helpers ───────────────────────────────────────────────────────
 
-    const classification = classifySendResponse(response);
-    const now = new Date();
-    let to: PayoutStatus;
-    let parkReason: ParkReason | undefined;
-
-    if (classification === 'accepted' || classification === 'duplicate') {
-      // The bank has the payment (it just accepted it, or it was already
-      // processed by a prior unknown-outcome attempt). Awaiting settlement.
-      to = PayoutStatus.sent;
-    } else if (classification === 'permanent') {
-      // Explicit bank rejection: park for manual review, never auto-retry.
-      to = PayoutStatus.parked;
-      parkReason = ParkReason.permanent_rejection;
-    } else {
-      // Unknown outcome: the payment may still go through, so the order waits
-      // for reconciliation before any re-send. Past the cap -> manual review.
-      to = payout.attempts + 1 >= MAX_SEND_ATTEMPTS ? PayoutStatus.parked : PayoutStatus.in_flight;
-      if (to === PayoutStatus.parked) parkReason = ParkReason.attempt_limit;
-    }
-
-    const data: PayoutTransitionData = {
-      status: to,
-      attempts: { increment: 1 },
-      lastAttemptAt: now,
-    };
-    if (parkReason) data.parkReason = parkReason;
-    const applied = await this.payouts.transition(payout.id, SENDABLE_STATES, data);
-    return { classification, parked: applied && to === PayoutStatus.parked };
-  }
-
-  /** [now - lag - 30min, now - lag]: 15 minutes of overlap with the previous run. */
-  private defaultWindow(): ReconcileWindow {
-    const nowMs = Date.now();
-    return {
-      from: new Date(nowMs - this.config.publishingLagMs - RECONCILE_WINDOW_MS),
-      to: new Date(nowMs - this.config.publishingLagMs),
-    };
-  }
-
-  private assertValidWindow(window: ReconcileWindow): void {
-    const fromMs = window.from.getTime();
-    const toMs = window.to.getTime();
-    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) {
-      throw new BadRequestException({
-        error: { code: 'invalid_window', message: 'reconcile window from/to must be valid dates', details: {} },
-      });
-    }
-    if (fromMs >= toMs) {
-      throw new BadRequestException({
-        error: { code: 'invalid_window', message: 'reconcile window from must be strictly before to', details: {} },
-      });
-    }
-    if (toMs > Date.now()) {
-      throw new BadRequestException({
-        error: { code: 'window_in_future', message: 'reconcile window to cannot be in the future', details: { to: window.to.toISOString() } },
-      });
+  private handleSendResult(order: PayoutOrder, txid: string, response: SendResponse): void {
+    switch (this.classify(response)) {
+      case 'accepted':
+        this.repo.markSent(order.id, txid).then(() =>
+          this.logger.log(`executePayments: order ${order.id} accepted (txid=${txid})`),
+        );
+        break;
+      case 'duplicate':
+        this.repo.markSent(order.id, txid).then(() =>
+          this.logger.log(`executePayments: order ${order.id} duplicate (txid=${txid})`),
+        );
+        break;
+      case 'transient_error':
+        this.repo.incrementAttempts(order.id).then(() =>
+          this.logger.warn(
+            `executePayments: order ${order.id} transient error: ${response.error?.message ?? 'unknown'}`,
+          ),
+        );
+        break;
+      case 'permanent_rejection':
+        this.repo.markPermanentRejection(order.id).then(() =>
+          this.logger.error(
+            `executePayments: order ${order.id} permanent rejection: ${response.error?.message ?? 'unknown'}`,
+          ),
+        );
+        break;
     }
   }
-}
 
-/** UTC calendar dates (midnight UTC) spanned by the window. */
-function utcDatesCovering(window: ReconcileWindow): Date[] {
-  const dates: Date[] = [];
-  let cursor = new Date(Date.UTC(window.from.getUTCFullYear(), window.from.getUTCMonth(), window.from.getUTCDate()));
-  while (cursor.getTime() <= window.to.getTime()) {
-    dates.push(cursor);
-    cursor = new Date(cursor.getTime() + 86_400_000);
+  private async collectSettlementTxids(start: Date, end: Date): Promise<string[]> {
+    const txids: string[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const settlements: Settlement[] = await this.bank.getStatement(cursor);
+      for (const s of settlements) {
+        txids.push(s.txid);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return txids;
   }
-  return dates;
 }

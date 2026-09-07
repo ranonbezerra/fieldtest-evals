@@ -1,70 +1,44 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import type { Response } from 'express';
-
-export interface ErrorEnvelope {
-  error: { code: string; message: string; details: Record<string, unknown> };
-}
-
-const CODES_BY_STATUS: Record<number, string> = {
-  400: 'invalid_input',
-  401: 'unauthorized',
-  403: 'forbidden',
-  404: 'resource_not_found',
-  409: 'conflict',
-  422: 'invalid_input',
-};
-
-function isEnvelope(body: unknown): body is ErrorEnvelope {
-  if (typeof body !== 'object' || body === null) return false;
-  const candidate = (body as { error?: unknown }).error;
-  if (typeof candidate !== 'object' || candidate === null) return false;
-  const error = candidate as Record<string, unknown>;
-  return (
-    typeof error.code === 'string' &&
-    typeof error.message === 'string' &&
-    typeof error.details === 'object' &&
-    error.details !== null
-  );
-}
-
-function extractMessage(exception: HttpException): string {
-  const body = exception.getResponse();
-  if (typeof body === 'string') return body;
-  if (typeof body === 'object' && body !== null) {
-    const message = (body as { message?: unknown }).message;
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message.join('; ');
-  }
-  return exception.message;
-}
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
-
   catch(exception: unknown, host: ArgumentsHost): void {
-    const response = host.switchToHttp().getResponse<Response>();
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let code = 'internal_error';
+    let message = 'An unexpected error occurred';
+    const details: Record<string, unknown> = {};
 
     if (exception instanceof HttpException) {
-      const status = exception.getStatus();
-      const body = exception.getResponse();
-      if (isEnvelope(body)) {
-        response.status(status).json(body);
-        return;
+      status = exception.getStatus();
+      const res = exception.getResponse();
+      if (typeof res === 'string') {
+        message = res;
+      } else if (typeof res === 'object' && res !== null) {
+        const body = res as Record<string, unknown>;
+        if (typeof body.message === 'string') {
+          message = body.message;
+        } else if (Array.isArray(body.message)) {
+          message = body.message.join(', ');
+        }
+        if (typeof body.error === 'string') {
+          code = body.error;
+        }
       }
-      response.status(status).json({
-        error: {
-          code: CODES_BY_STATUS[status] ?? 'request_failed',
-          message: extractMessage(exception),
-          details: {},
-        },
-      });
-      return;
+    } else if (exception instanceof Error) {
+      message = exception.message;
     }
 
-    this.logger.error(`unhandled exception: ${exception instanceof Error ? exception.stack : String(exception)}`);
-    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      error: { code: 'internal_error', message: 'unexpected internal error', details: {} },
+    response.status(status).json({
+      error: { code, message, details },
     });
   }
 }

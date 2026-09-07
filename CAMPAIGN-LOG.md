@@ -27,3 +27,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-06 15:38 | 18-timing-equal-enumeration | a | **1 failure(s)**: typecheck still failing after 2 repairs | 172.6 min | 104232 | 10.1 | 9 | 11/11 | yes |
 | 2026-09-07 00:30 | 01-payout-outbox | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 01:13 | 02-reconciliation-resend | a | **no meta** (exit 1) | – | – | – | – | – | – |
+| 2026-09-07 02:40 | 03-read-model-projection | a | **no meta** (exit 1) | – | – | – | – | – | – |
