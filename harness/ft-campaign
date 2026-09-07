@@ -145,7 +145,7 @@ def already_done(prob, vslug, slug, shape="phased"):
     return ws.is_dir() and any(f for f in ws.rglob("*") if f.is_file())
 
 
-def clear_dead_run(prob, vslug, slug):
+def clear_dead_run(prob, vslug, slug, shape="phased"):
     """Move aside a run directory that exists but produced no code.
 
     ft-go refuses to re-enter a run directory, correctly: a finished run is an
@@ -158,7 +158,7 @@ def clear_dead_run(prob, vslug, slug):
     The dead run is kept rather than deleted. Its steps/ and meta.yaml are why it
     died, and that is worth reading.
     """
-    run = prob / "runs" / slug / vslug
+    run = prob / "runs" / slug / (vslug if shape == "phased" else f"{vslug}-{shape}")
     if not run.is_dir():
         return False
     n = 1
@@ -294,7 +294,7 @@ def main():
 
         say("")
         say(f"=== {prob.name} {vslug}  ({done + 1}/{len(todo)}) ===")
-        aside = clear_dead_run(prob, vslug, slug)
+        aside = clear_dead_run(prob, vslug, slug, a.shape)
         if aside:
             say(f"an aborted run was in the way; kept as {aside.name}")
         state = wait_for_host()
