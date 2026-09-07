@@ -304,7 +304,29 @@ def main():
             # `toHaveLength does not exist`. The shim declares four functions and
             # three matchers; anything past that surface is reported as the model's
             # mistake.
+            # ...but only when the real package is actually a dependency. The
+            # fixtures script `vitest run` and declare only prisma and typescript,
+            # so `pnpm install` brings no vitest and deleting the shim leaves no
+            # source of types at all. Problem 12's local re-run failed the gate on
+            # 56 errors, 48 of them `Cannot find name 'expect'` — the shim removed
+            # and nothing installed in its place.
+            _pkg = ws / "package.json"
+            _deps = set()
+            if _pkg.is_file():
+                try:
+                    _p = json.loads(_pkg.read_text())
+                    _deps = set(_p.get("dependencies") or {}) | set(
+                        _p.get("devDependencies") or {})
+                except json.JSONDecodeError:
+                    pass
             for shim in list(ws.rglob("_shims.d.ts")):
+                shimmed = set(re.findall(r"declare module '([^']+)'", shim.read_text()))
+                missing = sorted(m for m in shimmed if m.split("/")[0] not in _deps)
+                if missing:
+                    say(f"kept {shim.relative_to(ws)} — {', '.join(missing)} "
+                        f"{'is' if len(missing) == 1 else 'are'} not a dependency, "
+                        f"so the shim is the only source of types")
+                    continue
                 shim.unlink()
                 say(f"removed {shim.relative_to(ws)} — the gate installs the real "
                     f"packages and the shim shadows their types")

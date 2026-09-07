@@ -1,0 +1,19 @@
+- **due_date NULL serialises as present-key-null** — Invoice created without a due date; `GET /invoices/:id` body contains `"due_date":null`. Fails if the DTO mapping or a JSON replacer drops null-valued keys (e.g. `if (v != null) out.k = v`), or if Drizzle's row model yields `undefined` for a NULL timestamptz and the serializer treats `undefined` as "omit".
+
+- **due_date non-null serialises as present-key-ISO-string** — Contrast to the previous case: invoice created with `due_date`; `GET /invoices/:id` body contains `"due_date":"2025-06-15T00:00:00.000Z"`. Fails if the value is emitted as a number (epoch ms), as a non-ISO format, or if a truthiness check on the date object drops it in an edge-case locale.
+
+- **Empty line_items in detail response is present-key-empty-array** — Invoice created with `lineItems: []`; both `GET /invoices/:id` and the `POST /invoices` 201 body contain `"line_items":[]`. Fails if the repository's sub-query returns an empty array that is then mapped to `undefined`/omitted, or if the service conditionally attaches `line_items` only when `items.length > 0`.
+
+- **Non-empty line_items in detail response is present-key-populated-array** — Invoice created with two line items; `GET /invoices/:id` body contains `"line_items":[{…},{…}]` with each element carrying all its columns. Fails if the mapping flattens, wraps in an extra array, or drops elements with zero-valued fields (e.g. a line item where `unit_price_cents` is 0).
+
+- **List endpoint omits the line_items key entirely** — `GET /invoices?accountId=…` returns an array where each element has NO `line_items` key (byte-compat with the Prisma list shape, which never joined items). Fails if the new repository or service accidentally includes `line_items:[]` on every list row, adding a field the old contract did not expose.
+
+- **due_date omitted in create body and due_date explicitly null produce identical read-back** — Two invoices: one created with no `due_date` key in the JSON body, one created with `"due_date":null`. Both read back via `GET /invoices/:id` as `"due_date":null`. Fails if one path stores a sentinel (empty string, epoch 0) while the other stores SQL NULL, causing one to serialise as a date string and the other as null.
+
+- **All non-null invoice fields are present in every response shape, including zero-valued money fields** — `GET /invoices/:id` for a freshly created invoice with `subtotal_cents=0, tax_cents=0, total_cents=0` still carries every key (`id`, `account_id`, `status`, `subtotal_cents`, `tax_cents`, `total_cents`, `due_date`, `created_at`, `updated_at`). Fails if a generic DTO mapper uses a truthiness filter (`value ? set : skip`) that silently drops zero-string or empty values from the output.
+
+- **Account DTO carries all fields present, including zero-valued counters** — `GET /accounts/:id` for a brand-new account shows `"credit_limit_cents":"0","balance_cents":"0","total_invoiced_cents":"0"` — keys present, values are the string `"0"`. Fails if the account-to-DTO mapping omits keys whose BigInt value is `0n` (falsy), or if a `?? 'default'` coalesce converts the legitimate zero to a placeholder.
+
+- **Error envelope `details` is present-empty-object, never null or absent** — `GET /invoices/:id` with a nonexistent UUID → 404 body is `{ "error": { "code":"resource_not_found", "message":"…", "details":{} } }`. Fails if the global exception filter sets `details: null` (or omits the key) when there are no extra details to attach, violating the "details is an object, never null" contract.
+
+Not testing here: the *value* format of BigInt fields (covered by `bigint-format.spec.ts`), transactional rollback semantics (`transaction-failure.spec.ts`), input validation rejections (`validate-*.spec.ts`), or the non-reversal of counters on void (`void-invoice.spec.ts`) — those are orthogonal concerns with their own failure modes and dedicated spec files.

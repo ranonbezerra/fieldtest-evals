@@ -6,10 +6,7 @@ export const DB = Symbol('DB');
 @Global()
 @Module({
   providers: [
-    {
-      provide: DB,
-      useFactory: () => createDb(),
-    },
+    { provide: DB, useFactory: () => createDb() },
   ],
   exports: [DB],
 })

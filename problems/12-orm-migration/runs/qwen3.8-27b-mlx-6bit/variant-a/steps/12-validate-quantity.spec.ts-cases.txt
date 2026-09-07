@@ -1,0 +1,15 @@
+- **quantity 0 is rejected with 400 validation_error** — proves the `> 0` boundary treats zero as invalid at the application layer. Fails if the guard is `>= 0` or only checks for negatives, or if zero slips past the DTO and hits the DB CHECK constraint, surfacing as `resource_conflict` or a 500 instead of `validation_error`.
+
+- **quantity −5 is rejected with 400 validation_error** — proves negative values are caught before any DB interaction. Fails if the validation compares with `> 0` but a type-coercion step (e.g. `Number` cast on a string input) turns the value into `NaN` which passes a loose check, or if the guard is written as `!== 0` only.
+
+- **quantity 1 (minimum valid) is accepted and the invoice + line item are created** — proves the lower boundary is inclusive of 1. Fails if the check is `> 1` instead of `>= 1` / `> 0`, an off-by-one that silently rejects the smallest legitimate order.
+
+- **quantity field absent from a line-item body → 400 validation_error, no rows persisted** — proves the field is required, not silently defaulted. Fails if the DTO marks quantity optional with a default of 1 (hiding caller intent) or if it inserts NULL and the NOT NULL constraint produces a 500 `internal_error` instead of a 400.
+
+- **non-integer quantity (2.7) → 400 validation_error** — proves type enforcement at the API boundary. Fails if the DTO accepts any `number` and Postgres silently truncates to 2, creating a line item whose `line_total_cents` no longer matches the caller's intended quantity.
+
+- **request with two line items where the second has quantity 0 → 400, and zero rows exist in invoices or line_items** — proves validation is all-or-nothing before any write enters the transaction. Fails if per-item validation is interleaved with inserts (first item committed before second is checked) or if the early-return happens after `tx.insert(invoices)` without a rollback, leaving an orphan invoice with one line item.
+
+- **error envelope carries code `"validation_error"`, a developer-facing message, and `details` as an object (not null)** — proves the single-envelope contract for input errors. Fails if the Postgres CHECK constraint fires first and the global filter maps it to `resource_conflict`, or if `details` is serialised as `null` / omitted, breaking clients that branch on the code.
+
+Deliberately **not** testing: an upper bound on quantity (the schema has no MAX and the task specifies none), and concurrent duplicate POSTs with invalid quantity (stateless per-request validation has no race; the concurrency cases that matter—counter under-count on retry—belong in `transaction-failure.spec.ts`).

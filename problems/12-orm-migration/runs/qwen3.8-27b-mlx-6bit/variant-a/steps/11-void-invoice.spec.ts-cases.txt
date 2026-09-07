@@ -1,0 +1,19 @@
+- **voiding an invoice leaves account.total_invoiced_cents unchanged** — Create an invoice (counter increments by total), then PATCH status→'void', then GET the account and assert `total_invoiced_cents` equals its post-creation value. Fails if the void path performs a `SET total_invoiced_cents = total_invoiced_cents - …` or resets it.
+
+- **voiding an invoice leaves account.balance_cents unchanged** — Same setup; assert `balance_cents` equals its post-creation value after void. Fails if the void path adjusts balance in either direction.
+
+- **voiding returns 200 and the response body carries `status: "void"`** — Basic success path. Fails if the endpoint returns a different status code, omits the `status` field, or returns the pre-void status.
+
+- **voiding updates `updated_at` to a timestamp later than `created_at`** — After void, the response's `updated_at` must be strictly greater than (or at least not equal to) the original `created_at`. Fails if the UPDATE statement omits `updated_at = now()` or sets it to a stale value.
+
+- **voiding a non-existent invoice returns 404 with `resource_not_found`** — PATCH `/invoices/<random-uuid>/status` → 404 envelope. Fails if the repository returns `null` but the service skips the null-check, or if the error code is anything other than `resource_not_found`.
+
+- **voiding an already-void invoice is idempotent and does not double-adjust counters** — Void the same invoice twice; second response is still 200 with `status: "void"`, and counters are unchanged from after the first void. Fails if there is any subtractive logic that fires on every void (double-subtract), or if the second void 404s because the row was "consumed."
+
+- **voiding does not modify or delete line_items** — Create an invoice with two line items, void it, then GET `/invoices/:id` and assert the `line_items` array is identical in length, description, unit_price_cents, quantity, and line_total_cents. Fails if the void path issues a `DELETE FROM line_items` or `UPDATE line_items SET …`.
+
+- **voiding from the 'paid' state does not reverse counters** — Transition draft→sent→paid, then void. Assert counters equal their post-creation values. Fails if there is status-transition logic that specifically reverses on a paid→void edge (e.g., "refund").
+
+- **voiding an invoice with total_cents = 0 is a no-op on counters** — Create a zero-amount invoice (no line items, no tax), void it. Counters unchanged. Fails if there is a special-case branch for zero that skips the status update (leaving status stuck at 'draft') or triggers an erroneous decrement of 0 that corrupts a negative balance.
+
+Deliberately **not** testing: (a) whether voiding blocks further status transitions (un-void) — the plan specifies no such constraint and adding one would be new behaviour, not preserved behaviour; (b) concurrent simultaneous voids on the same invoice — the UPDATE is a plain `SET status = …` with no read-modify-write on counters, so there is no race surface to exercise; (c) voiding after account deletion — unreachable through the API because there is no `DELETE /accounts/:id` endpoint and the FK defaults to NO ACTION, so the account cannot be removed while invoices reference it.
