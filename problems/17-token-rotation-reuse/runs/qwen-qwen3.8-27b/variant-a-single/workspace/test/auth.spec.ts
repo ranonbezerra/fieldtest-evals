@@ -1,192 +1,314 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AuthService } from '../src/auth/auth.service.js';
+import { AuthService } from '../src/auth/auth.service';
 
-// ASSUMPTION: AuthService is instantiated with (repository, prisma) where prisma
-//   exposes `$transaction(fn)`. The rotation entry-point is `rotate(refreshToken: string)`.
-// ASSUMPTION: On success the method resolves to { accessToken: string, refreshToken: string }.
-// ASSUMPTION: On any rejection path (expired, retired/replay, unknown, malformed) the
-//   method rejects. The controller maps all rejections to the same error envelope.
-// ASSUMPTION: The repository exposes methods that accept an optional `tx` parameter
-//   for use inside a Prisma interactive transaction.
+// ASSUMPTION: The AuthService constructor in the current workspace accepts 1 argument
+// (the repository). The issueAccessToken function is expected to be available via a
+// separate injection mechanism (e.g. a module-level provider) not visible in the stub.
 
-type RotationResult = { accessToken: string; refreshToken: string };
+// ASSUMPTION: The `rotate` method is specified by PLAN.md §3 but is not yet present on
+// the compiled AuthService type. Tests express the contract via a local interface and
+// a type assertion so the test file compiles against the current stub.
 
-interface TokenRecord {
+// ASSUMPTION: Repository method names are inferred from the PLAN.md algorithm. The
+// repository stub is an empty class, so names follow the plan's intent.
+
+// ─── Types ────────────────────────────────────────────────────────────────────────
+
+interface RotateResult {
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface ErrorEnvelope {
+  error: {
+    code: string;
+    message: string;
+    details: Record<string, unknown>;
+  };
+}
+
+interface TokenRow {
   id: string;
-  value: string;
-  userId: string;
   familyId: string;
+  sessionId: string;
+  createdAt: Date;
+  retiredAt: Date | null;
+  revokedAt: Date | null;
+}
+
+interface SessionRow {
+  id: string;
+  userId: string;
+  createdAt: Date;
   expiresAt: Date;
-  absoluteExpiry: Date;
-  retired: boolean;
 }
 
-function makeToken(overrides: Partial<TokenRecord> = {}): TokenRecord {
+interface RepoContract {
+  findTokenById(id: string): Promise<TokenRow | null>;
+  findSessionById(id: string): Promise<SessionRow | null>;
+  retireTokenIfActive(id: string): Promise<number>;
+  createToken(data: { familyId: string; sessionId: string }): Promise<{ id: string }>;
+  revokeFamily(familyId: string): Promise<void>;
+  createAuditRecord(data: {
+    familyId: string;
+    tokenId: string;
+    event: string;
+    details: Record<string, unknown>;
+  }): Promise<void>;
+}
+
+interface AuthServiceContract {
+  rotate(token: string): Promise<RotateResult>;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────────
+
+function createMockRepo(): RepoContract {
   return {
-    id: 'tok-1',
-    value: 'rt-valid',
-    userId: 'user-1',
-    familyId: 'fam-1',
-    expiresAt: new Date(Date.now() + 3_600_000),
-    absoluteExpiry: new Date(Date.now() + 86_400_000),
-    retired: false,
-    ...overrides,
+    findTokenById: vi.fn().mockResolvedValue(null),
+    findSessionById: vi.fn().mockResolvedValue(null),
+    retireTokenIfActive: vi.fn().mockResolvedValue(0),
+    createToken: vi.fn().mockResolvedValue({ id: 'token-new' }),
+    revokeFamily: vi.fn().mockResolvedValue(undefined),
+    createAuditRecord: vi.fn().mockResolvedValue(undefined),
   };
 }
 
-function makeRepository() {
-  return {
-    findToken: vi.fn(),
-    retireToken: vi.fn(),
-    issueToken: vi.fn(),
-    invalidateFamily: vi.fn(),
-    recordAudit: vi.fn(),
-  };
+function extractEnvelope(e: unknown): ErrorEnvelope {
+  if (e !== null && typeof e === 'object' && 'response' in e) {
+    return (e as { response: ErrorEnvelope }).response;
+  }
+  if (e !== null && typeof e === 'object' && 'error' in e) {
+    return e as ErrorEnvelope;
+  }
+  throw new Error(`Unexpected rejection shape: ${String(e)}`);
 }
 
-function makePrisma() {
-  return {
-    $transaction: vi.fn(<T>(fn: (tx: Record<string, unknown>) => Promise<T>) =>
-      fn({}),
-    ),
-  };
+async function captureRejection(p: Promise<unknown>): Promise<unknown> {
+  try {
+    await p;
+  } catch (e: unknown) {
+    return e;
+  }
+  throw new Error('Expected promise to reject but it resolved');
 }
 
-describe('AuthService — refresh-token rotation', () => {
-  let service: AuthService;
-  let repo: ReturnType<typeof makeRepository>;
-  let prisma: ReturnType<typeof makePrisma>;
+// ─── Constants ────────────────────────────────────────────────────────────────────
+
+const userId = 'user-1';
+const familyId = 'family-1';
+const sessionId = 'session-1';
+
+// ─── Tests ────────────────────────────────────────────────────────────────────────
+
+describe('AuthService — refresh-token rotation (Variant A)', () => {
+  let repo: RepoContract;
+  let service: AuthServiceContract;
 
   beforeEach(() => {
-    repo = makeRepository();
-    prisma = makePrisma();
-    service = new AuthService(repo as any, prisma as any);
+    vi.resetAllMocks();
+    repo = createMockRepo();
+    // ASSUMPTION: 1-arg constructor per compiler (see top of file)
+    const raw = new AuthService(repo as never);
+    service = raw as unknown as AuthServiceContract;
   });
 
-  // ── 1. Concurrent presentation of one token ──────────────────────────
+  // ── 1. Concurrent presentation of one token ──────────────────────────────────
 
-  describe('concurrent presentation of the same token', () => {
-    it('exactly one call rotates; the other is rejected', async () => {
-      const token = makeToken();
-      const sibling = makeToken({ id: 'tok-2', value: 'rt-sibling' });
+  describe('concurrent presentation of one token', () => {
+    it('exactly one of two concurrent rotate calls succeeds; the other is rejected', async () => {
+      const tokenValue = 'token-A';
+      const now = new Date();
+      const futureExpiry = new Date(now.getTime() + 3_600_000);
 
-      // Simulate: first caller sees the token as valid, second sees it retired.
-      let call = 0;
-      repo.findToken.mockImplementation(async (_tx: unknown, _v: string) => {
-        call++;
-        return call === 1 ? token : { ...token, retired: true };
-      });
-      repo.retireToken.mockResolvedValue(undefined);
-      repo.issueToken.mockResolvedValue(sibling);
-      repo.invalidateFamily.mockResolvedValue(undefined);
-      repo.recordAudit.mockResolvedValue(undefined);
+      const tokenRow: TokenRow = {
+        id: tokenValue,
+        familyId,
+        sessionId,
+        createdAt: now,
+        retiredAt: null,
+        revokedAt: null,
+      };
+      const sessionRow: SessionRow = {
+        id: sessionId,
+        userId,
+        createdAt: now,
+        expiresAt: futureExpiry,
+      };
+
+      repo.findTokenById.mockResolvedValue(tokenRow);
+      repo.findSessionById.mockResolvedValue(sessionRow);
+      // First CAS wins (1 row affected); second CAS loses (0 rows affected)
+      repo.retireTokenIfActive.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      repo.createToken.mockResolvedValue({ id: 'token-B' });
 
       const results = await Promise.allSettled([
-        service.rotate('rt-valid') as Promise<RotationResult>,
-        service.rotate('rt-valid') as Promise<RotationResult>,
+        service.rotate(tokenValue),
+        service.rotate(tokenValue),
       ]);
 
-      const fulfilled = results.filter((r) => r.status === 'fulfilled');
-      const rejected = results.filter((r) => r.status === 'rejected');
+      const fulfilled = results.filter(
+        (r): r is PromiseFulfilledResult<RotateResult> => r.status === 'fulfilled',
+      );
+      const rejected = results.filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected',
+      );
 
       expect(fulfilled).toHaveLength(1);
       expect(rejected).toHaveLength(1);
 
-      const ok = (fulfilled[0] as PromiseFulfilledResult<RotationResult>).value;
-      expect(ok.accessToken).toBeTypeOf('string');
-      expect(ok.refreshToken).toBeTypeOf('string');
-      expect(ok.refreshToken).not.toBe('rt-valid');
+      // Winner returns fresh tokens
+      expect(fulfilled[0].value.accessToken).toBeTypeOf('string');
+      expect(fulfilled[0].value.refreshToken).toBe('token-B');
+
+      // Loser gets the standard indistinguishable envelope
+      const envelope = extractEnvelope(rejected[0].reason);
+      expect(envelope.error.code).toBe('invalid_token');
+      expect(envelope.error.details).toEqual({});
     });
   });
 
-  // ── 2. Replay of a retired token invalidates the sibling ─────────────
+  // ── 2. Replay invalidates sibling token ──────────────────────────────────────
 
-  describe('replay of a retired token', () => {
-    it('invalidates the whole family and records an audit event', async () => {
-      const retired = makeToken({ retired: true });
+  describe('replay invalidates sibling token', () => {
+    it('presenting an already-retired token revokes every token in the family', async () => {
+      const now = new Date();
 
-      repo.findToken.mockResolvedValue(retired);
-      repo.invalidateFamily.mockResolvedValue(undefined);
-      repo.recordAudit.mockResolvedValue(undefined);
+      const retiredRow: TokenRow = {
+        id: 'token-A',
+        familyId,
+        sessionId,
+        createdAt: now,
+        retiredAt: now,
+        revokedAt: null,
+      };
 
-      await expect(service.rotate('rt-valid')).rejects.toThrow();
+      repo.findTokenById.mockResolvedValue(retiredRow);
+      repo.revokeFamily.mockResolvedValue(undefined);
+      repo.createAuditRecord.mockResolvedValue(undefined);
 
-      expect(repo.invalidateFamily).toHaveBeenCalledWith(expect.anything(), 'fam-1');
-      expect(repo.recordAudit).toHaveBeenCalled();
-    });
+      await expect(service.rotate('token-A')).rejects.toThrow();
 
-    it('the sibling token is no longer usable after the replay', async () => {
-      const retired = makeToken({ id: 'tok-1', retired: true });
-      const sibling = makeToken({ id: 'tok-2', value: 'rt-sibling' });
+      // Family-wide revocation was triggered
+      expect(repo.revokeFamily).toHaveBeenCalledWith(familyId);
 
-      // First: the retired token is presented → triggers family invalidation.
-      // Second: the sibling is presented → now also retired (family invalidated).
-      let findCall = 0;
-      repo.findToken.mockImplementation(async () => {
-        findCall++;
-        return findCall === 1 ? retired : { ...sibling, retired: true };
-      });
-      repo.invalidateFamily.mockResolvedValue(undefined);
-      repo.recordAudit.mockResolvedValue(undefined);
-
-      await expect(service.rotate('rt-valid')).rejects.toThrow();
-      await expect(service.rotate('rt-sibling')).rejects.toThrow();
-
-      expect(repo.invalidateFamily).toHaveBeenCalled();
+      // Audit recorded as reuse_detected
+      expect(repo.createAuditRecord).toHaveBeenCalledWith(
+        expect.objectContaining({
+          familyId,
+          event: 'reuse_detected',
+        }),
+      );
     });
   });
 
-  // ── 3. Rotation respects the absolute session deadline ────────────────
+  // ── 3. Rotation against absolute deadline ────────────────────────────────────
 
-  describe('absolute session deadline', () => {
-    it('rejects rotation when the absolute expiry has passed even if the token itself is unexpired', async () => {
-      const token = makeToken({
-        expiresAt: new Date(Date.now() + 3_600_000),
-        absoluteExpiry: new Date(Date.now() - 1_000),
-      });
+  describe('rotation against absolute deadline', () => {
+    it('rejects rotation when the session has passed its absolute expiry', async () => {
+      const now = new Date();
+      const pastExpiry = new Date(now.getTime() - 1_000);
 
-      repo.findToken.mockResolvedValue(token);
+      const tokenRow: TokenRow = {
+        id: 'token-A',
+        familyId,
+        sessionId,
+        createdAt: pastExpiry,
+        retiredAt: null,
+        revokedAt: null,
+      };
+      const sessionRow: SessionRow = {
+        id: sessionId,
+        userId,
+        createdAt: pastExpiry,
+        expiresAt: pastExpiry, // already in the past
+      };
 
-      await expect(service.rotate('rt-valid')).rejects.toThrow();
+      repo.findTokenById.mockResolvedValue(tokenRow);
+      repo.findSessionById.mockResolvedValue(sessionRow);
+      repo.createAuditRecord.mockResolvedValue(undefined);
 
-      expect(repo.issueToken).not.toHaveBeenCalled();
-      expect(repo.retireToken).not.toHaveBeenCalled();
+      await expect(service.rotate('token-A')).rejects.toThrow();
+
+      // Audit says 'expired'
+      expect(repo.createAuditRecord).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'expired' }),
+      );
+
+      // No new token was minted
+      expect(repo.createToken).not.toHaveBeenCalled();
     });
   });
 
-  // ── 4. All rejections are indistinguishable to the caller ─────────────
+  // ── 4. Rejection responses compared to each other ────────────────────────────
 
-  describe('rejection indistinguishability', () => {
-    const scenarios: Array<[label: string, token: TokenRecord | null]> = [
-      ['expired', makeToken({ expiresAt: new Date(Date.now() - 1_000) })],
-      ['retired', makeToken({ retired: true })],
-      ['unknown', null],
-    ];
+  describe('rejection responses are indistinguishable', () => {
+    it('unknown, expired, and retired (reuse) all produce the same envelope', async () => {
+      const now = new Date();
+      const pastExpiry = new Date(now.getTime() - 1_000);
+      const futureExpiry = new Date(now.getTime() + 3_600_000);
 
-    it.each(scenarios)('rejects a %s token with the same shape', async (_label, token) => {
-      repo.findToken.mockResolvedValue(token);
-      repo.invalidateFamily.mockResolvedValue(undefined);
-      repo.recordAudit.mockResolvedValue(undefined);
+      const activeSession: SessionRow = {
+        id: sessionId,
+        userId,
+        createdAt: now,
+        expiresAt: futureExpiry,
+      };
+      const expiredSession: SessionRow = {
+        id: sessionId,
+        userId,
+        createdAt: pastExpiry,
+        expiresAt: pastExpiry,
+      };
 
-      const err = await service.rotate('rt-valid').catch((e) => e);
+      const activeToken: TokenRow = {
+        id: 'tok',
+        familyId,
+        sessionId,
+        createdAt: now,
+        retiredAt: null,
+        revokedAt: null,
+      };
 
-      expect(err).toBeInstanceOf(Error);
-    });
+      const envelopes: ErrorEnvelope[] = [];
 
-    it('all rejection errors carry the same message', async () => {
-      const messages: string[] = [];
-
-      for (const [, token] of scenarios) {
-        repo.findToken.mockResolvedValue(token);
-        repo.invalidateFamily.mockResolvedValue(undefined);
-        repo.recordAudit.mockResolvedValue(undefined);
-
-        const err = (await service.rotate('rt-valid').catch((e) => e)) as Error;
-        messages.push(err.message);
+      // 1 — Unknown token (not found in DB)
+      repo.findTokenById.mockResolvedValueOnce(null);
+      repo.createAuditRecord.mockResolvedValueOnce(undefined);
+      {
+        const reason: unknown = await captureRejection(service.rotate('ghost-token'));
+        envelopes.push(extractEnvelope(reason));
       }
 
-      expect(messages[0]).toBe(messages[1]);
-      expect(messages[1]).toBe(messages[2]);
+      // 2 — Expired session
+      repo.findTokenById.mockResolvedValueOnce(activeToken);
+      repo.findSessionById.mockResolvedValueOnce(expiredSession);
+      repo.createAuditRecord.mockResolvedValueOnce(undefined);
+      {
+        const reason: unknown = await captureRejection(service.rotate('tok'));
+        envelopes.push(extractEnvelope(reason));
+      }
+
+      // 3 — Retired token (reuse / compromise)
+      const retiredToken: TokenRow = { ...activeToken, id: 'tok-retired', retiredAt: now };
+      repo.findTokenById.mockResolvedValueOnce(retiredToken);
+      repo.revokeFamily.mockResolvedValueOnce(undefined);
+      repo.createAuditRecord.mockResolvedValueOnce(undefined);
+      {
+        const reason: unknown = await captureRejection(service.rotate('tok-retired'));
+        envelopes.push(extractEnvelope(reason));
+      }
+
+      // All three must be byte-identical in their observable fields
+      for (let i = 1; i < envelopes.length; i++) {
+        expect(envelopes[i].error.code).toBe(envelopes[0].error.code);
+        expect(envelopes[i].error.message).toBe(envelopes[0].error.message);
+        expect(envelopes[i].error.details).toEqual(envelopes[0].error.details);
+      }
+
+      // And they must use the single contract code
+      expect(envelopes[0].error.code).toBe('invalid_token');
+      expect(envelopes[0].error.details).toEqual({});
     });
   });
 });

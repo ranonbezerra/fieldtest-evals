@@ -1,37 +1,45 @@
-import { Controller, Post, Body, Req, Res } from '@nestjs/common';
+// src/auth/auth.controller.ts
+import { Body, Controller, Post, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-
-// ASSUMPTION: AuthService exposes `rotate(refreshToken: string | undefined): Promise<{ accessToken: string; refreshToken: string }>` — inferred from the variant-a requirements since the service file's exports are not visible to this fix.
-
-interface RefreshBody {
-  refreshToken?: string;
-}
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('refresh')
+  @HttpCode(HttpStatus.OK)
   async refresh(
-    @Body() body: RefreshBody,
-    @Req() req: { cookies?: Record<string, string> },
-    @Res({ passthrough: true }) res: { cookie(name: string, value: string, options?: Record<string, unknown>): void },
-  ) {
-    // When both body and cookie are present, the body value wins.
-    const refreshToken = body.refreshToken ?? req.cookies?.refresh_token;
+    @Body('refreshToken') bodyToken: string | undefined,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    // Precedence: JSON body wins over cookie.
+    const cookieToken = req.cookies?.refresh_token as string | undefined;
+    const refreshToken = bodyToken ?? cookieToken;
 
-    const result = await this.authService.rotate(refreshToken);
+    if (!refreshToken) {
+      res.status(HttpStatus.UNAUTHORIZED).json({
+        error: {
+          code: 'invalid_token',
+          message: 'Invalid or expired refresh token',
+          details: {},
+        },
+      });
+      return;
+    }
 
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      path: '/auth/refresh',
-    });
-
-    return {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-    };
+    try {
+      const result = await this.authService.rotate(refreshToken);
+      res.status(HttpStatus.OK).json(result);
+    } catch {
+      res.status(HttpStatus.UNAUTHORIZED).json({
+        error: {
+          code: 'invalid_token',
+          message: 'Invalid or expired refresh token',
+          details: {},
+        },
+      });
+    }
   }
 }

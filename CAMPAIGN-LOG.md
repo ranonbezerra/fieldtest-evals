@@ -41,3 +41,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 06:54 | 14-code-review-planted-bugs | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 07:12 | 15-wiring-boot-failure | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 07:15 | 16-migration-that-lied | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-07 07:48 | 17-token-rotation-reuse | a | **no meta** (exit 0) | – | – | – | – | – | – |

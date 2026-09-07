@@ -334,6 +334,16 @@ def main():
         if not content.strip():
             print(f"ft-run: [{a.label}] empty reply; {a.file} not written", file=sys.stderr)
             return 6
+        # A source file is never an unfenced chat reply. Problem 07 lost a valid
+        # test file to a repair round that answered "I need to see the current
+        # file to understand what's there." followed by a <tool_call> block; the
+        # reply was written over the code and the run typechecked prose. What is
+        # already on disk came from a fenced block and is the better artifact, so
+        # refuse and let the caller record the failed repair.
+        if not a.verbatim and not fenced:
+            print(f"ft-run: [{a.label}] reply carried no fenced block; "
+                  f"{a.file} left as it was", file=sys.stderr)
+            return 6
         Path(a.file).parent.mkdir(parents=True, exist_ok=True)
         Path(a.file).write_text(text, encoding="utf-8")
         n = len(text.encode())
