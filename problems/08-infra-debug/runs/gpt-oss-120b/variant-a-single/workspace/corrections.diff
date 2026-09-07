@@ -1,0 +1,51 @@
+--- a/kubeconfig
++++ b/kubeconfig
+@@
+-    "server": "https://localhost:6443"
++    "server": "https://10.0.0.5:6443"
+@@
+-    "name": "staging-cluster"
++    "name": "staging-cluster"
++    # The server address now matches the certificate's SAN (10.0.0.5).
++    # No insecure-skip-tls-verify is required.
+
+--- a/manifests/api-deployment.yaml
++++ b/manifests/api-deployment.yaml
+@@
+   spec:
+     containers:
+       - name: api
+         image: myorg/api:latest
+-        ports:
+-          - containerPort: 3000
+-        readinessProbe:
+-          httpGet:
+-            path: /health
+-            port: 8080   # <-- wrong port
+-          initialDelaySeconds: 5
+-          periodSeconds: 10
++        ports:
++          - containerPort: 3000
++        readinessProbe:
++          httpGet:
++            path: /health
++            port: 3000   # Fixed to match the container port
++          initialDelaySeconds: 5
++          periodSeconds: 10
+@@
+-      labels:
+-        app: api
++      labels:
++        app: api
++        # Ensure the label matches the Service selector (see Service diff).
+
+--- a/manifests/api-service.yaml
++++ b/manifests/api-service.yaml
+@@
+ spec:
+   selector:
+-    app: api-server   # <-- does not match Deployment label
++    app: api          # Fixed to match Deployment label
+   ports:
+     - protocol: TCP
+       port: 80

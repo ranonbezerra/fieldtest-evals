@@ -83,15 +83,18 @@ def strip_stray_fences(text):
     return "\n".join(lines)
 
 
-# The fence may be longer than three backticks, and has to be when the file itself
-# contains fenced blocks — a markdown deliverable, a REVIEW.md quoting code. Problem
-# 14 opened its review with ````markdown, which is correct, and the three-backtick
-# pattern matched nothing at all: the run committed a workspace with no deliverable
-# in it. The closing fence must be at least as long as the opening one.
-MULTI = re.compile(
-    r"^###[ \t]+`?([\w./+-]+)`?[ \t]*\r?\n+(`{3,}|~{3,})[\w+-]*\r?\n"
-    r"(.*?)\r?\n\2\2*[ \t]*(?:\r?\n|$)",
-    re.S | re.M)
+# One reply, many files. A `### path` heading, then a fenced block holding that
+# file's content, which for a markdown deliverable contains fenced blocks of its
+# own. Two ways that goes wrong, both seen:
+#   - the model opens with ````markdown because the content has ``` inside it
+#     (problem 14, and correct of it) — so the opening fence may be longer;
+#   - the model opens with ```md and the content still has ``` inside it
+#     (gpt-oss-120b on problem 08) — so the FIRST close of the opening width is
+#     not the end. diagnosis.md landed as 10 lines of an 83-line file.
+# A block therefore ends at the LAST close of its own width before the next
+# heading, not the first.
+HEADING = re.compile(r"^###[ \t]+`?([\w./+-]+)`?[ \t]*$")
+OPEN_FENCE = re.compile(r"^(`{3,}|~{3,})[\w+-]*[ \t]*$")
 
 
 def extract_files(text):
@@ -101,11 +104,32 @@ def extract_files(text):
     path repeated later wins: a reply that sketches a file and then writes it
     properly should land the second version.
     """
+    lines = text.splitlines()
+    heads = [(i, m.group(1)) for i, l in enumerate(lines)
+             for m in (HEADING.match(l),) if m]
     out = {}
-    for path, _fence, body in MULTI.findall(text):
+    for n, (i, path) in enumerate(heads):
+        stop = heads[n + 1][0] if n + 1 < len(heads) else len(lines)
+        j = i + 1
+        while j < stop and not lines[j].strip():
+            j += 1
+        if j >= stop:
+            continue
+        opened = OPEN_FENCE.match(lines[j])
+        if not opened:
+            continue
+        fence = opened.group(1)
+        close = re.compile(r"^" + re.escape(fence) + fence[0] + r"*[ \t]*$")
+        last = None
+        for k in range(j + 1, stop):
+            if close.match(lines[k]):
+                last = k
+        if last is None:
+            continue
+        body = "\n".join(lines[j + 1:last])
         p = path.strip().lstrip("./")
         if p:
-            out[p] = strip_stray_fences(body.rstrip("\n")) + "\n"
+            out[p] = body.rstrip("\n") + "\n"
     return out
 
 
