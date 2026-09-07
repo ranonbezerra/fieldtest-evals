@@ -187,3 +187,21 @@ src/features/sessions/SessionDetailScreen.tsx(11,11): error TS1003: Identifier e
 src/features/sessions/SessionDetailScreen.tsx(12,1): error TS1109: Expression expected.
 src/features/sessions/SessionDetailScreen.tsx(12,13): error TS1109: Expression expected.
 
+
+---
+
+## Retypecheck after restoring two files the harness overwrote
+
+`ft-run` wrote unfenced replies over source files. Two of this run's files were lost
+to it: `src/features/sessions/SessionDetailScreen.tsx` (a repair round replaced the
+79-line scaffold screen with 12 lines of prose and a `<tool_call>` block) and
+`src/auth/auth-context.tsx` (repair2 replaced repair1's valid 47-line component with
+61 lines of the model arguing that the file needed no change).
+
+The screen was restored from `problems/10-adapt-existing-screen/scaffold` — the model
+never delivered its own version, and the local run left the scaffold file identical.
+The auth context was restored from the `## reply` block of `repair1-auth-context.tsx`
+in this run's transcript, which is the state repair2 destroyed.
+
+    before restore   208 errors, 189 of them TS1434/TS1005/TS1002 — prose parsed as TSX
+    after restore     38 errors, 0 syntax errors

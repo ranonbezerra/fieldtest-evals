@@ -1,0 +1,40 @@
+src/app/LoginScreen.tsx(3,26): error TS2307: Cannot find module '../features/auth/queries' or its corresponding type declarations.
+src/app/LoginScreen.tsx(4,15): error TS2305: Module '"../api/types"' has no exported member 'LoginPayload'.
+src/app/router.tsx(17,15): error TS2741: Property 'children' is missing in type '{}' but required in type '{ children: ReactNode; }'.
+src/auth/auth-context.tsx(3,8): error TS1192: Module '"/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/runs/qwen-qwen3.8-27b/variant-a-single/workspace/src/api/client"' has no default export.
+src/auth/RequireAuth.tsx(3,25): error TS2307: Cannot find module '../features/auth/queries' or its corresponding type declarations.
+src/features/orders/OrderDetailScreen.tsx(3,20): error TS2724: '"./queries"' has no exported member named 'orderKeys'. Did you mean 'ordersKeys'?
+src/features/orders/OrderDetailScreen.tsx(4,10): error TS2305: Module '"../../api/types"' has no exported member 'OrderStatus'.
+src/features/orders/OrderDetailScreen.tsx(11,47): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/features/orders/OrdersListScreen.tsx(2,15): error TS2305: Module '"../../api/types"' has no exported member 'Order'.
+src/features/orders/OrdersListScreen.tsx(2,22): error TS2305: Module '"../../api/types"' has no exported member 'OrderStatus'.
+src/features/orders/OrdersListScreen.tsx(3,34): error TS2307: Cannot find module './OrderStatusBadge' or its corresponding type declarations.
+src/features/orders/OrdersListScreen.tsx(4,34): error TS2307: Cannot find module './OrderDetailPanel' or its corresponding type declarations.
+src/features/orders/OrdersListScreen.tsx(18,31): error TS2304: Cannot find name 'useState'.
+src/features/orders/OrdersListScreen.tsx(19,27): error TS2304: Cannot find name 'useState'.
+src/features/orders/OrdersListScreen.tsx(20,45): error TS2304: Cannot find name 'useState'.
+src/features/orders/OrdersListScreen.tsx(28,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/features/orders/OrdersListScreen.tsx(29,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/features/orders/OrdersListScreen.tsx(33,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/features/orders/OrdersListScreen.tsx(91,23): error TS7006: Parameter 'order' implicitly has an 'any' type.
+src/features/orders/queries.ts(3,76): error TS2307: Cannot find module '../../api/orders' or its corresponding type declarations.
+src/features/orders/queries.ts(5,1): error TS6192: All imports in import declaration are unused.
+src/features/orders/queries.ts(5,15): error TS2305: Module '"../../api/types"' has no exported member 'Order'.
+src/features/orders/queries.ts(5,22): error TS2305: Module '"../../api/types"' has no exported member 'Page'.
+src/features/orders/queries.ts(33,17): error TS6133: 'created' is declared but its value is never read.
+src/features/sessions/queries.ts(66,33): error TS2345: Argument of type 'SessionListParams' is not assignable to parameter of type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type 'SessionListParams'.
+src/features/sessions/SessionDetailScreen.tsx(11,45): error TS2554: Expected 0 arguments, but got 1.
+src/features/sessions/SessionDetailScreen.tsx(44,45): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ id: string; notes: string; }'.
+src/features/sessions/SessionsListScreen.test.tsx(5,32): error TS6133: 'vi' is declared but its value is never read.
+src/features/sessions/SessionsListScreen.test.tsx(5,36): error TS6133: 'beforeEach' is declared but its value is never read.
+src/features/sessions/SessionsListScreen.tsx(1,23): error TS6133: 'useParams' is declared but its value is never read.
+src/features/sessions/SessionsListScreen.tsx(3,10): error TS2724: '"./queries"' has no exported member named 'useSessionsList'. Did you mean 'useSessionList'?
+src/features/sessions/SessionsListScreen.tsx(50,22): error TS7006: Parameter 'session' implicitly has an 'any' type.
+src/mocks/handlers.ts(1,36): error TS2307: Cannot find module 'msw' or its corresponding type declarations.
+src/mocks/handlers.ts(17,36): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/handlers.ts(23,44): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/handlers.ts(23,52): error TS7031: Binding element 'request' implicitly has an 'any' type.
+src/mocks/handlers.ts(31,43): error TS7031: Binding element 'params' implicitly has an 'any' type.
+src/mocks/server.ts(1,29): error TS2307: Cannot find module 'msw/node' or its corresponding type declarations.
