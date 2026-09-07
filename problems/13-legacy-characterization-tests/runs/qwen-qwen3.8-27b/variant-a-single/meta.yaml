@@ -1,0 +1,155 @@
+{
+  "model": "qwen/qwen3.8-27b",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "13-legacy-characterization-tests",
+  "variant": "variant-a",
+  "date": "2026-09-07T06:06:30+00:00",
+  "wall_seconds": 543,
+  "wall_minutes": 9.1,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": {
+    "total_usd": 0.0461,
+    "per_1k_output_usd": 0.002
+  },
+  "runner": "api",
+  "spec_source": "model",
+  "shape": "single",
+  "asked_again_after_empty": false,
+  "manifest": {
+    "declared": 6,
+    "built": 0,
+    "truncated": true
+  },
+  "requests": 1,
+  "resumed": false,
+  "requests_this_invocation": 1,
+  "tokens": {
+    "prompt_total": 1275,
+    "completion_total": 22951,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 22951,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 43.0,
+    "output_tokens_per_second_overall": 43.0,
+    "generation_seconds": 533,
+    "model_load_seconds": 0,
+    "overhead_seconds": 10
+  },
+  "revisions": {
+    "self_repairs": 0,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": true,
+    "repairs": 0,
+    "skipped": null,
+    "gate_scaffold_added": [
+      "package.json"
+    ]
+  },
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failed": 38,
+    "passed": 15,
+    "total": 53,
+    "failing": [
+      "feeCalculator \u2014 degenerate inputs > [HOLE-1] baseAmount 0 bills 0 silently \u2014 no \"no-fee case\" flag anywhere in the result",
+      "feeCalculator \u2014 degenerate inputs > [HOLE-2] NEGATIVE baseAmount bills a NEGATIVE fee (a \"credit\") with no guard",
+      "feeCalculator \u2014 fee tables and dates > [QUIRKY-VALUES] the shipped tables differ from the runbook in two cells \u2014 pinned as-is",
+      "feeCalculator \u2014 fee tables and dates > knows the three table identities (values must never be re-keyed silently)",
+      "feeCalculator \u2014 fee tables and dates > pins EVERY shipped table cell (18 rows) verbatim \u2014 drift here is a rate change",
+      "feeCalculator \u2014 fee tables and dates > selects the 2019 table for an opening date before 2021-01-01",
+      "feeCalculator \u2014 fee tables and dates > selects the 2021 table for an opening date between the two transitions",
+      "feeCalculator \u2014 fee tables and dates > selects the 2024 table for an opening date after the second transition",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > civil / critical pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > civil / high pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > civil / low pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > civil / medium pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > criminal / critical pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > criminal / high pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > family / critical pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > probate / high pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > probate / low pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > probate / medium pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > tenant / critical pins the shipped fee (runbook intent noted where it differs)",
+      "feeCalculator \u2014 full case-type x complexity matrix (24 cells) > tenant / high pins the shipped fee (runbook intent noted where it differs)"
+    ]
+  },
+  "failures": [],
+  "phases": [
+    {
+      "label": "solution",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 1275,
+      "completion_tokens": 22951,
+      "reasoning_chars": 36459,
+      "content_chars": 40426,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 533.2,
+      "server_seconds": 533.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 43.0,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/13-legacy-characterization-tests/variants/variant-a.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.04609325,
+      "upstream_cost_usd": 0.04609325,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1788760647-3al2V48uIdaiOAwXhzyz",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}
