@@ -359,6 +359,17 @@ def main():
             print(f"ft-run: [{a.label}] reply carried no fenced block; "
                   f"{a.file} left as it was", file=sys.stderr)
             return 6
+        # A fence is not enough. Problem 17's second repair returned a fenced
+        # block whose content was `<result><name>Read</name><output>…` — the model
+        # transcribing a tool call it does not have — and 99 lines of working
+        # service became 206 lines that produced 84 syntax errors.
+        _first = next((ln for ln in text.splitlines() if ln.strip()), "")
+        if not a.verbatim and _first.lstrip().startswith(
+                ("<result>", "<tool_call>", "<output>", "<function_call>")):
+            print(f"ft-run: [{a.label}] reply opens with {_first.strip()[:24]!r}, "
+                  f"which is a tool-call transcript, not a file; "
+                  f"{a.file} left as it was", file=sys.stderr)
+            return 6
         Path(a.file).parent.mkdir(parents=True, exist_ok=True)
         Path(a.file).write_text(text, encoding="utf-8")
         n = len(text.encode())
