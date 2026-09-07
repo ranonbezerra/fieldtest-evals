@@ -1,0 +1,33 @@
+{
+  "label": "repair2-SessionDetailScreen.tsx",
+  "model": "qwen/qwen3.8-27b",
+  "provider": "openrouter",
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20,
+  "max_tokens": null,
+  "context_window": 1000000,
+  "thinking": true,
+  "reasoning_effort": "low",
+  "prompt_tokens": 2418,
+  "completion_tokens": 162,
+  "reasoning_chars": 232,
+  "content_chars": 358,
+  "finish_reason": "stop",
+  "output_ceiling_hit": false,
+  "wall_seconds": 2.8,
+  "server_seconds": 2.8,
+  "model_load_seconds": 0.0,
+  "output_tokens_per_second": 58.1,
+  "reads": [
+    "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/10-adapt-existing-screen/variants/variant-a.md"
+  ],
+  "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+  "host_pressure_at_send": [],
+  "cost_usd": 0.0009714,
+  "upstream_cost_usd": 0.0009714,
+  "reasoning_tokens": null,
+  "cached_tokens": null,
+  "generation_id": "gen-1788758242-ys4rZwf4qDJDqm3PVkcY",
+  "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial"
+}

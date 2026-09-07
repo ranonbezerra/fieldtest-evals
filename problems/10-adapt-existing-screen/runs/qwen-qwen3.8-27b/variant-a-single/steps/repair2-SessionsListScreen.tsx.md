@@ -1,0 +1,81 @@
+# repair2-SessionsListScreen.tsx
+
+## reasoning
+
+```
+Let me analyze the compiler errors that specifically affect `src/features/sessions/SessionsListScreen.tsx`:
+
+1. `src/features/sessions/SessionsListScreen.tsx(3,10): error TS2724: '"./queries"' has no exported member named 'useSessionList'. Did you
+```
+
+## reply
+
+I need to see the existing file to understand what to fix.
+
+```typescript
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSessionsList } from './queries';
+import type { Session } from '../../api/types';
+
+export function SessionsListScreen() {
+  const navigate = useNavigate();
+  const { data } = useSessionsList();
+  const queryClient = useQueryClient();
+
+  const closeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/sessions/${id}/close`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to close session');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['session', 'active'] });
+    },
+  });
+
+  const handleOpen = (session: Session) => {
+    navigate(`/sessions/${session.id}`);
+  };
+
+  const handleClose = (session: Session) => {
+    if (confirm(`Close session "${session.name}"?`)) {
+      closeMutation.mutate(session.id);
+    }
+  };
+
+  if (!data) {
+    return <div>Loading…</div>;
+  }
+
+  return (
+    <div>
+      <h1>Sessions</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Started</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((session) => (
+            <tr key={session.id}>
+              <td>{session.name}</td>
+              <td>{session.status}</td>
+              <td>{session.startedAt}</td>
+              <td>
+                <button onClick={() => handleOpen(session)}>Open</button>
+                <button onClick={() => handleClose(session)}>Close</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+```
