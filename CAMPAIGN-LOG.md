@@ -59,3 +59,4 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 23:59 | 15-wiring-boot-failure | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-07 23:59 | 16-migration-that-lied | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-08 00:06 | 17-token-rotation-reuse | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-08 00:09 | 18-timing-equal-enumeration | a | **no meta** (exit 0) | – | – | – | – | – | – |

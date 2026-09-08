@@ -1,3 +1,22 @@
+# repair2-auth.controller.ts
+
+## reasoning
+
+```
+We need to write controller fixing imports. Likely need to import AuthService, DTOs. Provide basic controller with routes sign-up and sign-in, returning generic response. Use NestJS decorators. Provide class. No other files changed.
+
+Assume AuthService has methods signUp and signIn returning something. We'll just call them and return result.
+
+Implement using appropriate imports: Controller, Post, Body from '@nestjs/common'; DTOs from './dto/...'; AuthService from './auth.service'.
+
+Also need to export class.
+
+Write.
+```
+
+## reply
+
+```ts
 // src/auth/auth.controller.ts
 
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
@@ -33,3 +52,4 @@ export class AuthController {
     return { message: 'If the credentials are correct, you will be signed in.' };
   }
 }
+```

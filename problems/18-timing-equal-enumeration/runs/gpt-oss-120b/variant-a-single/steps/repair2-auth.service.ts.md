@@ -1,3 +1,16 @@
+# repair2-auth.service.ts
+
+## reasoning
+
+```
+We need to write auth.service.ts with proper imports and types. Likely need DTOs, repository, mail service, argon2. Assume they exist. Provide implementation matching timing equalization. Simplify: implement signUp and signIn returning generic response. Use constant-time compare via argon2.verify and dummy hash for non-existing. Use bcrypt? We'll import argon2. Provide class AuthService with constructor injecting repository and mailService. Implement signUp(dto) and signIn(dto). Use async functions. Use dummyHash = await argon2.hash('dummy'); compute start time etc. Ensure response consistent. Return { message: 'OK' }. Also handle errors. Provide imports. Assume repository has findByEmail, create, etc. Provide placeholder types. We'll just compile. Use class-validator DTO imports not needed here. But need to import them for type. We'll import SignUpDto, SignInDto from ./dto/*. Provide.
+
+Let's craft.
+```
+
+## reply
+
+```ts
 // src/auth/auth.service.ts
 import { Injectable } from '@nestjs/common';
 import * as argon2 from 'argon2';
@@ -124,3 +137,4 @@ export class AuthService {
     return { message: 'OK' };
   }
 }
+```
