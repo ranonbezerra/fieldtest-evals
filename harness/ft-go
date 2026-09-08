@@ -212,8 +212,17 @@ def main():
         sys.exit("ft-go: no cheatsheet for this problem and no harness default")
 
     slug = re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9.-]", "-", MODEL.lower())).strip("-")
+    # A hosted run normally sends no `reasoning` parameter: the model works at its
+    # own default effort, which is what the other hosted campaigns measured. Setting
+    # one is a second condition, not a correction, so it gets its own tag and sits
+    # beside the default-effort runs instead of overwriting them. Locally the effort
+    # is part of the frozen configuration and every recorded verdict already assumes
+    # it, so the suffix applies only when the model is not on this machine.
+    _eff = os.environ.get("FT_REASONING_EFFORT", "")
+    _eff_axis = (f"--effort-{_eff}" if _eff
+                 and os.environ.get("FT_PROVIDER", "omlx") != "omlx" else "")
     tag = slug + ("" if a.runner == "api" else f"--{a.runner}") \
-               + ("" if a.spec == "model" else f"--{a.spec}")
+               + ("" if a.spec == "model" else f"--{a.spec}") + _eff_axis
     RUNNER = HARNESS / ("ft-run" if a.runner == "api" else "ft-aider")
     # A different shape is a different condition, not a different variant, and the
     # two must not overwrite each other: `variant-a` stays the phased run every
