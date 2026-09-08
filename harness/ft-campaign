@@ -162,7 +162,11 @@ def clear_dead_run(prob, vslug, slug, shape="phased"):
     if not run.is_dir():
         return False
     n = 1
-    while (aside := run.with_name(f"{vslug}.aborted-{n}")).exists():
+    # `run.name`, not `vslug`: with --shape single the run is `variant-a-single`,
+    # and setting it aside as `variant-a.aborted-1` renames it into another
+    # condition's namespace, where it would collide with the phased run's own
+    # aborted copies. It cost the default-effort problem 03 its directory once.
+    while (aside := run.with_name(f"{run.name}.aborted-{n}")).exists():
         n += 1
     run.rename(aside)
     return aside
@@ -235,6 +239,14 @@ def main():
 
     model = os.environ.get("OMLX_MODEL", "unknown").removeprefix("openai/")
     slug = re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9.-]", "-", model.lower())).strip("-")
+    # ft-go tags a hosted run with its reasoning effort when one is set, so the
+    # default-effort and configured-effort campaigns sit in separate directories.
+    # This has to agree with it, or `already_done` reads one axis's runs as the
+    # other's and skips them: the medium campaign began at problem 03 because it
+    # found the default-effort 01 and 02 on disk.
+    _eff = os.environ.get("FT_REASONING_EFFORT", "")
+    if _eff and os.environ.get("FT_PROVIDER", "omlx") != "omlx":
+        slug += f"--effort-{_eff}"
 
     wanted = [p.strip() for p in a.problems.split(",") if p.strip()]
     problems = [p for p in sorted((ROOT / "problems").iterdir())
