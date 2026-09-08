@@ -1,0 +1,10 @@
+[
+  "SECURITY.md",
+  "prisma/schema.prisma",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/auth/dto/refresh.dto.ts",
+  "test/auth-refresh.spec.ts"
+]
