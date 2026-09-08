@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id        String   @id @default(cuid()) @db.Uuid
+  balance   BigInt   @default(0)
+  reserved  BigInt   @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payouts       Payout[]
+  ledgerEntries LedgerEntry[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String    @id @default(cuid())
+  accountId          String    @map("account_id")
+  amount             BigInt
+  destinationAddress String    @map("destination_address")
+  idempotencyKey     String    @unique @map("idempotency_key")
+  status             String    @default("created")
+  txHash             String?   @map("tx_hash")
+  lastError          String?   @map("last_error")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  account       Account         @relation(fields: [accountId], references: [id])
+  ledgerEntries LedgerEntry[]
+  messages      PayoutMessage[]
+
+  @@map("payouts")
+}
+
+model LedgerEntry {
+  id            String   @id @default(cuid())
+  accountId     String   @map("account_id")
+  payoutId      String?  @map("payout_id")
+  entryType     String   @map("entry_type")
+  debit         BigInt   @default(0)
+  credit        BigInt   @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id])
+  payout  Payout? @relation(fields: [payoutId], references: [id])
+
+  @@map("ledger_entries")
+}
+
+model PayoutMessage {
+  id           String     @id @default(cuid())
+  payoutId     String     @unique @map("payout_id")
+  status       String     @default("pending")
+  attemptCount Int        @default(0) @map("attempt_count")
+  nextRetryAt  DateTime?  @map("next_retry_at")
+  lockUntil    DateTime?  @map("lock_until")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@map("payout_messages")
+}

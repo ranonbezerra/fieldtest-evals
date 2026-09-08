@@ -1,0 +1,15 @@
+[
+  "package.json",
+  "prisma/migrations/20240101000000_init/migration.sql",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/main.ts",
+  "src/payout/payout.errors.ts",
+  "src/payout/payout.provider.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "test/setup.ts",
+  "tsconfig.json"
+]

@@ -107,3 +107,4 @@ because it leads its weight class on agentic benchmarks (78.5% SWE-bench Multili
 70.2% Terminal-Bench 2.1) and fits a 128 GB machine at 6-bit with room for KV cache.
 
 Running.
+| 2026-09-08 22:56 | 01-payout-outbox | a | **no meta** (exit 0) | – | – | – | – | – | – |
