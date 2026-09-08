@@ -120,12 +120,34 @@ def extract_files(text):
             continue
         fence = opened.group(1)
         close = re.compile(r"^" + re.escape(fence) + fence[0] + r"*[ \t]*$")
-        last = None
-        for k in range(j + 1, stop):
-            if close.match(lines[k]):
-                last = k
-        if last is None:
+        closes = [k for k in range(j + 1, stop) if close.match(lines[k])]
+        if not closes:
             continue
+        # With a same-width inner fence the two readings are both defensible and
+        # markdown decides between them. A .md file legitimately contains ``` blocks,
+        # so its real end is the LAST close (gpt-oss on problem 08 opened ```md around
+        # ```bash blocks; taking the first gave 10 lines of a 69-line file). A source
+        # file does not, so a second block under one heading means the model stopped
+        # and reconsidered mid-reply, and the file is the FIRST block (Laguna on
+        # problem 01 closed payout.service.ts, wrote "Wait, TransientProviderError is
+        # exported as a class...", and reopened; taking the last gave a 1,827-line
+        # file and 3,126 syntax errors).
+        # Markdown legitimately contains ``` blocks, so a .md file's real end is
+        # the LAST close of the opening width — gpt-oss opened problem 08's
+        # diagnosis.md with ```md around ```bash blocks, and taking the first close
+        # gave 10 lines of a 69-line file.
+        #
+        # A source file does not contain fences, so the contract's reading is the
+        # literal one: the heading is "immediately followed by one fenced block",
+        # and that block is the file. Anything after it is the prose the instruction
+        # says is ignored. Taking the last close, or the largest block, both went
+        # wrong on Laguna's problem 01, where the model deliberated in the output —
+        # nine lines of imports, then "Wait, TransientProviderError is exported as a
+        # class...", then pages of "Actually... Let me check... Wait, actually..."
+        # with fragments between. A reply shaped like that has no deliverable to
+        # recover, and guessing which block was meant invents one.
+        prose_ok = Path(path).suffix.lower() in (".md", ".markdown", ".txt", ".rst")
+        last = closes[-1] if prose_ok else closes[0]
         body = "\n".join(lines[j + 1:last])
         p = path.strip().lstrip("./")
         if p:

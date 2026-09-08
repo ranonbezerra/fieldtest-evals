@@ -253,16 +253,3 @@ export class PayoutRepository {
     });
   }
 }
-```
-
-Wait, I have a circular dependency issue. The `PayoutRepository` imports `AccountNotFoundException` from `payout.errors.ts`, and the errors file doesn't import anything from the repository. So there's no circular dependency. Good.
-
-But the `import` inside the `reserveFunds` method:
-```ts
-throw new (await import('./payout.errors')).AccountNotFoundException(accountId);
-```
-
-This is a dynamic import, which is unnecessary. I should just import at the top:
-
-```ts
-import { AccountNotFoundException, InsufficientFundsException } from './payout.errors';
