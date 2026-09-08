@@ -264,6 +264,49 @@ logic had ever executed.
 
 ---
 
+## 9. Fix the two problems that contradict their own fixtures
+
+Not a harness change — a defect in the problem set, and it has already cost two runs.
+
+`12-orm-migration/variants/variant-a.md` opens *"The fixture is a working NestJS
+billing service on Prisma"*. `fixtures/billing-prisma/` is plain TypeScript: no
+decorator anywhere in `src`, no `experimentalDecorators` in its tsconfig, no NestJS
+dependency. `brief.md` repeats the claim. Qwen's local run wrote `@Injectable()` and
+`@Inject(DB)` and earned two TS1206 errors for believing what it was told; gpt-oss
+rewrote the pre-existing characterization suite into `@nestjs/testing` and `supertest`,
+which is the one thing M1 forbids.
+
+`14-code-review-planted-bugs/variants/variant-a.md` closes with *"Areas worth tracing
+(not a bug list)"* followed by seven items — one per planted bug, in the answer key's
+order. Qwen, working blind, produced 7 of 7 by writing one finding per bullet. The
+paragraph converts discovery into transcription. It should be deleted, or moved to a
+variant that is explicitly about triage.
+
+Both are corrections to the specification, so they wait for the same reason everything
+else here does: changing them changes what a run produces.
+
+## 10. The gate should skip when the reply carried nothing
+
+`ft-go` now scopes the gate to the paths a reply actually delivered (§4.16), and falls
+back to the whole workspace when there are none. That fallback is the bad case: on
+problem 14 the model's reply produced no files, the gate took the fixture as its scope,
+and four repair rounds rewrote the code `workspace.json` calls `review only … never
+edits these`.
+
+An empty extraction means the run has no deliverable. The gate should record that and
+stop, not repair the only files present.
+
+## 11. Give `ft-results` a shape column
+
+The table now folds `variant-a-single` into column A (§4.x). That is right for reading
+— it is still variant A — but the shape is a real axis and the table cannot show it.
+Three conditions currently collapse into three model rows, and a reader cannot tell
+from the README that the local rows are phased and the hosted rows are single.
+
+The verdict records carry `shape`; the table should have a column for it.
+
+---
+
 # What may be prevented, and what may not
 
 Written after problems 09, 10 and 11 — the first three with an existing codebase —

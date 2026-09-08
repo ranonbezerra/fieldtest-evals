@@ -10,11 +10,22 @@ measurement contradicts an earlier one, the earlier entry is corrected in place 
 says so, because a findings file that only accumulates becomes a place to argue from
 rather than a place to check.
 
-**Under test:** [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B) at 6-bit
-MLX — 27B dense, natively multimodal, 64 layers, hybrid
-`16 × (3 × Gated DeltaNet → 1 × Gated Attention)`, 22.27 GiB resident. Served by oMLX
-on a MacBook Pro (M4 Pro, 48 GB). Thinking mode by default, at the card's own
-temperature 1.0 / top_p 0.95 / top_k 20.
+**Under test.** Three conditions across two models, 18 problems each:
+
+| condition | model | shape | where |
+|---|---|---|---|
+| **local** | [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B) 6-bit MLX, 22.27 GiB | phased | oMLX, MacBook Pro M4 Pro 48 GB |
+| **qwen hosted** | `qwen/qwen3.8-27b` | single | OpenRouter |
+| **gpt-oss hosted** | `openai/gpt-oss-120b`, 117B MoE | single | OpenRouter |
+
+The local model is 27B dense, natively multimodal, 64 layers, hybrid
+`16 × (3 × Gated DeltaNet → 1 × Gated Attention)`. Thinking mode by default, at the
+card's own temperature 1.0 / top_p 0.95 / top_k 20.
+
+The machine constraints — a 16,384-token output ceiling, a 32,768-token window, and
+the phase decomposition they force — belong to the **local** condition only. The
+hosted conditions run uncapped, because a hosted model has no such limits and a field
+test that imposes them is measuring the harness rather than the model.
 
 ---
 
@@ -416,7 +427,7 @@ closely enough to write a verdict.
 **Independent of the parameter correction:** what a statement asks for does not change
 with temperature.
 
-## 4. The instruments were wrong six times, mostly in the direction that gets them ignored
+## 4. The instruments were wrong thirteen times, mostly in the direction that gets them ignored
 
 Recorded because the repository's whole subject is checks that pass for the wrong
 reason, and it would be dishonest to exempt its own. Six defects, and the pattern in
@@ -1133,7 +1144,303 @@ reach. It is recorded here as the first candidate for a second pass.
 the ceiling is also what breaks cross-file consistency. Feeding each phase the import
 lines of the files already written is the obvious repair and is not yet built.
 
-## 5. What is not established
+### 4.12 The single shape asked the model to work on code it never saw
+
+`ft-go` passed `reads=[variant]` and nothing else. For problems 09–16 the fixture **is**
+the task — review this service, refactor this mapper, characterize this calculator —
+and `single-shot.md` tells the model it has no filesystem and gets no second request.
+So the model was told a codebase existed, never shown it, and told to answer once.
+
+Problem 14's reply says it outright:
+
+    Grounding. // ASSUMPTION: the fixture source was not included in the material
+    I was given
+
+The cost, measured on the same problem in two conditions. Problem 16, Qwen, same week:
+
+| | local phased (fixture reachable) | hosted single (blind) |
+|---|---|---|
+| defect 1 | **journal, correctly** | invented a comment-only file that does not exist |
+| journal fixed | **yes** | wrote a different journal, in a tree of its own |
+| backfill | **five rows moved, verified live** | in a directory the pipeline never reads |
+| verdict | **PASS_WITH_NOTES** | FAIL |
+
+And problem 13: given a prose description, Qwen invented a fee calculator with
+`criminal` and `civil` case types the fixture does not contain, wrote 53 assertions
+about its invention and six findings in the register of discovered fact. gpt-oss, with
+the file in the prompt, imported `../feeCalculator` and pinned it with 61 passing tests,
+finding all four planted quirks.
+
+**Fix.** The single request now carries every seeded file, and `single-shot.md` says
+files given above the task are the real codebase. Measured effect on problem 09: 58
+relative imports with the scaffold's `.js` convention and **zero** without, against
+37 / 16 for the blind run.
+
+**What it did not buy.** The same run calls `.isOk` twelve times on the scaffold's
+`ApiResult`, which is a discriminated union with an `ok()`/`err()` factory and no such
+method. Reading the file taught it the path, the layout and the envelope's name; it did
+not stop it assuming the semantics.
+
+### 4.13 Lockfiles are not source, and one cost a run its first request
+
+`seed_reads` accepted any `.yaml`, so `pnpm-lock.yaml` went into the prompt — 84 KB of
+the 97 KB problem 09 seeds. The first request reached **136,221 tokens against
+gpt-oss-120b's 131,072 limit** and returned `context_length_exceeded`. The run survived
+only because `ft-go` asks again.
+
+Lockfiles and `.DS_Store` are now excluded by name and any seeded file over 200 KB is
+skipped. Runs 09, 10 and 11 of the gpt-oss campaign carried the lockfile; 12 onward do
+not.
+
+### 4.14 `ft-run` wrote unfenced replies over source files
+
+The file-writing path took whatever came back. A repair round for problem 07 answered
+`I need to see the current file to understand what's there.` followed by a
+`<tool_call>` block, and that prose replaced a valid 319-line test file — after which
+`tsc` reported TS1434/TS1161 syntax errors that were the harness's. Problem 10 lost a
+79-line scaffold screen the same way; problem 17's second repair returned a **fenced**
+block whose content was `<result><name>Read</name><output>…`, a tool call the model
+does not have, over 99 lines of working service.
+
+Effect on the record: problem 17 reported 84 syntax errors; with the file restored it
+has 22 real ones. Problem 10 reported 208; restored, 38.
+
+`ft-run` now refuses a reply with no fenced block, and refuses one opening with a
+tool-call transcript, leaving the existing file alone and returning non-zero so the
+caller records a failed repair. A scan of every run in the repository found three
+affected files, all restored.
+
+### 4.15 The fence parser truncated markdown deliverables
+
+`extract_files` matched only three-backtick fences and stopped at the first closing
+fence of that width. Two failure modes, both seen:
+
+- Qwen's problem 14 opened its `REVIEW.md` with ````markdown` — correct, because the
+  file contains code blocks — and **nothing was extracted**. The run committed a
+  workspace with no deliverable in it.
+- gpt-oss's problem 08 opened with ```md` and put ```bash` blocks inside. The parser
+  closed the file at the first inner fence: `diagnosis.md` landed as 10 lines of 69,
+  `runbook.md` as 12 of 139.
+
+It is now a scanner: a block ends at the **last** close of its own width before the next
+heading. Both deliverables recovered and judged in full.
+
+### 4.16 The gate rewrote code the model was forbidden to touch
+
+`ft-go`'s single branch set the gate's scope to every file in the workspace, on the
+stated assumption that "in this shape the model wrote the whole workspace". True for
+problems 01–08, false for every scaffold-seeded one.
+
+Problem 10's reply carried 29 paths against 40 files on disk, and 22 repair rounds
+rewrote **thirteen** scaffold files — the orders feature, the auth context, the MSW
+handlers. Problem 14's gate, finding no extracted files at all, repaired
+`transfers.service.ts` and `accounts.repository.ts`, which `workspace.json` calls
+`review only … never edits these`.
+
+`ft-run` now records the paths it extracted to `<raw>.files.json` and `ft-go` scopes the
+gate to that set. All fifteen files restored from their fixtures.
+
+### 4.17 The shim was deleted when nothing replaced it
+
+`_shims.d.ts` lets a fixture typecheck standalone; 4.x removed it on seeding because it
+shadows the real vitest types after `pnpm install`. But the fixtures script
+`"test": "vitest run"` and **declare no vitest**, so `pnpm install` brings none and the
+deletion leaves no source of types at all.
+
+Local problem 12's re-run failed the gate on 56 errors, **48 of them
+`Cannot find name 'expect'`**. With vitest, its types and the Nest test packages
+supplied, 17 remain — and the deliverable still does not build, because it migrated to
+`drizzle-orm` without ever declaring it.
+
+The shim is now removed only when the module it shims is an actual dependency.
+
+### 4.18 Two problems contradict their own fixtures
+
+Not harness code, but the same class of defect and it misled two runs.
+
+`12-orm-migration/variants/variant-a.md` opens *"The fixture is a working NestJS
+billing service on Prisma"*. The fixture has no decorator anywhere in `src` and no
+`experimentalDecorators` in its tsconfig — it is plain TypeScript. Qwen's local run
+wrote `@Injectable()` and `@Inject(DB)` against that config and earned two TS1206
+errors for believing its brief; gpt-oss rewrote the pre-existing characterization suite
+into `@nestjs/testing` and `supertest`.
+
+`14-code-review-planted-bugs/variants/variant-a.md` closes with a paragraph listing
+seven "areas worth tracing" — one per planted bug, in the answer key's order. Qwen,
+blind, found 7 of 7 by writing one finding per bullet. That paragraph should go, or
+move to a variant explicitly about triage rather than discovery.
+
+Both should be corrected before either problem is run again in any condition.
+
+---
+
+## 5. Three conditions, the same score, different problems
+
+Eighteen problems, three conditions, judged by hand against the same rubrics.
+
+| | local, phased | qwen hosted, single | gpt-oss-120b hosted, single |
+|---|---|---|---|
+| PASS | 1 | 1 | 1 |
+| PASS_WITH_NOTES | 3 | 4 | 3 |
+| FAIL | 14 | 13 | 14 |
+
+Three near-identical scores. The interesting number is not in that table:
+
+    non-FAIL in all three conditions:   1 problem   (08, infra debugging)
+    FAIL in all three:                  9 problems
+    the three disagree:                 8 problems
+
+**Half the problems separate the conditions, and the separation is not noise.**
+
+### 5.1 The disagreements fall on one line
+
+| problem | local | qwen hosted | gpt-oss | what the problem needs |
+|---|---|---|---|---|
+| 04 grounded LLM | ✓ | ✓ | ✗ | build from nothing |
+| 05 on-chain anchoring | ✗ | ✓ | ✗ | build from nothing |
+| 18 timing equalisation | ✗ | ✓ | ✗ | build from nothing |
+| 14 code review | ✓ | ✓ | ✗ | read and report |
+| 16 migration that lied | ✓ | ✗ | ✗ | read and diagnose |
+| 10 adapt a screen | ✗ | ✗ | **✓** | read and edit |
+| 11 behavior-preserving refactor | ✗ | ✗ | **✓** | read and edit |
+| 13 characterization tests | ✗ | ✗ | **✓** | read and pin |
+
+Every problem gpt-oss-120b won is one where a codebase already exists and the task is
+to read it and change a little. Every problem it lost to Qwen is one where the task is
+to produce a working system from a description.
+
+Its own campaign says the same thing without the comparison:
+
+    greenfield problems (01–07, 17, 18):   9 runs, 9 FAIL
+    fixture problems (08, 10, 11, 13):     1 PASS, 3 PASS_WITH_NOTES
+
+**gpt-oss-120b reliably produces the shape of a solution and does not fill it.** The
+evidence is verbatim, not inferred:
+
+- problem 02: `// Placeholder for resend eligibility logic. In the real implementation
+  we would determine which orders are absent from the statement beyond the publishing
+  lag …` — an accurate summary of three must-haves, written instead of them.
+- problem 03: `rederive()` is a comment listing the three steps it would take.
+- problem 07: `ClassificationService` is 28 lines whose only statement is
+  `return this.repository.classify(…)`, and the repository has no `classify`.
+
+And on the same eighteen problems it wrote the campaign's only clean PASS — problem 11,
+one request, $0.0007, three copies of a mapper reduced to one with all three call sites
+delegating, the reporting quirk preserved as a documented option, and the uncovered
+copy characterized first.
+
+Qwen3.8-27B is the mirror image: it builds every part of a problem and then cannot
+resolve its own references. Problem 02 hosted is 6 of 6 must-haves with 10 of 11 real
+tests passing, failing on 25 typecheck errors of which 24 are a missing `.js`.
+
+**Neither model is better. They fail at different halves of the same job**, and a
+benchmark that reports one number for each would hide that completely.
+
+### 5.2 `reference_gap` is intra-reply, and the decomposition only changed its rate
+
+The local campaign's dominant failure was the model losing track of what it had
+already written across phases. The obvious explanation was the decomposition: one file
+per request, no sight of the last. **That explanation is wrong**, and three
+measurements retire it.
+
+**The convention is lost inside one reply.** Counting relative imports in the thirteen
+hosted Qwen runs that chose `moduleResolution: NodeNext`, where `.js` is mandatory:
+
+| | runs | imports |
+|---|---|---|
+| convention held throughout | 04, 05, 07, 11, 15, 18 | **145 with `.js`, 0 without** |
+| one convention, wrongly chosen | 02 | 0 with, 14 without |
+| convention lost partway | 03, 06, 09, 17 | 94 with, 29 without |
+
+Problem 09 shows the shape: files 1–7 of its delivery are clean, file 8 loses it, file
+9 recovers, files 10–13 all lose it. Sixteen unresolved imports, every one naming a
+file that exists.
+
+**The same defect appears with no decomposition and no ceiling at all.** Four instances
+from single-request runs, each two artifacts written minutes apart:
+
+| problem | the two things that disagreed |
+|---|---|
+| 04 | `capitalizeFirst(…)` against `expect(…).toContain('several shards')` |
+| 09 | `createTrip(userId, dto)` against a four-positional-argument call |
+| 06 | `"esModuleInterop": true` against `import * as request from 'supertest'` |
+| 17 | `vi.fn()` fakes against `let repo: RepoContract`, which erases the mock type |
+
+**And it is not one model's.** gpt-oss-120b states it outright. From problem 05:
+
+    Because those files are missing (and we are not allowed to create them), we
+    declare minimal local typings that satisfy the service implementation and the
+    compiler.
+
+`anchor.repository.ts` is 2,288 bytes and sits beside that comment, written by the same
+reply. The service's parallel contract declares `findIntent` and `updateIntent`; the
+real repository defines `createIntent`, `findPending`, `updateStatus`, `getProof`. All
+five tests die on `this.repository.findIntent is not a function`.
+
+Problem 01 is the same in miniature: the model's own `schema.prisma` declares
+`model OutboxMessage`, and its own `payout.repository.ts` carries
+`// ASSUMPTION: The outbox table is called Message in the Prisma schema`.
+
+**Corrected conclusion.** The decomposition converts an occasional drift into a
+certainty — locally, problem 05 lost the `.js` extension on 17 of 18 files, uniformly,
+because no request could see the one before it. The drift itself belongs to the models,
+and survives being handed the whole task in one reply.
+
+### 5.3 The same invalid Prisma schema, from two different models
+
+`prisma generate` fails on one in three schema-bearing runs, always the same way: a
+relation field written from one side only.
+
+| run | validation errors | models missing their back-relation |
+|---|---|---|
+| qwen hosted 03 | 5 | `Company`, `Event`, `Worker` |
+| qwen hosted 07 | 2 | `Ingredient` |
+| gpt-oss 06 | 2 | `Customer`, `Plan` |
+| gpt-oss 07 | 5 | several |
+
+The mechanism is visible in qwen's problem 07. `Ingredient` carries
+`synonyms Synonym[]` — the back-relation for the model declared **twelve lines below
+it** — and lacks the ones for `Rule` (line 60) and `ProfileModifier` (line 96). It
+anticipates the back-relation for what it is about to write next and loses it across
+distance.
+
+Two models, four runs, one failure. This is a property of how a schema gets written
+left to right, not of either model — and Prisma is one of the few languages that
+requires going back to amend an earlier declaration.
+
+### 5.4 A green pipeline cannot see whether the job was done
+
+Two runs passed everything a machine can check and failed the rubric outright.
+
+**Qwen hosted, problem 11.** `tsc --noEmit (attempt 0) -> 0`, zero repairs,
+`vitest run -> 0`, 22 of 22 tests passing — the strongest gate result of its campaign.
+It fails M4, the point of the problem: `scripts/reporting.ts` is byte-identical to the
+fixture and still carries its own copy of the mapper. The model wrote a *new* script
+that delegates and left the original in place, and its `NOTES.md` tabulates that new
+file as call site 3 with the line *"All three call sites now delegate."*
+
+**gpt-oss, problem 02.** `vitest run -> 0`, 2 of 2 passing. The tests are
+`should executePayments without throwing` and `should reconcile without throwing`, and
+both methods have comments where their bodies belong. A method whose body is a comment
+does not throw.
+
+**gpt-oss, problem 04.** Four of five tests green, and `test/answer.spec.ts` imports
+only `node:assert` and `vitest`. It defines its own `answer()` — *"Very naive fake
+implementation that simply concatenates sources"* — and its own `evaluate()`. **The
+suite would pass identically if `src/` were deleted.** Meanwhile the redactor that is
+the product's entire purpose is inverted and removes nothing, which was established by
+running it:
+
+    in:  The Gravel Wretch guards the Bakery cellar. Weaken it with Moonlight Shards.
+    out: The Gravel Wretch guards the Bakery cellar. Weaken it with Moonlight Shards.
+
+This is the argument for judging every run by hand against a written rubric. Three
+green pipelines, three deliverables that do not do the job, and no automated check in
+this harness could tell.
+
+---
+
+## 6. What is not established
 
 - **Nothing about the model.** The first campaign ran at the wrong temperature and was
   discarded; the corrected one has not started. Every entry in §1 is about the server's
@@ -1155,7 +1462,7 @@ lines of the files already written is the obvious repair and is not yet built.
   to read from an existing codebase is unmeasured.
 
 
-## 6. Open predictions
+## 7. Open predictions
 
 Written before the data, so they can be wrong rather than rationalised afterwards.
 

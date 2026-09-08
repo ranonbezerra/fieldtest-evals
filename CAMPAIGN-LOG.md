@@ -60,3 +60,50 @@ Written by `harness/ft-campaign` as each run lands. One row per run.
 | 2026-09-07 23:59 | 16-migration-that-lied | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-08 00:06 | 17-token-rotation-reuse | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-08 00:09 | 18-timing-equal-enumeration | a | **no meta** (exit 0) | – | – | – | – | – | – |
+
+---
+
+## Hosted campaigns
+
+Two models, single-request shape, uncapped output — the machine constraints belong to
+the local condition and were not carried over.
+
+| | qwen/qwen3.8-27b | openai/gpt-oss-120b |
+|---|---|---|
+| runs | 18 | 18 |
+| wall clock | 5.3 h | **1.5 h** |
+| cost | $3.46 | **$0.1029** |
+| PASS / NOTES / FAIL | 1 / 4 / 13 | 1 / 3 / 14 |
+
+Against the local phased campaign: 43.2 h, 391 requests, 1 / 3 / 14.
+
+**Only problem 08 is non-FAIL in all three conditions. Nine fail in all three. Eight
+disagree**, and the disagreements separate cleanly: gpt-oss-120b wins where a codebase
+exists to read (10, 11, 13) and loses where one must be built (04, 05, 18).
+
+### What was corrected mid-campaign
+
+Seven harness defects, all in FINDINGS §4.12–4.18, all found by reading runs rather
+than by the harness reporting them:
+
+1. the single shape never handed the model its seeded fixture — problems 09–16 of the
+   Qwen hosted campaign ran blind, and eight verdicts carry a note saying so
+2. `pnpm-lock.yaml` in the seeded reads pushed problem 09 past the model's context
+   limit and cost it a request
+3. `ft-run` wrote unfenced replies and tool-call transcripts over source files —
+   three files destroyed, all restored
+4. the fence parser truncated markdown deliverables — two recovered
+5. the gate rewrote fifteen scaffold files it was scoped to leave alone
+6. `_shims.d.ts` was deleted when nothing replaced it — 48 phantom errors on local 12
+7. `ft-results` read the whole hosted campaign as "not yet run"
+
+The pattern is the same one the repository is about: **every defect made a run look
+worse than it was, and none of them announced itself.**
+
+## Laguna S 2.1
+
+`poolside/laguna-s-2.1` — 118B MoE, 8B active, open weights, 21 July 2026. Chosen
+because it leads its weight class on agentic benchmarks (78.5% SWE-bench Multilingual,
+70.2% Terminal-Bench 2.1) and fits a 128 GB machine at 6-bit with room for KV cache.
+
+Running.

@@ -81,10 +81,48 @@ rubrics systematically mis-evaluate.
 This is the card the repository exists to hand you. Not a score: **what you can give a
 model and expect back.**
 
+### The scoreboard
+
+Eighteen problems, three conditions, every run judged by hand against a written rubric.
+
+| | local, phased | qwen hosted, single | gpt-oss-120b hosted |
+|---|---|---|---|
+| PASS | 1 | 1 | 1 |
+| PASS_WITH_NOTES | 3 | 4 | 3 |
+| FAIL | 14 | 13 | 14 |
+| wall clock | 43.2 h | 5.3 h | **1.5 h** |
+| cost | a laptop's three days | $3.46 | **$0.10** |
+
+Three near-identical scores, and that is the least interesting thing about them:
+
+- **one** problem is non-FAIL in all three conditions (08, infra debugging)
+- **nine** are FAIL in all three
+- **eight** disagree — and the disagreements fall on a single line
+
+Every problem `gpt-oss-120b` won is one where a codebase already exists and the job is
+to read it and change a little (10, 11, 13). Every problem it lost to Qwen is one where
+the job is to build a working system from a description (04, 05, 18). Its own record
+says the same without the comparison: **9 greenfield problems, 9 failures; 4 fixture
+problems, 1 PASS and 3 PASS_WITH_NOTES.**
+
+Qwen3.8-27B is the mirror image — it builds every part of a problem and then cannot
+resolve its own references. On problem 02 hosted it met 6 of 6 must-haves with 10 of 11
+real tests passing, and failed on 25 typecheck errors of which 24 were a missing `.js`.
+
+**Neither model is better; they fail at different halves of the same job.** A benchmark
+reporting one number per model hides that entirely, which is most of why this
+repository exists.
+
 ### What is being measured, and on what
 
 | | |
 |---|---|
+**The local condition.** The constraints below — the output ceiling, the context
+window, and the phase decomposition they force — are properties of running a model on a
+48 GB laptop. They are configuration for the *local* condition and nothing else; the
+hosted conditions run uncapped, because a hosted model has no such limits and imposing
+them would measure the harness.
+
 | **Model** | [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B), released 14 August 2026 — 27B dense, **natively multimodal** (only the text path is exercised here) |
 | **Architecture** | 64 layers, hidden 5,120, hybrid: `16 × (3 × Gated DeltaNet → 1 × Gated Attention)`. Linear attention in 48 layers, full attention in 16 |
 | **Quantization** | 6-bit MLX (LM Studio community build), group size 64 · **22.27 GiB resident** |
@@ -117,47 +155,47 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | – | – | – | – | *not yet run* |
-| 02 | reconciliation resend | – | – | – | – | *not yet run* |
-| 03 | read model projection | – | – | – | – | *not yet run* |
-| 04 | grounded llm product | – | – | – | – | *not yet run* |
-| 05 | onchain anchoring | – | – | – | – | *not yet run* |
-| 06 | multi tenant isolation | – | – | – | – | *not yet run* |
-| 07 | ingredient classification | – | – | – | – | *not yet run* |
-| 08 | infra debug | – | – | – | – | *not yet run* |
-| 09 | feature in conventions | – | – | – | – | *not yet run* |
-| 10 | adapt existing screen | – | – | – | – | *not yet run* |
-| 11 | behavior preserving refactor | – | – | – | – | *not yet run* |
-| 12 | orm migration | – | – | – | – | *not yet run* |
-| 13 | legacy characterization tests | – | – | – | – | *not yet run* |
-| 14 | code review planted bugs | – | – | – | – | *not yet run* |
-| 15 | wiring boot failure | – | – | – | – | *not yet run* |
-| 16 | migration that lied | – | – | – | – | *not yet run* |
-| 17 | token rotation reuse | – | – | – | – | *not yet run* |
-| 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+| 01 | payout outbox | ✗ | – | – | – | Eight of eight must-haves — including the transaction boundary the 27B missed — on a codebase whose three main files each address a different repository. |
+| 02 | reconciliation resend | ✗<br><sub>M1, M3, M4, M5, M6</sub> | – | – | – | Twelve files, a clean module graph, a green test run — and the two methods the problem is about are both marked "placeholder". |
+| 03 | read model projection | ✗<br><sub>M1, M2, M3, M5</sub> | – | – | – | A correct schema, a good index, three services with the right names — and the two that matter are a stub and a delegate to that stub. |
+| 04 | grounded llm product | ✗<br><sub>M6</sub> | – | – | – | Six files, the right architecture, `Math.min` in the right place — and a spoiler-free mode that redacts nothing, proven by running it. |
+| 05 | onchain anchoring | ✗ | – | – | – | It wrote the repository, then wrote the service believing the repository did not exist and that it was forbidden from creating one. |
+| 06 | multi tenant isolation | ✗<br><sub>M5</sub> | – | – | – | Twenty-seven files, a genuinely structural tenant filter, and a test suite consisting of the assertion that the code compiles. |
+| 07 | ingredient classification | ✗<br><sub>M3, M5, M6</sub> | – | – | – | A well-modelled schema with an empty application on top of it, and a service that delegates the whole problem to a method nobody wrote. |
+| 08 | infra debug | ~ | – | – | – | Three faults found, the security trap refused, a 139-line runbook, and a TLS fix that removes the tunnel it needs. Fifty-four seconds and five hundredths of a cent. |
+| 09 | feature in conventions | ✗<br><sub>M5</sub> | – | – | – | Given the codebase to read, it followed the conventions it could see and invented the semantics it had to understand. |
+| 10 | adapt existing screen | ~ | – | – | – | Three files, one request, a clean compile and no regressions — the first genuinely surgical edit either model has produced. |
+| 11 | behavior preserving refactor | ✓ | – | – | – | Three copies became one, all three call sites delegate, the quirk survives as an option, and the uncovered copy got its characterization test first — in one request, for seven hundredths of a cent. |
+| 12 | orm migration | ✗<br><sub>M1</sub> | – | – | – | A real migration — Drizzle in the repository, the dependency declared, the BigInt contract reasoned about — that begins by replacing the safety net it was supposed to run against. |
+| 13 | legacy characterization tests | ~ | – | – | – | Sixty-one green tests pinning the legacy calculator as it actually behaves, four planted quirks found and one more besides, every fix proposed and none applied — in one request. |
+| 14 | code review planted bugs | ✗ | – | – | – | A review with real line numbers and correct mechanisms, five of seven plants, written in a format the harness cannot read and therefore never written at all. |
+| 15 | wiring boot failure | ✗<br><sub>M5</sub> | – | – | – | All three defects fixed in the file the key names, nothing silenced, a clean compile in one request — and no diagnosis at all. |
+| 16 | migration that lied | ✗<br><sub>M1, M2, M3, M6, M7</sub> | – | – | – | Its correction reproduces the defect it was hired to find: two new migration files on disk, neither of them in the journal. |
+| 17 | token rotation reuse | ✗<br><sub>M2, M3, M8</sub> | – | – | – | A sound family model with an absolute deadline, wired to a repository that exists under different names — and no compare-and-swap anywhere. |
+| 18 | timing equal enumeration | ✗<br><sub>M5</sub> | – | – | – | The right defence, measured once. |
 
 ### qwen-qwen3.8-27b
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | – | – | – | – | *not yet run* |
-| 02 | reconciliation resend | – | – | – | – | *not yet run* |
-| 03 | read model projection | – | – | – | – | *not yet run* |
-| 04 | grounded llm product | – | – | – | – | *not yet run* |
-| 05 | onchain anchoring | – | – | – | – | *not yet run* |
-| 06 | multi tenant isolation | – | – | – | – | *not yet run* |
-| 07 | ingredient classification | – | – | – | – | *not yet run* |
-| 08 | infra debug | – | – | – | – | *not yet run* |
-| 09 | feature in conventions | – | – | – | – | *not yet run* |
-| 10 | adapt existing screen | – | – | – | – | *not yet run* |
-| 11 | behavior preserving refactor | – | – | – | – | *not yet run* |
-| 12 | orm migration | – | – | – | – | *not yet run* |
-| 13 | legacy characterization tests | – | – | – | – | *not yet run* |
-| 14 | code review planted bugs | – | – | – | – | *not yet run* |
-| 15 | wiring boot failure | – | – | – | – | *not yet run* |
-| 16 | migration that lied | – | – | – | – | *not yet run* |
-| 17 | token rotation reuse | – | – | – | – | *not yet run* |
-| 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+| 01 | payout outbox | ✗<br><sub>M3</sub> | – | – | – | Seven of eight must-haves, the strongest reservation in the campaign, and the outbox message lands in its own transaction. |
+| 02 | reconciliation resend | ✗ | – | – | – | Chose a compiler setting its own imports violate, in the same reply that wrote both. |
+| 03 | read model projection | ✗<br><sub>M1, M2, M3, M5</sub> | – | – | – | An invalid relation in its own schema stops the client from generating, and hides that half its services call methods nobody wrote. |
+| 04 | grounded llm product | ~ | – | – | – | The best run of the campaign: eleven files, one request, clean compile, and every must-have met — undone only by a test that disagrees with the code beside it about a capital letter. |
+| 05 | onchain anchoring | ~ | – | – | – | Fifteen files, one request, clean compile, six of six must-haves, and a recovery design that is the best engineering in either campaign — with a red suite that is entirely the tests' fault. |
+| 06 | multi tenant isolation | ✗<br><sub>M5</sub> | – | – | – | The application is right and the only thing that fails is the test file that was supposed to prove it — which, on this problem, is the point. |
+| 07 | ingredient classification | ✗ | – | – | – | A carefully versioned design that cannot be built, because two relation fields point at a model that never learned it was pointed at. |
+| 08 | infra debug | ✓ | – | – | – | Four symptoms, three faults, no security disabled, and the one piece of reasoning the reference does not ask for: that a failing readiness probe empties a Service's endpoints too. |
+| 09 | feature in conventions | ✗<br><sub>M2</sub> | – | – | – | On the one problem that is purely about obeying a convention placed in front of it, it obeyed for seven files and then stopped. |
+| 10 | adapt existing screen | ✗<br><sub>M1, M2, M6</sub> | – | – | – | The bar is good work. It is bolted to an application the model wrote from scratch beside the one it was asked to edit, and the shared types it rewrote on the way took the orders feature down with them. |
+| 11 | behavior preserving refactor | ✗<br><sub>M4, M5</sub> | – | – | – | The only run in either campaign where everything compiles and every test passes, and it fails on the one thing it was hired to do: there are still two copies of the mapper. |
+| 12 | orm migration | ✗<br><sub>M4, M5, M6</sub> | – | – | – | It translated the schema, swapped the dependency in package.json, and did not touch one line of the code that talks to the database. |
+| 13 | legacy characterization tests | ✗<br><sub>M2, M3, M5, M6</sub> | – | – | – | A confident, detailed, well-organised characterization of a module that did not exist until the model wrote it. |
+| 14 | code review planted bugs | ~ | – | – | – | Seven findings, seven planted bugs, no false positives, correct mechanisms and correct fixes — written by a model that says, in its own first paragraph, that it was never shown the code. |
+| 15 | wiring boot failure | ✗<br><sub>M1</sub> | – | – | – | It diagnosed the boot failure correctly, prescribed the right structural fix, refused the wrong one and explained why — and applied all of it to a copy of the app it built itself, one directory below the real one. |
+| 16 | migration that lied | ✗<br><sub>M1, M2, M4, M6, M7</sub> | – | – | – | It designed exactly the right three checks for symptoms it was told about, and invented a cause, a filename and a migration journal for the code it could not read. |
+| 17 | token rotation reuse | ✗<br><sub>M8</sub> | – | – | – | Seven of eight must-haves, the best concurrency design in either campaign, and a test suite that cannot compile because of one word. |
+| 18 | timing equal enumeration | ~ | – | – | – | A real timing-equalisation, proven by its own statistical test, undone at the last inch by the default export of a vite plugin. |
 
 ### qwen3.8-27b-mlx-6bit
 

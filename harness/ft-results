@@ -45,6 +45,12 @@ def collect():
     out = {}
     for v in sorted(ROOT.glob("problems/*/runs/*/variant-*/verdict.md")):
         variant = v.parent.name.replace("variant-", "")
+        # `--shape single` writes to variant-<v>-single, so the run's variant is
+        # still <v>. Without this the whole hosted campaign read as "not yet run".
+        shape = "phased"
+        for suffix in ("-single", "-phased"):
+            if variant.endswith(suffix):
+                variant, shape = variant[: -len(suffix)], suffix[1:]
         tag = v.parent.parent.name
         problem = v.parent.parent.parent.parent.name
         # tag is <model-slug> optionally + --aider / --ladder
@@ -57,6 +63,7 @@ def collect():
             "failure_mode": field(text, "failure_mode"),
             "would_merge": field(text, "would_merge"),
             "headline": field(text, "headline"),
+            "shape": shape,
         }
         slot = "ladder" if "ladder" in axes else ("aider" if "aider" in axes else variant)
         out.setdefault(model, {}).setdefault(problem, {})[slot] = rec
