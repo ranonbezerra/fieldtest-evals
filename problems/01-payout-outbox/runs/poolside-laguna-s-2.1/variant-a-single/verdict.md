@@ -15,52 +15,44 @@ graded:       {state_machine: 0, tx_boundaries: 0, errors: 0, tests: 0,
 typecheck:    not reached — `pnpm install` exits 1
 tests:        not reached
 
-failure_mode: harness_artifact
-              # Not the harness's. The model emitted 126,727 output tokens against a
-              # 131,072 limit, `finish_reason: error`, and the reply ends mid-signature
-              # at `async findById(tx: TxClient, id: `. It never finished a deliverable.
+failure_mode: host_pressure
+              # Its own budget, not the machine's. Reasoning took 381,057 of the
+              # 490,804 characters generated — 78% — and the reply was cut off at
+              # `finish_reason: error`, 126,727 tokens against a 131,072 limit, ending
+              # mid-signature at `async findById(tx: TxClient, id: `.
 
 revisions:    {self_repairs: 0, dropped_a_requirement: n/a}
 cost:         {wall_minutes: 20.0, output_tokens: 126727, requests: 1}
 host:         {n/a — the model is not on this machine}
 
 would_merge:  there is nothing to merge
-headline:     Twenty minutes and 126,727 tokens of visible deliberation, cut off
-              mid-sentence, with no complete file in it.
+headline:     It spent 78% of its output budget thinking and ran out of room to
+              answer, twenty minutes in, mid-signature.
 ```
 
-## What the reply is
+## Where the budget went
 
-12,101 lines. **830 of them begin with `Wait`, `Actually`, `Let me` or `Hmm`.**
-Sixty-three `### path` headings for thirteen distinct paths — the model wrote each
-file's heading, opened a block, closed it, argued with itself, and started again.
+    reasoning   381,057 chars   78%
+    reply       109,747 chars   22%
+    ------------------------------
+    total       126,727 tokens  →  finish_reason: error at a 131,072 limit
 
-The sequence under `### src/payout/payout.service.ts`:
+The reply itself is 2,929 lines carrying 23 `### path` headings for thirteen distinct
+paths — the model writes a file's heading, opens a block, closes it, reconsiders, and
+starts the same file again. 126 lines of the reply begin with `Wait`, `Actually` or
+`Let me`, so some deliberation reaches the output, but the great majority of it is
+where it belongs: in the provider's separate `reasoning` field, which is 381 KB.
 
-    ```ts
-    import { PrismaClient, type Payout, type PayoutMessage } from '@prisma/client';
-    import { PayoutRepository } from './payout.repository';
-    import { PAYOUT_PROVIDER, type PayoutProvider, type TransientProviderError as TPE, …
-    ```
+The question it could not settle, asked and re-asked across both sections:
 
     Wait, `TransientProviderError` is exported as a class, not as `Trans…`
-    Actually, let me just write the full file now.
-    …
     Wait, but `Prisma.TransactionClient` extends `PrismaClient`… or does it?
-    Wait, but `PrismaService` extends `PrismaClient`, not `Prisma.Trans…`
     Actually, since `Prisma.TransactionClient` is a subset of `PrismaCl…`
-    Let me check: `Prisma.TransactionClient` includes methods like `pay…`
     Wait, actually, that's not how TypeScript works. TypeScript checks …
     Actually, in Prisma, `TransactionClient` explicitly excludes `$tran…`
-    Wait, but I used `PrismaClient` as the type in the repository, not …
-    Actually, let me just use `Prisma.TransactionClient` as the type. I…
 
-Nine of those lines are a real question about Prisma's `TransactionClient`, asked and
-re-asked eight times without being settled. The last heading for that file, at line
-9,834 of 12,101, is followed by another nine-line fragment.
-
-`finish_reason: error` at 126,727 completion tokens against the model's 131,072 ceiling.
-The reply ends `async findById(tx: TxClient, id: `.
+The last heading for `payout.service.ts` is at line 9,834 of 12,101 and is followed by
+another nine-line fragment. The reply ends `async findById(tx: TxClient, id: `.
 
 ## What landed
 
@@ -74,18 +66,19 @@ then exits 1 on a dependency that does not exist:
 must-have is unassessed rather than failed — recorded as `–` rather than `✗`, because a
 gate that never ran has no opinion.
 
-## This is not the ceiling, and not the harness
+## This is the model's allocation, not a limit imposed on it
 
-The hosted conditions run uncapped by design: `FT_MAX_TOKENS` is unset, and the
-provider allowed 131,072 output tokens. The model used 97% of them on visible
-self-argument. `single-shot.md` asks for "one fenced block holding **only** that file's
-content" and says "Prose between blocks is ignored"; this reply is prose with fragments
-in it.
+The hosted conditions run uncapped by design: `FT_MAX_TOKENS` is unset and no
+`reasoning` parameter is sent, so the model works at its own default effort with the
+provider's full 131,072 output tokens. It chose to spend 78% of them thinking.
 
-Two of the campaign's other models were given the same instruction on the same problem
-and answered it in one pass — Qwen3.8-27B in 25 requests across the phased run and one
-hosted, gpt-oss-120b in 2,776 output tokens. **Laguna spent forty-five times gpt-oss's
-entire problem-08 budget failing to produce a first draft.**
+That choice is the result. Capping it with `reasoning: {effort: "low"}` would produce a
+different number, and it would be the harness's number rather than the model's — the
+same reason the 16,384-token ceiling belongs to the local condition and nowhere else.
+
+For scale: gpt-oss-120b answered problem 08 in 2,776 output tokens and problem 01 in
+about nine thousand across 21 requests. Laguna spent 126,727 on one attempt at problem
+01 and did not finish it.
 
 ## A parser change this run triggered, and its correction
 
