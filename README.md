@@ -174,6 +174,29 @@ averaged in. [`harness/host-limits.md`](harness/host-limits.md) has the measurem
 | 17 | token rotation reuse | ✗<br><sub>M2, M3, M8</sub> | – | – | – | A sound family model with an absolute deadline, wired to a repository that exists under different names — and no compare-and-swap anywhere. |
 | 18 | timing equal enumeration | ✗<br><sub>M5</sub> | – | – | – | The right defence, measured once. |
 
+### poolside-laguna-s-2.1
+
+| # | Problem | A | B | C | L2 | What you can hand it |
+|---|---|:-:|:-:|:-:|:-:|---|
+| 01 | payout outbox | ✗ | – | – | – | Twenty minutes and 126,727 tokens of visible deliberation, cut off mid-sentence, with no complete file in it. |
+| 02 | reconciliation resend | – | – | – | – | *not yet run* |
+| 03 | read model projection | – | – | – | – | *not yet run* |
+| 04 | grounded llm product | – | – | – | – | *not yet run* |
+| 05 | onchain anchoring | – | – | – | – | *not yet run* |
+| 06 | multi tenant isolation | – | – | – | – | *not yet run* |
+| 07 | ingredient classification | – | – | – | – | *not yet run* |
+| 08 | infra debug | – | – | – | – | *not yet run* |
+| 09 | feature in conventions | – | – | – | – | *not yet run* |
+| 10 | adapt existing screen | – | – | – | – | *not yet run* |
+| 11 | behavior preserving refactor | – | – | – | – | *not yet run* |
+| 12 | orm migration | – | – | – | – | *not yet run* |
+| 13 | legacy characterization tests | – | – | – | – | *not yet run* |
+| 14 | code review planted bugs | – | – | – | – | *not yet run* |
+| 15 | wiring boot failure | – | – | – | – | *not yet run* |
+| 16 | migration that lied | – | – | – | – | *not yet run* |
+| 17 | token rotation reuse | – | – | – | – | *not yet run* |
+| 18 | timing equal enumeration | – | – | – | – | *not yet run* |
+
 ### qwen-qwen3.8-27b
 
 | # | Problem | A | B | C | L2 | What you can hand it |

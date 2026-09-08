@@ -1,0 +1,19 @@
+[
+  "package.json",
+  "prisma/migrations/20240115000000_init/migration.sql",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/bank/bank.module.ts",
+  "src/bank/bank.service.ts",
+  "src/bank/bank.types.ts",
+  "src/main.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/payout/payout.types.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
