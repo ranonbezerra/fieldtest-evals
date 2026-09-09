@@ -20,6 +20,20 @@ END = "<!-- results:end -->"
 
 MARK = {"PASS": "✓", "PASS_WITH_NOTES": "~", "FAIL": "✗"}
 
+# A verdict is a conjunction: one must-have short of eight fails the run, and so does
+# a build that will not complete over a design that is right. Reporting only the
+# verdict collapses those into the same cell, and they are not the same result —
+# 27 of the campaign's 43 failures were zero or one must-have short. `musts()` is the
+# number the table needs beside the mark.
+MUST = re.compile(r"M\d+\s*([✓✗~–])")
+
+
+def musts(gate):
+    """(met, assessed) from a gate line. `–` is unassessed and does not count."""
+    marks = [m for m in MUST.findall(gate or "")]
+    scored = [m for m in marks if m != "–"]
+    return marks.count("✓"), len(scored)
+
 
 def field(text, name):
     """One field, including the lines it wraps onto.
@@ -99,7 +113,15 @@ def render():
         return "\n".join(lines)
 
     for model, problems in sorted(data.items()):
+        met = tot = 0
+        for _p in problems.values():
+            for _r in _p.values():
+                a, b = musts(_r.get("gate"))
+                met += a; tot += b
+        rate = f" — **{met}/{tot} must-haves met ({100*met//tot}%)**" if tot else ""
         lines += [f"### {model}", "",
+                  f"Verdicts are a conjunction: one must-have short fails the run, and"
+                  f" so does a build that will not complete.{rate}", "",
                   "| # | Problem | A | B | C | L2 | What you can hand it |",
                   "|---|---|:-:|:-:|:-:|:-:|---|"]
         for name in sorted(titles):
@@ -112,8 +134,17 @@ def render():
                     cells.append("–")
                     continue
                 mark = MARK.get((r["verdict"] or "").upper(), "?")
+                met, tot = musts(r["gate"])
                 bad = failed_musts(r["gate"])
-                cells.append(f"{mark}<br><sub>{bad}</sub>" if bad else mark)
+                sub = f"{met}/{tot}" if tot else ""
+                if bad:
+                    sub = f"{sub} · {bad}" if sub else bad
+                # A failure with every must-have met is a build that did not
+                # complete over a design that did. Say so rather than let it read
+                # as the same thing as a design that is wrong.
+                elif tot and met == tot and mark == "✗":
+                    sub = f"{sub} · builds ✗"
+                cells.append(f"{mark}<br><sub>{sub}</sub>" if sub else mark)
             note = (got.get("a") or got.get("b") or got.get("c") or {}).get("headline") or ""
             # Once one problem is judged, the rest are not blank — they are unrun,
             # and a public table has to say so rather than leave fifteen empty cells.
