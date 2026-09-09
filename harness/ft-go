@@ -441,6 +441,23 @@ def main():
                 # with a different one.
                 say(f"resume: {len(already)} file(s) already written; not asking again")
             instruction = (HARNESS / "instructions" / "single-shot.md").read_text()
+            # `--spec ladder` was written for the phased shape, where the level-2
+            # spec replaces the plan the model would have written. In the single
+            # shape there is no plan phase, so the spec joins the reads: the design
+            # is handed over and the model implements it in one reply.
+            #
+            # That combination is the one that answers whether a local model can
+            # execute a specification someone else wrote. The phased shape would
+            # answer it through the decomposition this campaign established as a
+            # defect amplifier (FINDINGS §5.2), and the decomposition is a 48 GB
+            # artifact — a machine with room runs this in one pass.
+            spec_reads = []
+            if a.spec == "ladder":
+                _src = prob / "ladder" / "L2-spec.md"
+                if not _src.is_file():
+                    sys.exit(f"ft-go: --spec ladder needs {_src}")
+                spec_reads = [_src]
+                say("[spec] level-2 specification supplied; the model implements it")
             # A seeded workspace has to be handed over, not merely mentioned. The
             # instruction tells the model it has no filesystem, and for problems
             # 09-16 the fixture is the task: review this code, refactor this
@@ -467,7 +484,8 @@ def main():
                     f"asked to work on")
             rc = 0 if skip_ask else ft_run(
                 "solution", instruction, steps / "00-solution.md",
-                reads=[variant, *seed_reads], system=cheatsheet, files_into=ws)
+                reads=[variant, *spec_reads, *seed_reads], system=cheatsheet,
+                files_into=ws)
             if rc != 0:
                 # Nobody reads an empty reply and moves on. A developer asks again,
                 # and a field test that does not is measuring patience nobody has.
@@ -476,8 +494,8 @@ def main():
                 say("the request produced no files; asking again, as a person would")
                 rc = ft_run("solution-retry", instruction,
                             steps / "00-solution-retry.md",
-                            reads=[variant, *seed_reads], system=cheatsheet,
-                            files_into=ws)
+                            reads=[variant, *spec_reads, *seed_reads],
+                            system=cheatsheet, files_into=ws)
                 retried_single = True
             if rc != 0:
                 say("the second request produced nothing either; recorded as a "
