@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnchorStatus {
+  // Prepared:        intent committed, not yet broadcast (or crashed before the status write).
+  // BroadcastSent:   node accepted the transaction; awaiting a receipt.
+  // OutcomeUnknown:  broadcast attempted, outcome unknown (the timeout case).
+  //                  Never collapsed into BroadcastSent or Failed.
+  // Confirmed:       receipt with a block exists.
+  // Failed:          definitive failure (node rejection or failed receipt).
+  PREPARED
+  BROADCAST_SENT
+  OUTCOME_UNKNOWN
+  CONFIRMED
+  FAILED
+
+  @@map("anchor_status")
+}
+
+model Anchor {
+  id                String       @id @default(uuid())
+  documentId        String       @map("document_id")
+  version           Int
+  contentHash       String       @map("content_hash")
+  txId              String       @unique @map("tx_id")
+  signedTx          String       @map("signed_tx")
+  payload           Json
+  status            AnchorStatus @default(PREPARED)
+  broadcastAttempts Int          @default(0) @map("broadcast_attempts")
+  blockNumber       BigInt?      @map("block_number")
+  blockHash         String?      @map("block_hash")
+  failureReason     String?      @map("failure_reason")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  confirmedAt       DateTime?    @map("confirmed_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Exactly one anchor per (document, version), enforced at the schema level:
+  // a second attempt for the same version is rejected by the database, not by app logic.
+  @@unique([documentId, version], map: "anchor_document_version_key")
+  @@map("anchors")
+}
