@@ -427,7 +427,7 @@ closely enough to write a verdict.
 **Independent of the parameter correction:** what a statement asks for does not change
 with temperature.
 
-## 4. The instruments were wrong thirteen times, mostly in the direction that gets them ignored
+## 4. The instruments were wrong fourteen times, mostly in the direction that gets them ignored
 
 Recorded because the repository's whole subject is checks that pass for the wrong
 reason, and it would be dishonest to exempt its own. Six defects, and the pattern in
@@ -1271,6 +1271,59 @@ blind, found 7 of 7 by writing one finding per bullet. That paragraph should go,
 move to a variant explicitly about triage rather than discovery.
 
 Both should be corrected before either problem is run again in any condition.
+
+---
+
+### 4.19 The hosted model is fourteen models, and the harness recorded none of them
+
+`qwen/qwen3.8-27b` is one identifier on OpenRouter and **fourteen endpoints** behind it.
+They are not equivalent:
+
+| | |
+|---|---|
+| quantization | `fp8` × 9, `unknown` × 4, **`fp4` × 1** (Darkbloom) |
+| output ceiling | **32,768** (Darkbloom) to **235,929** (Parasail, Mancer 2, CoreWeave) — sevenfold |
+| context | 65,536 (Io Net) to 1,000,000 (Novita, Alibaba) |
+
+Requests are routed across them and the harness recorded only its own provider —
+`"openrouter"` — so which model actually answered was never in the record.
+
+**The truncations attributed to the model were the backend's.** Three runs stopped at
+suspiciously round numbers, and the endpoint table identifies them:
+
+    problem 02, both axes    exactly 32,768   the only endpoint with that ceiling
+                                              is Darkbloom, which is fp4
+    problem 03, ladder       exactly 65,536   Chutes or Ionstream
+    problem 12, model axis   exactly 65,536   same
+
+Each was read at the time as the model running out of room. The same model returned
+99,903 and 103,242 tokens on other problems the same day.
+
+**And reliability is not uniform.** Over seven ladder runs:
+
+    Parasail    2 completed, 0 failed        Cloudflare  0 completed, 2 failed
+    Novita      1 completed, 0 failed        Venice      0 completed, 1 failed
+    Mancer 2    1 completed, 0 failed        Reka        0 completed, 1 failed
+
+Three backends served everything they were given; three failed everything. Cloudflare
+returned exactly one token, twice. Two runs — ladder 02 and ladder 07 — are void
+because of it, and Reka burned 42,695 tokens producing no content at all.
+
+**What this does and does not contaminate.**
+
+It does not touch the campaign's central finding. The five valid ladder runs were
+served by Parasail, Novita and Mancer 2 — all `fp8`, all completed — and all five show
+the same thing: the specification supplies the design, the design gets built, and the
+build breaks on the model disagreeing with itself about an interface it just wrote.
+
+It does contaminate every quantization claim made about a hosted run, retroactively,
+across all three hosted campaigns. A run served by Darkbloom is a 4-bit model; one
+served by Parasail is 8-bit. For a repository whose subject is what changes between
+quantizations, that is the variable rather than a detail.
+
+*Changed:* `ft-run` records `upstream_provider` for every hosted request. The campaign
+was stopped at problem 08 rather than accumulating further runs under an uncontrolled
+variable, and pinning the provider is the open decision.
 
 ---
 
