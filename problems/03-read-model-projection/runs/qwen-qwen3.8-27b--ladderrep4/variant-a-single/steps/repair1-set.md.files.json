@@ -1,0 +1,9 @@
+[
+  "src/common/app-error.ts",
+  "src/events/events.repository.ts",
+  "src/events/events.service.ts",
+  "src/operations/operations.repository.ts",
+  "src/orders/orders.repository.ts",
+  "src/orders/orders.service.ts",
+  "test/setup.ts"
+]

@@ -1,0 +1,6 @@
+[
+  "src/common/error-envelope.filter.ts",
+  "src/events/events.repository.ts",
+  "src/operations/operations.repository.ts",
+  "src/orders/orders.repository.ts"
+]

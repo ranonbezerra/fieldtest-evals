@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  orders  PaymentOrder[]
+  workers Worker[]
+
+  @@map("companies")
+}
+
+model PaymentOrder {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  workerId  String   @map("worker_id")
+  status    String   @default("pending")
+  amount    Decimal  @db.Decimal(12, 2)
+  currency  String   @default("USD")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  worker  Worker  @relation(fields: [workerId], references: [id])
+  events  Event[]
+
+  @@index([companyId, status], map: "po_company_status")
+  @@index([workerId], map: "po_worker_id")
+  @@map("payment_orders")
+}
+
+model Worker {
+  id        String @id @default(uuid())
+  name      String
+  companyId String @map("company_id")
+
+  company Company        @relation(fields: [companyId], references: [id])
+  orders  PaymentOrder[]
+
+  @@index([companyId], map: "w_company_id")
+  @@map("workers")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  type      String
+  payload   Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order PaymentOrder @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "e_order_id")
+  @@map("events")
+}
+
+model OperationsReadModel {
+  id        String   @id @default(uuid())
+  orderId   String   @unique @map("order_id")
+  companyId String   @map("company_id")
+  workerId  String   @map("worker_id")
+  status    String
+  amount    Decimal  @db.Decimal(12, 2)
+  currency  String
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "ops_company_recency_covering")
+  @@index([createdAt], map: "ops_created_at_idx")
+  @@map("operations_read_model")
+}
