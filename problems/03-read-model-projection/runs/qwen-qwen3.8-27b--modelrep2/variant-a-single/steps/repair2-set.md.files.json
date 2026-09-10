@@ -1,0 +1,6 @@
+[
+  "src/app.module.ts",
+  "src/common/error-envelope.filter.ts",
+  "src/drift-repair/drift-repair.processor.ts",
+  "test/operations.spec.ts"
+]

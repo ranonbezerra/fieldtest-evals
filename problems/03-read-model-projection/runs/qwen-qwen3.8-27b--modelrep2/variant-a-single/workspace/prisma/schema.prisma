@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  VOID
+  REFUNDED
+}
+
+// ---------------------------------------------------------------------------
+// Source of truth (the write path is simulated against these tables).
+// ---------------------------------------------------------------------------
+
+model Worker {
+  id        String    @id @default(uuid()) @db.Uuid
+  companyId String    @map("company_id") @db.Uuid
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  orders PaymentOrder[]
+
+  @@index([companyId])
+  @@map("workers")
+}
+
+model PaymentOrder {
+  id        String      @id @default(uuid()) @db.Uuid
+  companyId String      @map("company_id") @db.Uuid
+  workerId  String      @map("worker_id") @db.Uuid
+  amount    Decimal     @db.Decimal(18, 4)
+  currency  String      @db.Char(3)
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  worker Worker       @relation(fields: [workerId], references: [id])
+  events OrderEvent[]
+
+  @@index([companyId, status])
+  @@index([createdAt])
+  @@map("payment_orders")
+}
+
+model OrderEvent {
+  id         String           @id @default(uuid()) @db.Uuid
+  orderId    String           @map("order_id") @db.Uuid
+  type       String
+  occurredAt DateTime         @map("occurred_at") @db.Timestamptz
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  order PaymentOrder @relation(fields: [orderId], references: [id])
+
+  @@index([orderId, occurredAt])
+  @@index([occurredAt])
+  @@map("order_events")
+}
+
+// ---------------------------------------------------------------------------
+// Read model (projections). Deliberately decoupled: no FKs into the source,
+// every row is re-derivable, so backfills can never block the write path.
+// ---------------------------------------------------------------------------
+
+/// One row per payment order, denormalized for the operations dashboard.
+/// Serves `GET /operations`: company + [status] + date-range filters,
+/// recency sort, stable pagination.
+model Operation {
+  id          String      @id @db.Uuid
+  companyId   String      @map("company_id") @db.Uuid
+  workerId    String      @map("worker_id") @db.Uuid
+  workerName  String      @map("worker_name")
+  status      OrderStatus
+  amount      Decimal     @db.Decimal(18, 4)
+  currency    String      @db.Char(3)
+  lastEventAt DateTime    @map("last_event_at") @db.Timestamptz
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([companyId, lastEventAt(sort: Desc)])
+  @@index([companyId, status, lastEventAt(sort: Desc)])
+  @@map("operations")
+}
+
+/// Exact per-company, per-status financial aggregates. Maintained with atomic
+/// delta upserts in the same transaction as the write (never approximate).
+model CompanyFinancialTotal {
+  companyId   String      @map("company_id") @db.Uuid
+  status      OrderStatus
+  orderCount  Int         @default(0) @map("order_count")
+  totalAmount Decimal     @default(0) @map("total_amount") @db.Decimal(18, 4)
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@id([companyId, status])
+  @@map("company_financial_totals")
+}
