@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Money is integer minor units (bigint) end to end.
+//
+// Account balances:
+//   available_minor_units = settled_minor_units - reserved_minor_units
+// Creating a payout moves funds from `available` to `reserved` via one
+// conditional UPDATE. Settlement (provider confirmation) moves funds out of
+// `reserved` and out of `settled`. Nothing else touches these columns, and
+// `settled_minor_units` never moves at creation time.
+model Account {
+  id                  String   @id @default(cuid())
+  settledMinorUnits   BigInt   @default(0) @map("settled_minor_units")
+  reservedMinorUnits  BigInt   @default(0) @map("reserved_minor_units")
+  availableMinorUnits BigInt   @default(0) @map("available_minor_units")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+  payouts             Payout[]
+
+  @@map("accounts")
+}
+
+// Payout lifecycle:
+//   created -> processing -> sent -> completed
+//                        \-> needs_review
+// `needs_review` is terminal: the reservation stays in place and a human
+// resolves it. There is deliberately no `failed` state: a provider error is
+// never a definitive "the transfer did not happen" (a timeout can hide a
+// landed transfer), so every exhausted failure path parks instead.
+//
+// attempt_state: none | in_flight | failed
+// `in_flight` means a provider call has been started and its outcome is not
+// yet known; a redelivered message in that state must never call the provider
+// again.
+model Payout {
+  id                 String        @id @default(cuid())
+  accountId          String        @map("account_id")
+  amountMinorUnits   BigInt        @map("amount_minor_units")
+  destinationAddress String        @map("destination_address")
+  idempotencyKey     String        @map("idempotency_key")
+  status             String        @default("created")
+  attemptState       String        @default("none") @map("attempt_state")
+  attempts           Int           @default(0)
+  txHash             String?       @map("tx_hash")
+  errorMessage       String?       @map("error_message")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at")
+  account            Account       @relation(fields: [accountId], references: [id])
+  message            Message?
+  ledgerEntries      LedgerEntry[]
+
+  @@unique([accountId, idempotencyKey])
+  @@index([status])
+  @@map("payouts")
+}
+
+// Postgres-backed outbox message. Status: pending | processing | done.
+// `leasedAt` supports lease expiry so a message whose worker died mid-call is
+// re-claimable (at-least-once delivery); payout-level guards make the
+// redelivery safe.
+model Message {
+  id        String    @id @default(cuid())
+  payoutId  String    @unique @map("payout_id")
+  kind      String    @default("payout.transfer")
+  status    String    @default("pending")
+  leasedAt  DateTime? @map("leased_at")
+  nextTryAt DateTime  @default(now()) @map("next_try_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  payout    Payout    @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextTryAt])
+  @@map("messages")
+}
+
+// Double-entry-style ledger. Every posting is a pair of legs sharing
+// `entryId` whose signed `amountMinorUnits` sum to zero:
+//   reservation: customer_funds -a / payouts_pending +a
+//   settlement:  payouts_pending -a / paid_out +a
+model LedgerEntry {
+  id               String   @id @default(cuid())
+  entryId          String   @map("entry_id")
+  payoutId         String   @map("payout_id")
+  accountId        String   @map("account_id")
+  accountName      String   @map("account_name")
+  amountMinorUnits BigInt   @map("amount_minor_units")
+  createdAt        DateTime @default(now()) @map("created_at")
+  payout           Payout   @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+  @@index([payoutId])
+  @@index([accountId])
+  @@map("ledger_entries")
+}

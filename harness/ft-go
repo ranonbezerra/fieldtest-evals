@@ -51,6 +51,9 @@ LOCK = Path(os.environ.get("FT_LOCK", "/tmp/fieldtest-run.lock"))
 MODEL = os.environ.get("OMLX_MODEL", "unknown").removeprefix("openai/")
 FLUSH_ABOVE = float(os.environ.get("FT_FLUSH_ABOVE_GIB", "26"))
 MAX_REPAIRS = 2
+# Generation on this model runs 20-30 minutes; 45 gives it room and still bounds a
+# hung connection. Override with FT_PHASE_TIMEOUT.
+PHASE_TIMEOUT = int(os.environ.get("FT_PHASE_TIMEOUT", "2700"))
 # Is there an output ceiling of ours at all? Only the local server imposes one,
 # and several phase-level remedies exist solely to live within it: lowering the
 # reasoning dial on a test write, retrying a phase that overflowed. Where no
@@ -392,7 +395,23 @@ def main():
                 cmd += ["--verbatim"]
         if a.runner == "aider":
             cmd += ["--workdir", str(ws)]
-        p = subprocess.run(cmd, input=instruction, text=True)
+        # A wall-clock bound on the request. `ft-run` passes its own timeout to
+        # `urlopen`, and that is per socket operation: a response that trickles, or a
+        # connection the provider never writes to, never trips it. One pinned request
+        # sat for 67 minutes on 0.16 seconds of CPU — blocked on a read, with the
+        # campaign behind it — where the same request had taken 31 minutes the day
+        # before. Killed here, recorded as a failed phase, and the run continues.
+        try:
+            p = subprocess.run(cmd, input=instruction, text=True,
+                               timeout=PHASE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            say(f"[{label}] no response in {PHASE_TIMEOUT // 60} min; giving up on "
+                f"this request")
+            Path(raw).write_text(
+                f"REQUEST TIMED OUT after {PHASE_TIMEOUT}s\n", encoding="utf-8")
+            failures.append({"phase": label, "exit": 124,
+                             "reason": f"no response in {PHASE_TIMEOUT}s"})
+            return 124
         u = Path(str(raw) + ".usage.json")
         rec = json.loads(u.read_text()) if u.exists() else {"label": label}
         rec["exit"] = p.returncode
