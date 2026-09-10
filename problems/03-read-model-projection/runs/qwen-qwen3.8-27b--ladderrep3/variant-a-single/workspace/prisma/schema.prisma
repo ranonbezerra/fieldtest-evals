@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  approved
+  rejected
+}
+
+model Company {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  orders PaymentOrder[]
+  events Event[]
+
+  @@map("companies")
+}
+
+model Worker {
+  id        String   @id @default(uuid()) @db.Uuid
+  fullName  String   @map("full_name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  orders PaymentOrder[]
+
+  @@map("workers")
+}
+
+model Event {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company        @relation(fields: [companyId], references: [id])
+  orders  PaymentOrder[]
+
+  @@index([companyId], map: "events_company_id_idx")
+  @@map("events")
+}
+
+model PaymentOrder {
+  id          String      @id @default(uuid()) @db.Uuid
+  companyId   String      @map("company_id") @db.Uuid
+  workerId    String      @map("worker_id") @db.Uuid
+  eventId     String      @map("event_id") @db.Uuid
+  status      OrderStatus @default(pending)
+  amountCents Int         @map("amount_cents")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @default(now()) @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  worker  Worker  @relation(fields: [workerId], references: [id])
+  event   Event   @relation(fields: [eventId], references: [id])
+
+  @@index([companyId, createdAt(sort: Desc)], map: "idx_payment_orders_company_created")
+  @@index([createdAt], map: "idx_payment_orders_created")
+  @@map("payment_orders")
+}
+
+model OperationReadModel {
+  // One row per payment order, shaped exactly like the dashboard query so the
+  // hot path never joins the source tables. worker_name / event_name are
+  // denormalized snapshots of the join columns.
+  paymentOrderId String      @id @map("payment_order_id") @db.Uuid
+  companyId      String      @map("company_id") @db.Uuid
+  workerId       String      @map("worker_id") @db.Uuid
+  workerName     String      @map("worker_name")
+  eventId        String      @map("event_id") @db.Uuid
+  eventName      String      @map("event_name")
+  status         OrderStatus
+  amountCents    Int         @map("amount_cents")
+  createdAt      DateTime    @map("created_at")
+  updatedAt      DateTime    @map("updated_at")
+
+  // The migration creates this index as a COVERING index
+  // (INCLUDE worker_name, event_name, amount_cents, updated_at) because
+  // Prisma cannot express INCLUDE columns.
+  @@index([companyId, status, createdAt(sort: Desc), paymentOrderId(sort: Desc)], map: "idx_operation_read_model_dashboard")
+  @@map("operation_read_model")
+}
+
+model CompanyFinancialTotals {
+  // Per-company financial totals, kept exact by atomic in-place increments in
+  // the writer's transaction and rebuilt by the re-derivation routine.
+  companyId           String @id @map("company_id") @db.Uuid
+  pendingAmountCents  BigInt @default(0) @map("pending_amount_cents")
+  approvedAmountCents BigInt @default(0) @map("approved_amount_cents")
+  rejectedAmountCents BigInt @default(0) @map("rejected_amount_cents")
+  ordersCount         Int    @default(0) @map("orders_count")
+
+  @@map("company_financial_totals")
+}

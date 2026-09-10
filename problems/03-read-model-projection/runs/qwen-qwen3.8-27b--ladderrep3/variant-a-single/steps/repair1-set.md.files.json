@@ -1,0 +1,5 @@
+[
+  "src/common/domain-exception.ts",
+  "src/main.ts",
+  "src/re-derivation/re-derivation.repository.ts"
+]

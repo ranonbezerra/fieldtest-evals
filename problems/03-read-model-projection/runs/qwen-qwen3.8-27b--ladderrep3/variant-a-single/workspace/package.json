@@ -1,0 +1,34 @@
+{
+  "name": "marketplace-backoffice",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Marketplace back-office: operations dashboard backed by a maintained read model",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "postinstall": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "dev": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.4",
+    "@nestjs/core": "^10.4.4",
+    "@nestjs/platform-express": "^10.4.4",
+    "@nestjs/schedule": "^4.1.1",
+    "@prisma/client": "^5.22.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
