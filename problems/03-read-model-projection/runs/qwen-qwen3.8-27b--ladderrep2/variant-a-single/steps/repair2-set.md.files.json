@@ -1,0 +1,6 @@
+[
+  "src/operations/projection-maintenance.service.ts",
+  "src/payment-orders/payment-orders.controller.ts",
+  "src/payment-orders/payment-orders.repository.ts",
+  "test/payment-orders.spec.ts"
+]

@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id   String @id @default(uuid())
+  name String
+
+  @@map("companies")
+}
+
+model Worker {
+  id        String  @id @default(uuid())
+  name      String
+  companyId String
+
+  @@map("workers")
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  companyId String
+  workerId  String
+  status    String
+  amount    Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status, createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OperationReadModel {
+  id        String   @id @default(uuid())
+  orderId   String
+  companyId String
+  workerId  String
+  status    String
+  amount    Decimal  @db.Decimal(12, 2)
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([orderId])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@index([companyId, status, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("operation_read_models")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  orderId   String
+  type      String
+  payload   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt(sort: Desc)])
+  @@map("events")
+}

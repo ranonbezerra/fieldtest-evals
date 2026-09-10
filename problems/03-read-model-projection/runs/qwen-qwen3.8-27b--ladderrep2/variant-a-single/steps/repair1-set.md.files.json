@@ -1,0 +1,6 @@
+[
+  "src/payment-orders/payment-orders.repository.ts",
+  "src/payment-orders/payment-orders.service.ts",
+  "test/operations.spec.ts",
+  "test/payment-orders.spec.ts"
+]
