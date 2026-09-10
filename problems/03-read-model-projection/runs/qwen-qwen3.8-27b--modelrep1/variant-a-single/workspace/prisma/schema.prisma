@@ -1,0 +1,94 @@
+// Source tables: workers, payment_orders, events.
+// Read model: operation_reads (one denormalised row per order, for the
+// dashboard) and company_totals (exact per-company, per-status aggregates).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  approved
+  rejected
+
+  @@map("order_status")
+}
+
+model Worker {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  orders PaymentOrder[]
+
+  @@map("workers")
+}
+
+model PaymentOrder {
+  id          String      @id @default(uuid()) @db.Uuid
+  companyId   String      @map("company_id") @db.Uuid
+  workerId    String      @map("worker_id") @db.Uuid
+  status      OrderStatus @default(pending)
+  amountCents Int         @map("amount_cents")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at")
+
+  worker Worker    @relation(fields: [workerId], references: [id])
+  events Event[]
+
+  @@index([createdAt, id], map: "ix_payment_orders_created_id")
+  @@map("payment_orders")
+}
+
+model Event {
+  id         String   @id @default(uuid()) @db.Uuid
+  orderId    String   @map("order_id") @db.Uuid
+  type       String
+  occurredAt DateTime @map("occurred_at") @default(now())
+
+  order PaymentOrder @relation(fields: [orderId], references: [id])
+
+  @@index([orderId, occurredAt], map: "ix_events_order_occurred")
+  @@map("events")
+}
+
+// One row per payment order, denormalised for the dashboard query.
+// Maintained by in-transaction write hooks and by re-derivation.
+model OperationRead {
+  id            String      @id @db.Uuid
+  companyId     String      @map("company_id") @db.Uuid
+  workerId      String      @map("worker_id") @db.Uuid
+  workerName    String      @map("worker_name")
+  status        OrderStatus
+  amountCents   Int         @map("amount_cents")
+  createdAt     DateTime    @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  lastEventType String?     @map("last_event_type")
+  lastEventAt   DateTime?   @map("last_event_at")
+
+  // Matches the hot dashboard query exactly: equality on company + status,
+  // range on created_at, then the same sort order (recency, id tiebreak).
+  @@index([companyId, status, createdAt(sort: Desc), id(sort: Desc)], map: "ix_operation_reads_company_status_created")
+  @@index([workerId], map: "ix_operation_reads_worker")
+  @@map("operation_reads")
+}
+
+// Exact (company, status) aggregates. Every write applies a signed delta
+// with a single atomic statement; re-derivation resets the buckets.
+model CompanyTotals {
+  companyId  String      @map("company_id") @db.Uuid
+  status     OrderStatus
+  orderCount Int         @default(0) @map("order_count")
+  totalCents BigInt      @default(0) @map("total_cents")
+  updatedAt  DateTime    @default(now()) @map("updated_at")
+
+  @@id([companyId, status])
+  @@map("company_totals")
+}

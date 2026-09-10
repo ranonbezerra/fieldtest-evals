@@ -1,0 +1,5 @@
+[
+  "src/app.module.ts",
+  "src/common/validation.ts",
+  "src/projection/projection.service.ts"
+]
