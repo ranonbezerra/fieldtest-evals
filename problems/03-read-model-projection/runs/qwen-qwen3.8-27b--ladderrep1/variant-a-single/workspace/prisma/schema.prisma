@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  approved
+  disputed
+  cancelled
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  paymentOrders   PaymentOrder[]
+  workers         Worker[]
+  operationRows   OperationRow[]
+  financialTotals CompanyFinancialTotals?
+
+  @@map("companies")
+}
+
+model PaymentOrder {
+  id          String      @id @default(uuid())
+  companyId   String      @map("company_id")
+  company     Company     @relation(fields: [companyId], references: [id])
+  workerId    String      @map("worker_id")
+  worker      Worker      @relation(fields: [workerId], references: [id])
+  amountCents Int         @map("amount_cents")
+  currency    String
+  status      OrderStatus @default(pending)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  operationRow OperationRow?
+  events       Event[]
+
+  @@index([companyId, status])
+  @@map("payment_orders")
+}
+
+model Worker {
+  id        String   @id @default(uuid())
+  name      String
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  paymentOrders PaymentOrder[]
+
+  @@map("workers")
+}
+
+model Event {
+  id             String       @id @default(uuid())
+  paymentOrderId String       @map("payment_order_id")
+  paymentOrder   PaymentOrder @relation(fields: [paymentOrderId], references: [id])
+  eventType      String       @map("event_type")
+  note           String?
+  occurredAt     DateTime     @map("occurred_at")
+
+  @@map("events")
+}
+
+model OperationRow {
+  id              String       @id @default(uuid())
+  paymentOrderId  String       @unique @map("payment_order_id")
+  paymentOrder    PaymentOrder @relation(fields: [paymentOrderId], references: [id])
+  companyId       String       @map("company_id")
+  company         Company      @relation(fields: [companyId], references: [id])
+  status          OrderStatus
+  workerName      String       @map("worker_name")
+  amountCents     Int          @map("amount_cents")
+  currency        String
+  latestEventType String?      @map("latest_event_type")
+  latestEventAt   DateTime?    @map("latest_event_at")
+  latestEventId   String?      @map("latest_event_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@index(
+    [companyId, status, updatedAt, paymentOrderId],
+    map: "operation_rows_company_status_updated_idx"
+  )
+  @@map("operation_rows")
+}
+
+model CompanyFinancialTotals {
+  companyId            String  @id @map("company_id")
+  company              Company @relation(fields: [companyId], references: [id])
+  pendingAmountCents   Int     @default(0) @map("pending_amount_cents")
+  pendingCount         Int     @default(0) @map("pending_count")
+  approvedAmountCents  Int     @default(0) @map("approved_amount_cents")
+  approvedCount        Int     @default(0) @map("approved_count")
+  disputedAmountCents  Int     @default(0) @map("disputed_amount_cents")
+  disputedCount        Int     @default(0) @map("disputed_count")
+  cancelledAmountCents Int     @default(0) @map("cancelled_amount_cents")
+  cancelledCount       Int     @default(0) @map("cancelled_count")
+  updatedAt            DateTime @map("updated_at")
+
+  @@map("company_financial_totals")
+}
