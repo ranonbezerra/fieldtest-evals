@@ -1,0 +1,6 @@
+[
+  "src/globals.d.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.provider.ts",
+  "test/payout.spec.ts"
+]

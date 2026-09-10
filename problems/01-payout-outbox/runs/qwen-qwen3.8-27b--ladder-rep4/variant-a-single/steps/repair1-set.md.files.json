@@ -1,0 +1,13 @@
+[
+  "src/app.module.ts",
+  "src/common/error-envelope.filter.ts",
+  "src/main.ts",
+  "src/payout/payout-worker.service.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.provider.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/payout/payout.worker.ts",
+  "test/payout.spec.ts"
+]

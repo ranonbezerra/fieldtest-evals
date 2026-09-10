@@ -1,0 +1,19 @@
+[
+  "DESIGN.md",
+  "prisma/migrations/20240101000000_initial_payout_schema/migration.sql",
+  "prisma/migrations/20240101000000_initial_payout_schema/migration_lock.toml",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/common/error-envelope.filter.ts",
+  "src/common/error-envelope.ts",
+  "src/main.ts",
+  "src/payout/payout-worker.service.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.errors.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.provider.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/payout/payout.worker.ts",
+  "test/payout.spec.ts"
+]
