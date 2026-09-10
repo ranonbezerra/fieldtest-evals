@@ -865,6 +865,21 @@ def main():
                         # does not exist makes the runner refuse — which showed up
                         # as every repair failing at once.
                         base = [variant] + ([plan_md] if plan_md.is_file() else [])
+                        # The Prisma schema is where every model and enum name is
+                        # authored, and `auto_reads` cannot find it: it searches
+                        # `*.ts` for `export <name>`, and a schema declares
+                        # `enum PayoutStatus {` in a `.prisma` file. The generated
+                        # client that does carry the type lives under node_modules,
+                        # which is excluded.
+                        #
+                        # So a repair for `Type '"created"' is not assignable to type
+                        # 'PayoutStatus'` was handed the variant, the spec, and
+                        # nothing that declares the enum. Problem 01 of the ladder
+                        # axis spent eighteen rounds on that error and did not
+                        # converge — the docstring above calls it another guess at a
+                        # closed door, and this is the door.
+                        schema = ws / "prisma" / "schema.prisma"
+                        base += [schema] if schema.is_file() else []
                         reads = base + [e for e in extra if e != f]
                         rlabel = f"repair{attempt+1}-{f.name}"
                         rmsg = (rtmpl.replace("{{PATH}}", str(rel))

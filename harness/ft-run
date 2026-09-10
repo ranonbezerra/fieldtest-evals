@@ -245,6 +245,18 @@ def main():
     }
     if a.max_tokens:
         payload["max_tokens"] = a.max_tokens
+    # One OpenRouter model id is many endpoints, and they are not the same model.
+    # `qwen/qwen3.8-27b` has fourteen: nine fp8, four unknown, and one fp4, with
+    # output ceilings from 32,768 to 235,929. Routing across them samples across
+    # quantizations, which for this repository is the variable rather than a
+    # detail — and three of the fourteen failed every request they were given.
+    # FT_PROVIDERS pins the order and turns fallbacks off, so eighteen runs measure
+    # one model. Unset, behaviour is unchanged.
+    if PROVIDER == "openrouter":
+        pinned = [x.strip() for x in os.environ.get("FT_PROVIDERS", "").split(",")
+                  if x.strip()]
+        if pinned:
+            payload["provider"] = {"order": pinned, "allow_fallbacks": False}
     effort = a.reasoning_effort or os.environ.get("FT_REASONING_EFFORT") or None
     if effort:
         if PROVIDER == "openrouter":

@@ -53,7 +53,12 @@ case "$FT_PROVIDER" in
     # in the account's activity, which is useful when several campaigns share a key.
     : "${FT_HTTP_REFERER:=https://github.com/ranonbezerra/fieldtest-evals}"
     : "${FT_APP_TITLE:=fieldtest-evals}"
-    export FT_HTTP_REFERER FT_APP_TITLE
+    # One model id is many endpoints and they are not the same model:
+    # qwen/qwen3.8-27b has fourteen, nine fp8, four unknown and one fp4, with
+    # output ceilings from 32,768 to 235,929. Pinned so a campaign measures one
+    # model instead of sampling across quantizations. See FINDINGS 4.19.
+    : "${FT_PROVIDERS:=Parasail,Novita,Mancer 2}"
+    export FT_HTTP_REFERER FT_APP_TITLE FT_PROVIDERS
     ;;
   *)
     echo "fieldtest: FT_PROVIDER must be omlx or openrouter, not '$FT_PROVIDER'" >&2
