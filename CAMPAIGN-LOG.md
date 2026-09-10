@@ -112,3 +112,4 @@ Running.
 | 2026-09-10 02:53 | 01-payout-outbox | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-10 03:22 | 02-reconciliation-resend | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-10 04:11 | 03-read-model-projection | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-10 04:46 | 04-grounded-llm-product | a | **no meta** (exit 0) | – | – | – | – | – | – |

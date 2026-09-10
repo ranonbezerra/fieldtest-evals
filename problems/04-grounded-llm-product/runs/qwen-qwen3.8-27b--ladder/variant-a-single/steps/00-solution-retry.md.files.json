@@ -1,0 +1,12 @@
+[
+  "src/assistant/assistant.grounding.ts",
+  "src/assistant/assistant.llm-client.ts",
+  "src/assistant/assistant.module.ts",
+  "src/assistant/assistant.redaction.ts",
+  "src/assistant/assistant.service.ts",
+  "src/eval/eval.golden-scenarios.ts",
+  "src/eval/eval.harness.ts",
+  "src/eval/eval.judges.ts",
+  "test/assistant.spec.ts",
+  "test/eval.spec.ts"
+]
