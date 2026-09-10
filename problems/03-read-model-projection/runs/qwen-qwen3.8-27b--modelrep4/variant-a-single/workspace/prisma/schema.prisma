@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(uuid()) @map("id")
+  name      String   @map("name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  workers Worker[]
+  events  Event[]
+  orders  PaymentOrder[]
+
+  @@map("companies")
+}
+
+model Worker {
+  id        String   @id @default(uuid()) @map("id")
+  companyId String   @map("company_id")
+  name      String   @map("name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  orders  PaymentOrder[]
+
+  @@index([companyId], map: "workers_company_id_idx")
+  @@map("workers")
+}
+
+model Event {
+  id        String   @id @default(uuid()) @map("id")
+  companyId String   @map("company_id")
+  title     String   @map("title")
+  venue     String   @map("venue")
+  startsAt  DateTime @map("starts_at")
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  orders  PaymentOrder[]
+
+  @@index([companyId], map: "events_company_id_idx")
+  @@map("events")
+}
+
+model PaymentOrder {
+  id          String   @id @default(uuid()) @map("id")
+  companyId   String   @map("company_id")
+  workerId    String?  @map("worker_id")
+  eventId     String?  @map("event_id")
+  status      String   @default("pending") @map("status")
+  amountCents Int      @map("amount_cents")
+  currency    String   @default("USD") @map("currency")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  worker  Worker? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([companyId], map: "payment_orders_company_id_idx")
+  @@index([createdAt], map: "payment_orders_created_at_idx")
+  @@map("payment_orders")
+}
+
+// Read-model projection: one denormalised row per payment order so the
+// dashboard never joins. Maintained transactionally by the write path and
+// re-derivable at any time from the source tables.
+model OperationView {
+  id            String    @id @map("id")
+  companyId     String    @map("company_id")
+  workerId      String?   @map("worker_id")
+  workerName    String?   @map("worker_name")
+  eventId       String?   @map("event_id")
+  eventTitle    String?   @map("event_title")
+  eventVenue    String?   @map("event_venue")
+  eventStartsAt DateTime? @map("event_starts_at")
+  status        String    @map("status")
+  amountCents   Int       @map("amount_cents")
+  currency      String    @map("currency")
+  createdAt     DateTime  @map("created_at")
+  updatedAt     DateTime  @map("updated_at")
+
+  @@index([companyId, status, createdAt(sort: Desc), id(sort: Desc)], map: "operation_views_company_status_created_idx")
+  @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "operation_views_company_created_idx")
+  @@index([createdAt], map: "operation_views_created_at_idx")
+  @@map("operation_views")
+}
+
+// Read-model projection: exact per-company, per-status financial totals,
+// accumulated by atomic delta upserts on the write path (never recomputed
+// per request).
+model CompanyOperationTotals {
+  companyId      String   @id @map("company_id")
+  pendingCents   BigInt   @default(0) @map("pending_cents")
+  approvedCents  BigInt   @default(0) @map("approved_cents")
+  rejectedCents  BigInt   @default(0) @map("rejected_cents")
+  completedCents BigInt   @default(0) @map("completed_cents")
+  cancelledCents BigInt   @default(0) @map("cancelled_cents")
+  pendingCount   BigInt   @default(0) @map("pending_count")
+  approvedCount  BigInt   @default(0) @map("approved_count")
+  rejectedCount  BigInt   @default(0) @map("rejected_count")
+  completedCount BigInt   @default(0) @map("completed_count")
+  cancelledCount BigInt   @default(0) @map("cancelled_count")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("company_operation_totals")
+}
