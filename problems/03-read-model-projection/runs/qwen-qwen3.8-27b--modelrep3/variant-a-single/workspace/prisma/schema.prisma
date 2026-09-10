@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  workers Worker[]
+  events  Event[]
+  orders  PaymentOrder[]
+  totals  CompanyOperationTotal[]
+
+  @@map("companies")
+}
+
+model Worker {
+  id        Int      @id @default(autoincrement())
+  name      String
+  companyId Int      @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  company Company        @relation(fields: [companyId], references: [id])
+  orders  PaymentOrder[]
+
+  @@index([companyId], map: "workers_company_id_idx")
+  @@map("workers")
+}
+
+model Event {
+  id        Int      @id @default(autoincrement())
+  name      String
+  companyId Int      @map("company_id")
+  startsAt  DateTime @map("starts_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  company Company        @relation(fields: [companyId], references: [id])
+  orders  PaymentOrder[]
+
+  @@index([companyId], map: "events_company_id_idx")
+  @@map("events")
+}
+
+model PaymentOrder {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  eventId   Int      @map("event_id")
+  workerId  Int      @map("worker_id")
+  amount    Decimal  @db.Decimal(12, 2)
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  company Company  @relation(fields: [companyId], references: [id])
+  event   Event    @relation(fields: [eventId], references: [id])
+  worker  Worker   @relation(fields: [workerId], references: [id])
+
+  readModels OperationReadModel[]
+
+  @@index([companyId], map: "payment_orders_company_id_idx")
+  @@index([createdAt], map: "payment_orders_created_at_idx")
+  @@map("payment_orders")
+}
+
+// Read model: one row per payment order, denormalized with the event and worker
+// fields the dashboard displays, so the dashboard query is a single indexed scan.
+model OperationReadModel {
+  orderId       Int      @map("order_id") @id
+  companyId     Int      @map("company_id")
+  status        String
+  amount        Decimal  @db.Decimal(12, 2)
+  eventId       Int      @map("event_id")
+  eventName     String   @map("event_name")
+  eventStartsAt DateTime @map("event_starts_at")
+  workerId      Int      @map("worker_id")
+  workerName    String   @map("worker_name")
+  createdAt     DateTime @map("created_at")
+
+  order PaymentOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status, createdAt(sort: Desc), orderId(sort: Desc)], map: "operation_read_models_company_status_created_idx")
+  @@index([companyId, createdAt(sort: Desc), orderId(sort: Desc)], map: "operation_read_models_company_created_idx")
+  @@map("operation_read_models")
+}
+
+// Exact financial totals per company, maintained with atomic SQL increments.
+model CompanyOperationTotal {
+  companyId      Int      @map("company_id") @id
+  operationCount Int      @default(0) @map("operation_count")
+  totalAmount    Decimal  @default(0) @db.Decimal(18, 2) @map("total_amount")
+  approvedAmount Decimal  @default(0) @db.Decimal(18, 2) @map("approved_amount")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("company_operation_totals")
+}

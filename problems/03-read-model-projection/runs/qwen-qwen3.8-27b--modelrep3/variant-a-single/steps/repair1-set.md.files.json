@@ -1,0 +1,4 @@
+[
+  "src/operations/operation-totals.controller.ts",
+  "src/operations/operations.repository.ts"
+]
