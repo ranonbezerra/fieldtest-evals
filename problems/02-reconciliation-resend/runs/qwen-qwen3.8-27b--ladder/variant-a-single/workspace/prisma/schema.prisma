@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending      // awaiting its first send
+  processing   // bank knows the txid (accepted / duplicate); awaiting the statement line
+  unknown      // outcome unknown (timeout / transport error); awaiting evidence from reconcile
+  settled      // matched to a statement line; paid — terminal
+  rejected     // bank permanent rejection — terminal
+  needs_review // five attempts, still no evidence — parked for manual review, terminal
+}
+
+model Order {
+  id              String      @id @default(uuid()) @map("id")
+  supplier_id     String      @map("supplier_id")
+  bank_key        String      @map("bank_key") // supplier's account key at the bank, sent with every instruction
+  effective_date  DateTime    @db.Date @map("effective_date") // UTC day the payment is effective
+  amount          Int         @map("amount") // integer minor units (cents), end to end
+  txid            String?     @unique @map("txid") // derived on first send; stable for every retry
+  status          OrderStatus @default(pending) @map("status")
+  attempt         Int         @default(0) @map("attempt") // send attempts made so far
+  last_attempt_at DateTime?   @map("last_attempt_at") // anchor for the publication-lag check
+  error_code      String?     @map("error_code") // last bank code, or parking reason
+  error_message   String?     @map("error_message")
+  settled_at      DateTime?   @map("settled_at")
+  settled_on      DateTime?   @db.Date @map("settled_on") // UTC day of the statement line
+  created_at      DateTime    @default(now()) @map("created_at")
+  updated_at      DateTime    @updatedAt @map("updated_at")
+
+  @@index([status, last_attempt_at])
+  @@map("orders")
+}

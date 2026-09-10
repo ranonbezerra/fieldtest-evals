@@ -1,0 +1,14 @@
+[
+  "nest-cli.json",
+  "package.json",
+  "prisma/migrations/20250101000000_init/migration.sql",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/bank/bank.module.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "tsconfig.build.json",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
