@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum MessageStatus {
+  PENDING
+  IN_FLIGHT
+  PROCESSED
+}
+
+enum LedgerBucket {
+  AVAILABLE
+  HELD
+  PAID_OUT
+}
+
+enum LedgerSide {
+  DEBIT
+  CREDIT
+}
+
+model Account {
+  id        String   @id @default(uuid()) @map("id")
+  settled   BigInt   @default(0) @map("settled")
+  reserved  BigInt   @default(0) @map("reserved")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String       @id @default(uuid()) @map("id")
+  accountId          String       @map("account_id")
+  amount             BigInt
+  destinationAddress String       @map("destination_address")
+  idempotencyKey     String       @map("idempotency_key")
+  status             PayoutStatus @default(CREATED) @map("status")
+  txHash             String?      @map("tx_hash")
+  attempts           Int          @default(0) @map("attempts")
+  lastError          String?      @map("last_error")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  account       Account        @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  outbox        OutboxMessage?
+  ledgerEntries LedgerEntry[]
+
+  @@unique([accountId, idempotencyKey])
+  @@index([accountId])
+  @@index([status])
+  @@map("payouts")
+}
+
+model OutboxMessage {
+  id            String        @id @default(uuid()) @map("id")
+  payoutId      String        @unique @map("payout_id")
+  status        MessageStatus @default(PENDING) @map("status")
+  attempts      Int           @default(0) @map("attempts")
+  nextAttemptAt DateTime      @default(now()) @map("next_attempt_at")
+  claimedAt     DateTime?     @map("claimed_at")
+  processedAt   DateTime?     @map("processed_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+
+  @@index([status, nextAttemptAt])
+  @@map("outbox_messages")
+}
+
+model LedgerEntry {
+  id        String       @id @default(uuid()) @map("id")
+  payoutId  String       @map("payout_id")
+  bucket    LedgerBucket @map("bucket")
+  side      LedgerSide   @map("side")
+  amount    BigInt
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+
+  @@index([payoutId])
+  @@map("ledger_entries")
+}
