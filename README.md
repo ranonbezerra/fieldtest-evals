@@ -221,7 +221,7 @@ Verdicts are a conjunction: one must-have short fails the run, and so does a bui
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
 | 01 | payout outbox | ✗<br><sub>7/8 · M3</sub> | – | – | ✗<br><sub>8/8 · builds ✗</sub> | Seven of eight must-haves, the strongest reservation in the campaign, and the outbox message lands in its own transaction. |
-| 02 | reconciliation resend | ✗<br><sub>6/6 · builds ✗</sub> | – | – | – | Chose a compiler setting its own imports violate, in the same reply that wrote both. |
+| 02 | reconciliation resend | ✗<br><sub>6/6 · builds ✗</sub> | – | – | ? | Chose a compiler setting its own imports violate, in the same reply that wrote both. |
 | 03 | read model projection | ✗<br><sub>2/6 · M1, M2, M3, M5</sub> | – | – | – | An invalid relation in its own schema stops the client from generating, and hides that half its services call methods nobody wrote. |
 | 04 | grounded llm product | ~<br><sub>6/6</sub> | – | – | – | The best run of the campaign: eleven files, one request, clean compile, and every must-have met — undone only by a test that disagrees with the code beside it about a capital letter. |
 | 05 | onchain anchoring | ~<br><sub>6/6</sub> | – | – | – | Fifteen files, one request, clean compile, six of six must-haves, and a recovery design that is the best engineering in either campaign — with a red suite that is entirely the tests' fault. |

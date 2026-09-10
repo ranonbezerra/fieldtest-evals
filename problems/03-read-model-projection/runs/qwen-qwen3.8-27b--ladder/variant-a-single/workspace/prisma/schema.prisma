@@ -1,0 +1,101 @@
+// Source of truth for the database. The projection tables (ops_rows,
+// company_totals) are maintained synchronously by the write services; see
+// DESIGN.md. The covering index the dashboard relies on uses INCLUDE, which
+// the schema cannot express; the migration adds it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  approved
+  rejected
+}
+
+model Company {
+  id     String         @id @default(cuid()) @map("id")
+  name   String         @map("name")
+  orders PaymentOrder[]
+  totals CompanyTotal?
+
+  @@map("companies")
+}
+
+model Worker {
+  id     String         @id @default(cuid()) @map("id")
+  name   String         @map("name")
+  orders PaymentOrder[]
+
+  @@map("workers")
+}
+
+model Event {
+  id     String         @id @default(cuid()) @map("id")
+  title  String         @map("title")
+  orders PaymentOrder[]
+
+  @@map("events")
+}
+
+model PaymentOrder {
+  id          String      @id @default(cuid()) @map("id")
+  companyId   String      @map("company_id")
+  workerId    String?     @map("worker_id")
+  eventId     String?     @map("event_id")
+  status      OrderStatus @default(pending) @map("status")
+  amountCents BigInt      @map("amount_cents")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  // No @updatedAt on purpose: the write services set it explicitly so the
+  // same instant can be stamped onto the projection row (occurred_at).
+  updatedAt   DateTime    @default(now()) @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  worker  Worker? @relation(fields: [workerId], references: [id])
+  event   Event?  @relation(fields: [eventId], references: [id])
+
+  @@index([companyId], map: "payment_orders_company_id_idx")
+  @@index([updatedAt], map: "payment_orders_updated_at_idx")
+  @@map("payment_orders")
+}
+
+// Projection: one row per payment order, shaped like the dashboard query so
+// the hot path performs no join back to the source tables.
+model OpsRow {
+  id          String      @id @map("id")
+  companyId   String      @map("company_id")
+  status      OrderStatus @map("status")
+  amountCents BigInt      @map("amount_cents")
+  // When the order entered its current state; mirrors payment_orders.updated_at.
+  occurredAt  DateTime    @map("occurred_at")
+  workerName  String?     @map("worker_name")
+  eventName   String?     @map("event_name")
+  createdAt   DateTime    @map("created_at")
+  updatedAt   DateTime    @map("updated_at")
+
+  // Dashboard access pattern: WHERE company_id = ? [AND status = ?]
+  // AND occurred_at in range, ORDER BY occurred_at DESC, id DESC.
+  // The migration adds INCLUDE (amount_cents, worker_name, event_name,
+  // created_at) so the dashboard read is an index-only scan.
+  @@index([companyId, status, occurredAt(sort: Desc), id(sort: Desc)], map: "idx_ops_rows_lookup")
+  @@map("ops_rows")
+}
+
+// Projection: exact per-company financial totals, kept by atomic in-place
+// increments inside the write transaction.
+model CompanyTotal {
+  companyId     String @id @map("company_id")
+  totalCents    BigInt @default(0) @map("total_cents")
+  approvedCents BigInt @default(0) @map("approved_cents")
+  rejectedCents BigInt @default(0) @map("rejected_cents")
+  orderCount    Int    @default(0) @map("order_count")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("company_totals")
+}
