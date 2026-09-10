@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  domain       String   @unique
+  name         String
+  branding     Json     @default("{}")
+  featureFlags Json     @default("{}") @map("feature_flags")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  customers Customer[]
+  plans     Plan[]
+  orders    Order[]
+
+  @@map("tenants")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  email     String
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  // the same email may exist in several tenants, never twice in one
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model Plan {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  slug       String
+  name       String
+  priceCents Int      @map("price_cents")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("plans")
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  customerId  String   @map("customer_id")
+  planId      String   @map("plan_id")
+  orderNumber String   @map("order_number")
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan     Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, customerId])
+  @@index([tenantId, planId])
+  @@map("orders")
+}
