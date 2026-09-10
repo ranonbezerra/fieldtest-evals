@@ -228,6 +228,10 @@ def main():
     ap.add_argument("--shape", choices=["phased", "single"], default="phased",
                     help="passed through to ft-go; `single` sends each problem in "
                          "one request and writes to variant-<v>-single")
+    ap.add_argument("--spec", choices=["model", "ladder"], default="model",
+                    help="where the specification comes from: the model's own "
+                         "phase-0 plan, or the problem's level-2 spec. `ladder` "
+                         "hands the design over and measures implementation alone.")
     ap.add_argument("--problems", default="")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--max-hours", type=float, default=0, help="0 means no limit")
@@ -244,6 +248,8 @@ def main():
     # This has to agree with it, or `already_done` reads one axis's runs as the
     # other's and skips them: the medium campaign began at problem 03 because it
     # found the default-effort 01 and 02 on disk.
+    if a.spec != "model":
+        slug += f"--{a.spec}"
     _eff = os.environ.get("FT_REASONING_EFFORT", "")
     if _eff and os.environ.get("FT_PROVIDER", "omlx") != "omlx":
         slug += f"--effort-{_eff}"
@@ -318,6 +324,8 @@ def main():
             sh([str(HARNESS / "ft-flush"), "--if-above", "26"], timeout=300)
 
         cmd = [str(HARNESS / "ft-go"), prob.name, vslug[-1]]
+        if a.spec != "model":
+            cmd += ["--spec", a.spec]
         if a.shape != "phased":
             cmd += ["--shape", a.shape]
         if state == "ignore":
