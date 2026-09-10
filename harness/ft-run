@@ -345,6 +345,13 @@ def main():
         record["reasoning_tokens"] = u.get("reasoning_tokens")
         record["cached_tokens"] = u.get("cached_tokens")
         record["generation_id"] = body.get("id")
+        # OpenRouter routes one model across several upstream providers and they do
+        # not share an output ceiling. Two requests for qwen3.8-27b in this campaign
+        # stopped at exactly 32,768 tokens and one at exactly 65,536 — powers of two,
+        # a backend's cap rather than the model's. Without this field "it ran out of
+        # room" is indistinguishable from "this backend had less room", and the two
+        # mean different things about the model.
+        record["upstream_provider"] = body.get("provider")
         # The effort word is the same across providers and the meaning is not.
         record["reasoning_effort_semantics"] = (
             "fraction of max_tokens reserved for thinking (OpenRouter), not the "
