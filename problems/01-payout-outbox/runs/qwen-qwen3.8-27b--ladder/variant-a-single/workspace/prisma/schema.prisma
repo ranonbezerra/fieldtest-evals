@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PayoutAccount {
+  id        String   @id @default(uuid())
+  settled   BigInt   @default(0)
+  reserved  BigInt   @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payouts Payout[]
+
+  @@map("payout_accounts")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+model Payout {
+  id                 String       @id @default(uuid())
+  accountId          String       @map("account_id")
+  amount             BigInt
+  destinationAddress String       @map("destination_address")
+  idempotencyKey     String       @unique @map("idempotency_key")
+  status             PayoutStatus @default(CREATED)
+  txHash             String?      @map("tx_hash")
+  failureReason      String?      @map("failure_reason")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  account       PayoutAccount   @relation(fields: [accountId], references: [id])
+  messages      OutboxMessage[]
+  ledgerEntries LedgerEntry[]
+
+  @@index([accountId])
+  @@map("payouts")
+}
+
+enum MessageStatus {
+  PENDING
+  IN_FLIGHT
+  PROCESSED
+  EXHAUSTED
+}
+
+model OutboxMessage {
+  id              String        @id @default(uuid())
+  type            String        @default("payout.transfer")
+  payoutId        String        @unique @map("payout_id")
+  status          MessageStatus @default(PENDING)
+  attempts        Int           @default(0)
+  confirmAttempts Int           @default(0) @map("confirm_attempts")
+  claimedAt       DateTime?     @map("claimed_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@index([status, createdAt])
+  @@map("outbox_messages")
+}
+
+enum LedgerSide {
+  DEBIT
+  CREDIT
+}
+
+model LedgerEntry {
+  id        String     @id @default(uuid())
+  payoutId  String?    @map("payout_id")
+  account   String
+  side      LedgerSide
+  amount    BigInt
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  payout Payout? @relation(fields: [payoutId], references: [id])
+
+  @@index([payoutId])
+  @@map("ledger_entries")
+}
