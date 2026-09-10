@@ -824,9 +824,36 @@ def main():
                 rc, out = run(["npx", "--no-install", "prisma", "generate"],
                               cwd=ws, timeout=600)
                 gate["log"] += f"$ prisma generate -> {rc}\n{out[-1500:]}\n"
+                prisma_error = ""
                 if rc != 0:
+                    prisma_error = out[-3000:]
                     say(f"[gate] prisma generate failed ({rc}); the typecheck will "
                         f"not see the generated client")
+                    # And repairing TypeScript will not help. `bad` is built from the
+                    # compiler's error lines, so it only ever holds `.ts` files; when
+                    # the client was never generated every error is downstream of that
+                    # and the file that has to change is the schema, which can never
+                    # appear in the list. Measured over four identical runs of problem
+                    # 01: the two with a valid schema typechecked clean with no repair
+                    # at all, and one of the two without spent both rounds on `.ts`
+                    # files, returning 6 of 7 and then 6 of 6 of them unchanged.
+                    # Returning nothing was the right answer to an impossible request.
+                    schema_f = ws / "prisma" / "schema.prisma"
+                    if str(schema_f.relative_to(ws)) in declared or not manifest:
+                        stmpl = (HARNESS / "instructions"
+                                 / "phase-repair-schema.md").read_text()
+                        gate["repairs"] += 1
+                        ft_run("repair-schema", stmpl.replace("{{ERRORS}}",
+                                                              prisma_error),
+                               steps / "repair-schema.md",
+                               reads=[variant] + ([plan_md] if plan_md.is_file()
+                                                  else []),
+                               out_file=schema_f, system=cheatsheet, effort="low")
+                        rc, out = run(["npx", "--no-install", "prisma", "generate"],
+                                      cwd=ws, timeout=600)
+                        gate["log"] += (f"$ prisma generate (after schema repair) -> "
+                                        f"{rc}\n{out[-1500:]}\n")
+                        say(f"[gate] prisma generate after schema repair -> {rc}")
 
             # A problem whose deliverable is a diagnosis, a runbook and three diffs
             # has no TypeScript, and running `tsc` on it produces TS18003 — "no
