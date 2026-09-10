@@ -427,7 +427,7 @@ closely enough to write a verdict.
 **Independent of the parameter correction:** what a statement asks for does not change
 with temperature.
 
-## 4. The instruments were wrong fourteen times, mostly in the direction that gets them ignored
+## 4. The instruments were wrong sixteen times, mostly in the direction that gets them ignored
 
 Recorded because the repository's whole subject is checks that pass for the wrong
 reason, and it would be dishonest to exempt its own. Six defects, and the pattern in
@@ -1324,6 +1324,69 @@ quantizations, that is the variable rather than a detail.
 *Changed:* `ft-run` records `upstream_provider` for every hosted request. The campaign
 was stopped at problem 08 rather than accumulating further runs under an uncontrolled
 variable, and pinning the provider is the open decision.
+
+---
+
+### 4.20 One sample per cell, and the cells are wide
+
+Four runs of problem 01 on the ladder axis, identical in every input — same model, same
+provider, same specification, same prompt, same harness:
+
+| | `prisma generate` | errors at attempt 0 | final | repairs | `.js` with/without |
+|---|---|---|---|---|---|
+| rep1 | ok | **0** | **0** | 0 | 20 / 0 |
+| rep2 | ok | **0** | **0** | 0 | 18 / 0 |
+| rep3 | **failed** | 75 | 56 | 2 | 21 / 0 |
+| rep4 | **failed** | 50 | **1** | 2 | 20 / 0 |
+
+Generation runs at temperature 1.0 — the model card's own recommendation, frozen since
+the first campaign — so this is a distribution, not a measurement. Every number this
+repository has published is one draw from one.
+
+**The variance has a single cause.** Where the Prisma schema is valid the typecheck
+passes clean with no repair at all; where it carries a one-sided relation, fifty-odd
+errors cascade from a client that was never generated. Two of four identical attempts
+wrote the bad relation.
+
+That makes the one-sided relation the dominant defect of this model on this problem —
+**a finding this strengthens**, since it now has an incidence rather than an anecdote,
+and it joins the same defect already recorded across two models and four runs (§5.3).
+
+**And it retires two claims made here on one run each.**
+
+*Retired:* that the per-file repair caused the missing `.js` extensions. All four
+repetitions carry the convention perfectly — 79 relative imports, none without the
+extension. The run that showed 0 of 15 was the outlier, and §4.x built a structural
+explanation on top of it. The set repair was worth building for other reasons — rep4
+went 50 → 18 → 1 across two rounds — but it was not built from evidence.
+
+*Weakened:* that giving the repair `prisma/schema.prisma` eliminated the enum drift.
+It may have; it may have been the draw. One run against one run cannot separate them.
+
+**What survives** is what has many independent observations: interface drift across 57
+verdicts and three models, the one-sided relation across two models and now four
+repetitions, problem 08 passing in every condition, problem 11 as the only clean PASS.
+
+*Changed:* nothing in the harness. The correction is to how its output is read — a
+comparison between two configurations differing by one run each is a difference of
+draws until it is repeated, and most of this repository's cross-condition claims are
+exactly that.
+
+### 4.21 The repair cannot reach the file that is wrong
+
+`bad` is built from the TypeScript compiler's error lines, so it only ever contains
+`.ts` files. When `prisma generate` fails, every error is downstream of a client that
+does not exist, and the file that has to change is `schema.prisma` — which can never
+appear in that list.
+
+Repetition 3 shows the shape: two set repairs, the model returning **6 of 7 files
+unchanged** and then **6 of 6 unchanged**, and the error count moving 75 → 74 → 56.
+Returning nothing was the correct answer to an impossible request; the files it was
+handed were not the ones that were wrong.
+
+*Changed:* when `prisma generate` fails, the schema becomes the repair's target and
+carries the Prisma validation error, instead of two rounds spent on `.ts` files that
+only suffer the cascade.
 
 ---
 
