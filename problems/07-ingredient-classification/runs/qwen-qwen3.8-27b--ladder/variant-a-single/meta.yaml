@@ -1,0 +1,182 @@
+{
+  "model": "qwen/qwen3.8-27b",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "07-ingredient-classification",
+  "variant": "variant-a",
+  "date": "2026-09-10T06:40:32+00:00",
+  "wall_seconds": 1178,
+  "wall_minutes": 19.6,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": null,
+  "runner": "api",
+  "spec_source": "ladder",
+  "shape": "single",
+  "asked_again_after_empty": true,
+  "manifest": {
+    "declared": 0,
+    "built": 0,
+    "truncated": false
+  },
+  "requests": 2,
+  "resumed": false,
+  "requests_this_invocation": 2,
+  "tokens": {
+    "prompt_total": 2487,
+    "completion_total": 42696,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 42696,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 48.9,
+    "output_tokens_per_second_overall": 36.4,
+    "generation_seconds": 1174,
+    "model_load_seconds": 0,
+    "overhead_seconds": 3
+  },
+  "revisions": {
+    "self_repairs": 0,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": false,
+    "passed": null,
+    "repairs": 0,
+    "skipped": "no TypeScript in the workspace",
+    "gate_scaffold_added": [
+      "package.json",
+      "tsconfig.json"
+    ]
+  },
+  "tests": {
+    "ran": false
+  },
+  "failures": [
+    {
+      "phase": "solution",
+      "exit": 6,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "solution-retry",
+      "exit": 6,
+      "reason": "runner exited non-zero"
+    },
+    {
+      "phase": "solution",
+      "exit": 6,
+      "reason": "two requests, neither wrote a file. The replies are in steps/ and are reasoning that ran out of budget before answering."
+    }
+  ],
+  "phases": [
+    {
+      "label": "solution",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 0,
+      "completion_tokens": 1,
+      "reasoning_chars": 52519,
+      "content_chars": 0,
+      "finish_reason": "error",
+      "output_ceiling_hit": false,
+      "wall_seconds": 301.4,
+      "server_seconds": 301.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 0.0,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/ladder/L2-spec.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0,
+      "upstream_cost_usd": 3.2e-06,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789021255-i38435iYvA6BQFqgENNk",
+      "upstream_provider": "Cloudflare",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 6,
+      "runner": "api"
+    },
+    {
+      "label": "solution-retry",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 2487,
+      "completion_tokens": 42695,
+      "reasoning_chars": 166593,
+      "content_chars": 0,
+      "finish_reason": "error",
+      "output_ceiling_hit": false,
+      "wall_seconds": 873.1,
+      "server_seconds": 873.1,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 48.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/07-ingredient-classification/ladder/L2-spec.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0,
+      "upstream_cost_usd": 0.109404468,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789021557-r0iu4FsQYCbS6PEPwPmn",
+      "upstream_provider": "Reka",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 6,
+      "runner": "api"
+    }
+  ]
+}

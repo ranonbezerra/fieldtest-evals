@@ -216,7 +216,7 @@ Verdicts are a conjunction: one must-have short fails the run, and so does a bui
 
 ### qwen-qwen3.8-27b
 
-Verdicts are a conjunction: one must-have short fails the run, and so does a build that will not complete. — **99/139 must-haves met (71%)**
+Verdicts are a conjunction: one must-have short fails the run, and so does a build that will not complete. — **104/145 must-haves met (71%)**
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
@@ -225,7 +225,7 @@ Verdicts are a conjunction: one must-have short fails the run, and so does a bui
 | 03 | read model projection | ✗<br><sub>2/6 · M1, M2, M3, M5</sub> | – | – | ✗<br><sub>4/6 · M2</sub> | An invalid relation in its own schema stops the client from generating, and hides that half its services call methods nobody wrote. |
 | 04 | grounded llm product | ~<br><sub>6/6</sub> | – | – | ✗<br><sub>6/6 · builds ✗</sub> | The best run of the campaign: eleven files, one request, clean compile, and every must-have met — undone only by a test that disagrees with the code beside it about a capital letter. |
 | 05 | onchain anchoring | ~<br><sub>6/6</sub> | – | – | ✗<br><sub>5/6</sub> | Fifteen files, one request, clean compile, six of six must-haves, and a recovery design that is the best engineering in either campaign — with a red suite that is entirely the tests' fault. |
-| 06 | multi tenant isolation | ✗<br><sub>5/6 · M5</sub> | – | – | – | The application is right and the only thing that fails is the test file that was supposed to prove it — which, on this problem, is the point. |
+| 06 | multi tenant isolation | ✗<br><sub>5/6 · M5</sub> | – | – | ✗<br><sub>5/6</sub> | The application is right and the only thing that fails is the test file that was supposed to prove it — which, on this problem, is the point. |
 | 07 | ingredient classification | ✗<br><sub>5/6</sub> | – | – | – | A carefully versioned design that cannot be built, because two relation fields point at a model that never learned it was pointed at. |
 | 08 | infra debug | ✓<br><sub>6/6</sub> | – | – | – | Four symptoms, three faults, no security disabled, and the one piece of reasoning the reference does not ask for: that a failing readiness probe empties a Service's endpoints too. |
 | 09 | feature in conventions | ✗<br><sub>3/6 · M2</sub> | – | – | – | On the one problem that is purely about obeying a convention placed in front of it, it obeyed for seven files and then stopped. |
