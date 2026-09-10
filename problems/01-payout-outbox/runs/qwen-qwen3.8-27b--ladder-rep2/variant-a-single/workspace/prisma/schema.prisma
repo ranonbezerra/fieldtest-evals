@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Seller account balances in minor units (bigint, never floats).
+// Available funds = settled - held.
+//   settled: confirmed balance; moves only on confirmed settlement or on a
+//            proven no-settlement release
+//   held:    funds reserved by in-flight payouts
+model Account {
+  id        String   @id
+  settled   BigInt   @default(0)
+  held      BigInt   @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payouts Payout[]
+
+  @@map("accounts")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+model Payout {
+  id                 String       @id @default(uuid())
+  accountId          String       @map("account_id")
+  amount             BigInt
+  destinationAddress String       @map("destination_address")
+  idempotencyKey     String       @unique @map("idempotency_key")
+  status             PayoutStatus @default(CREATED)
+  txHash             String?      @map("tx_hash")
+  lastError          String?      @map("last_error")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  completedAt        DateTime?    @map("completed_at")
+
+  account       Account         @relation(fields: [accountId], references: [id])
+  message       OutboxMessage?
+  ledgerEntries LedgerEntry[]
+
+  @@index([accountId, status])
+  @@map("payouts")
+}
+
+enum MessageStatus {
+  OPEN
+  PROCESSED
+}
+
+// Outbox: one row per payout, written in the same transaction as the
+// reservation. A polling worker drains OPEN rows; delivery is at-least-once.
+model OutboxMessage {
+  id          BigInt        @id @default(autoincrement())
+  payoutId    String        @unique @map("payout_id")
+  status      MessageStatus @default(OPEN)
+  attempts    Int           @default(0)
+  lastError   String?       @map("last_error")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  processedAt DateTime?     @map("processed_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@map("outbox_messages")
+}
+
+// Double-entry ledger: every funds movement writes two legs that sum to zero.
+// `accountId` is a seller account id or a system account (system:in_flight,
+// system:outflow).
+model LedgerEntry {
+  id        BigInt   @id @default(autoincrement())
+  accountId String   @map("account_id")
+  delta     BigInt
+  payoutId  String   @map("payout_id")
+  code      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@index([accountId, id])
+  @@index([payoutId])
+  @@map("ledger_entries")
+}
