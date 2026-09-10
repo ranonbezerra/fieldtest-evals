@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  created
+  processing
+  sent
+  completed
+  failed
+  needs_review
+}
+
+enum MessageStatus {
+  pending
+  processing
+  processed
+}
+
+model Account {
+  id              String   @id @default(uuid()) @map("id")
+  settledBalance  BigInt   @default(0) @map("settled_balance")
+  reservedBalance BigInt   @default(0) @map("reserved_balance")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  payouts     Payout[]
+  ledgerLines LedgerLine[]
+
+  @@map("account")
+}
+
+model Payout {
+  id                 String       @id @default(uuid()) @map("id")
+  accountId          String       @map("account_id")
+  idempotencyKey     String       @map("idempotency_key")
+  amount             BigInt
+  destinationAddress String       @map("destination_address")
+  status             PayoutStatus @default(created)
+  txHash             String?      @map("tx_hash")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @default(now()) @updatedAt @map("updated_at")
+  completedAt        DateTime?    @map("completed_at")
+
+  account     Account       @relation(fields: [accountId], references: [id])
+  ledgerEntry LedgerEntry[]
+
+  @@unique([accountId, idempotencyKey])
+  @@index([accountId])
+  @@map("payout")
+}
+
+model Message {
+  id            String        @id @default(uuid()) @map("id")
+  type          String
+  payload       Json
+  status        MessageStatus @default(pending)
+  attempts      Int           @default(0)
+  nextAttemptAt DateTime      @default(now()) @map("next_attempt_at")
+  processedAt   DateTime?     @map("processed_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  @@index([status, nextAttemptAt])
+  @@map("message")
+}
+
+model LedgerEntry {
+  id        String   @id @default(uuid()) @map("id")
+  payoutId  String   @map("payout_id")
+  kind      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payout Payout       @relation(fields: [payoutId], references: [id])
+  lines  LedgerLine[]
+
+  @@index([payoutId])
+  @@map("ledger_entry")
+}
+
+model LedgerLine {
+  id          String  @id @default(uuid()) @map("id")
+  entryId     String  @map("entry_id")
+  accountName String  @map("account_name")
+  accountId   String? @map("account_id")
+  direction   String
+  amount      BigInt
+
+  entry   LedgerEntry @relation(fields: [entryId], references: [id])
+  account Account?    @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@map("ledger_line")
+}

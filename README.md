@@ -216,17 +216,17 @@ Verdicts are a conjunction: one must-have short fails the run, and so does a bui
 
 ### qwen-qwen3.8-27b
 
-Verdicts are a conjunction: one must-have short fails the run, and so does a build that will not complete. — **104/145 must-haves met (71%)**
+Verdicts are a conjunction: one must-have short fails the run, and so does a build that will not complete. — **67/101 must-haves met (66%)**
 
 | # | Problem | A | B | C | L2 | What you can hand it |
 |---|---|:-:|:-:|:-:|:-:|---|
-| 01 | payout outbox | ✗<br><sub>7/8 · M3</sub> | – | – | ✗<br><sub>8/8 · builds ✗</sub> | Seven of eight must-haves, the strongest reservation in the campaign, and the outbox message lands in its own transaction. |
-| 02 | reconciliation resend | ✗<br><sub>6/6 · builds ✗</sub> | – | – | ? | Chose a compiler setting its own imports violate, in the same reply that wrote both. |
-| 03 | read model projection | ✗<br><sub>2/6 · M1, M2, M3, M5</sub> | – | – | ✗<br><sub>4/6 · M2</sub> | An invalid relation in its own schema stops the client from generating, and hides that half its services call methods nobody wrote. |
-| 04 | grounded llm product | ~<br><sub>6/6</sub> | – | – | ✗<br><sub>6/6 · builds ✗</sub> | The best run of the campaign: eleven files, one request, clean compile, and every must-have met — undone only by a test that disagrees with the code beside it about a capital letter. |
-| 05 | onchain anchoring | ~<br><sub>6/6</sub> | – | – | ✗<br><sub>5/6</sub> | Fifteen files, one request, clean compile, six of six must-haves, and a recovery design that is the best engineering in either campaign — with a red suite that is entirely the tests' fault. |
-| 06 | multi tenant isolation | ✗<br><sub>5/6 · M5</sub> | – | – | ✗<br><sub>5/6</sub> | The application is right and the only thing that fails is the test file that was supposed to prove it — which, on this problem, is the point. |
-| 07 | ingredient classification | ✗<br><sub>5/6</sub> | – | – | – | A carefully versioned design that cannot be built, because two relation fields point at a model that never learned it was pointed at. |
+| 01 | payout outbox | ✗<br><sub>8/8 · builds ✗</sub> | – | – | – | Eight of eight must-haves — including the one it got wrong when it designed this itself — and it still cannot compile against its own schema. |
+| 02 | reconciliation resend | ? | – | – | – | Void. Both attempts were truncated upstream; the run measures a backend's output ceiling, not the model. |
+| 03 | read model projection | ✗<br><sub>4/6 · M2</sub> | – | – | – | The transaction boundary both earlier conditions missed is here and correct — and the rebuild routine is called by name and written nowhere. |
+| 04 | grounded llm product | ✗<br><sub>6/6 · builds ✗</sub> | – | – | – | Six of six, including the redactor that defeated gpt-oss — and a service that calls its own redactor with the wrong arguments. |
+| 05 | onchain anchoring | ✗<br><sub>5/6</sub> | – | – | – | The best state model this problem has received, wired to three worker classes that were never written. |
+| 06 | multi tenant isolation | ✗<br><sub>5/6</sub> | – | – | – | It wrote every leak test the issue asked for, and then could not run them, for the same reason gpt-oss could not on this same problem. |
+| 07 | ingredient classification | ? | – | – | – | Void. Cloudflare returned one token and an error; Reka burned 42,695 tokens and returned nothing. |
 | 08 | infra debug | ✓<br><sub>6/6</sub> | – | – | – | Four symptoms, three faults, no security disabled, and the one piece of reasoning the reference does not ask for: that a failing readiness probe empties a Service's endpoints too. |
 | 09 | feature in conventions | ✗<br><sub>3/6 · M2</sub> | – | – | – | On the one problem that is purely about obeying a convention placed in front of it, it obeyed for seven files and then stopped. |
 | 10 | adapt existing screen | ✗<br><sub>2/6 · M1, M2, M6</sub> | – | – | – | The bar is good work. It is bolted to an application the model wrote from scratch beside the one it was asked to edit, and the shared types it rewrote on the way took the orders feature down with them. |

@@ -116,3 +116,4 @@ Running.
 | 2026-09-10 05:29 | 05-onchain-anchoring | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-10 06:20 | 06-multi-tenant-isolation | a | **no meta** (exit 0) | – | – | – | – | – | – |
 | 2026-09-10 06:40 | 07-ingredient-classification | a | **no meta** (exit 0) | – | – | – | – | – | – |
+| 2026-09-10 10:40 | 01-payout-outbox | a | **no meta** (exit 0) | – | – | – | – | – | – |
