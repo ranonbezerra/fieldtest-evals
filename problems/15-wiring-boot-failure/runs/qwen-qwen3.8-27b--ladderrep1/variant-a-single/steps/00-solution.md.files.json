@@ -1,0 +1,9 @@
+[
+  "DIAGNOSIS.md",
+  "src/jobs/jobs.module.ts",
+  "src/jobs/queues.ts",
+  "src/notifications/notifications.module.ts",
+  "src/notifications/notifications.service.ts",
+  "src/users/users.module.ts",
+  "test/app-context.spec.ts"
+]
