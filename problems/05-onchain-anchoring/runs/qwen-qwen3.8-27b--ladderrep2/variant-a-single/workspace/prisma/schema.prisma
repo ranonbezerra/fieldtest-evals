@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnchorStatus {
+  PREPARED
+  BROADCAST_SENT
+  BROADCAST_UNKNOWN
+  CONFIRMED
+  FAILED
+}
+
+model Anchor {
+  id                String       @id @default(cuid())
+  documentId        String       @map("document_id")
+  version           Int
+  contentHash       String       @map("content_hash")
+  txId              String       @unique @map("tx_id")
+  signedTx          String       @map("signed_tx")
+  status            AnchorStatus @default(PREPARED)
+  blockNumber       Int?         @map("block_number")
+  blockHash         String?      @map("block_hash")
+  broadcastAttempts Int          @default(0) @map("broadcast_attempts")
+  broadcastAt       DateTime?    @map("broadcast_at")
+  lastError         String?      @map("last_error")
+  confirmedAt       DateTime?    @map("confirmed_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Exactly one anchor per (document, version) — enforced by the database,
+  // not by application logic.
+  @@unique([documentId, version], map: "uq_anchors_document_version")
+  @@map("anchors")
+}
