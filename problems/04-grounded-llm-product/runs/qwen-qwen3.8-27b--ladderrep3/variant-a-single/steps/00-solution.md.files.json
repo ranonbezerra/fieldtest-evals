@@ -1,0 +1,17 @@
+[
+  "package.json",
+  "src/app.module.ts",
+  "src/eval/eval-harness.ts",
+  "src/eval/golden-scenarios.ts",
+  "src/eval/judges.ts",
+  "src/guide/grounding.ts",
+  "src/guide/guide.controller.ts",
+  "src/guide/guide.module.ts",
+  "src/guide/guide.service.ts",
+  "src/guide/llm.client.ts",
+  "src/guide/redaction.ts",
+  "src/main.ts",
+  "test/eval.spec.ts",
+  "test/guide.spec.ts",
+  "tsconfig.json"
+]
