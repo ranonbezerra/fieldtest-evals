@@ -1,0 +1,56 @@
+$ pnpm install -> 0
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +201
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 201, reused 169, downloaded 28, added 197
+Progress: resolved 201, reused 169, downloaded 31, added 200
+Progress: resolved 201, reused 169, downloaded 32, added 201, done
+
+dependencies:
++ @nestjs/common 10.4.22
++ @nestjs/core 10.4.22
++ @nestjs/platform-express 10.4.22
++ drizzle-orm 0.33.0
++ pg 8.23.0
++ reflect-metadata 0.2.2
++ rxjs 7.8.2
++ zod 3.25.76
+
+devDependencies:
++ @types/express 4.17.25
++ @types/node 22.20.1
++ @types/pg 8.23.1
++ drizzle-kit 0.24.2
++ typescript 5.9.3
++ vitest 2.1.9
+
+Done in 2.3s using pnpm v10.28.2
+
+
+$ tsc --noEmit (attempt 0) -> 2
+drizzle/schema.ts(44,3): error TS2345: Argument of type '(t: { id: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; tripId: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; userId: ExtraConfigColumn<...>; role: ExtraConfigColumn<...>; createdAt: ExtraConfigColumn<...>; updatedAt: ExtraConfigColumn<...>; }) => UniqueConstraintBuilder[]' is not assignable to parameter of type '(self: { id: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; tripId: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; userId: ExtraConfigColumn<...>; role: ExtraConfigColumn<...>; createdAt: ExtraConfigColumn<...>; updatedAt: ExtraConfigColumn<...>; }) => PgTableExtraConfig'.
+  Type 'UniqueConstraintBuilder[]' is not assignable to type 'PgTableExtraConfig'.
+    Index signature for type 'string' is missing in type 'UniqueConstraintBuilder[]'.
+drizzle/schema.ts(59,3): error TS2345: Argument of type '(t: { id: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; tripId: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; ... 5 more ...; updatedAt: ExtraConfigColumn<...>; }) => IndexBuilder[]' is not assignable to parameter of type '(self: { id: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; tripId: ExtraConfigColumn<ColumnBaseConfig<ColumnDataType, string>>; ... 5 more ...; updatedAt: ExtraConfigColumn<...>; }) => PgTableExtraConfig'.
+  Type 'IndexBuilder[]' is not assignable to type 'PgTableExtraConfig'.
+    Index signature for type 'string' is missing in type 'IndexBuilder[]'.
+src/modules/trips/trips.service.spec.ts(105,9): error TS2353: Object literal may only specify known properties, and 'updatedAt' does not exist in type 'MemberRow'.
+
+
+$ tsc --noEmit (attempt 1) -> 0
+
+
+$ vitest run -> 0
+
+ RUN  v2.1.9 /Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/09-feature-in-conventions/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace
+
+ ✓ src/modules/users/users.service.spec.ts (3 tests) 2ms
+ ✓ src/modules/trips/trips.service.spec.ts (14 tests) 4ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  18:27:09
+   Duration  631ms (transform 796ms, setup 0ms, collect 955ms, tests 5ms, environment 0ms, prepare 61ms)
+
+
