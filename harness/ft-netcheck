@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""List runs whose result is not a sample of the model, because the network was.
+
+A dropped connection leaves the socket open and silent; ft-run then dies at the
+request ceiling without ever writing its usage record. So the signature of a network
+casualty is a step file with no `.usage.json` beside it -- not anything in the usage
+record, which is exactly what is missing.
+
+The distinction that matters is not whether a request died but whether the run
+recovered from it. ft-go answers a dead solution with one retry, and when that retry
+returns the sample is clean: the model still produced the whole thing in one request.
+A run is a casualty only when no successful attempt follows the dead one, because the
+repair phase then works from nothing and writes whatever it likes -- on 14 it wrote
+source files for a problem whose only deliverable is a review.
+
+Prints one `problem<TAB>tag` line per casualty, so a driver can consume it.
+"""
+import json, os, sys, glob
+from collections import defaultdict
+
+def attempts(steps_dir):
+    """Every solution attempt in chronological order, as (name, ok).
+
+    Sorted by mtime, not by name: `00-solution-retry.md` sorts before
+    `00-solution.md` alphabetically, which reverses the one ordering the caller
+    depends on.
+
+    An attempt counts as good only if it also extracted a file. A reply can finish
+    cleanly and still leave the run with nothing -- prose the extractor could not
+    parse, a fence that never closed -- and that is exactly the case ft-go answers
+    with a retry, so treating it as good would report the casualty as recovered.
+    """
+    out = []
+    files = glob.glob(os.path.join(steps_dir, "*.md"))
+    for md in sorted(files, key=lambda q: os.path.getmtime(q)):
+        base = os.path.basename(md)
+        if not base.startswith("00-solution"):
+            continue
+        u = md + ".usage.json"
+        if not os.path.exists(u):
+            out.append((base, False))          # died before recording: the network
+            continue
+        try:
+            d = json.load(open(u))
+        except Exception:
+            out.append((base, False)); continue
+        cc = d.get("content_chars") or 0
+        fj = md + ".files.json"
+        try:
+            nfiles = len(json.load(open(fj))) if os.path.exists(fj) else 0
+        except Exception:
+            nfiles = 0
+        ok = d.get("finish_reason") == "stop" and cc > 0 and nfiles > 0
+        out.append((base, ok))
+    return out
+
+def main(patterns):
+    verbose = os.environ.get("FT_NETCHECK_VERBOSE")
+    casualties = []
+    for pat in patterns:
+        for steps in sorted(glob.glob(os.path.join(pat, "steps"))):
+            var = os.path.dirname(steps)
+            tag = os.path.basename(os.path.dirname(var))
+            prob = var.split(os.sep)[1]
+            att = attempts(steps)
+            if not att or all(ok for _, ok in att):
+                continue
+            recovered = any(ok for _, ok in att)
+            if verbose:
+                marks = " ".join(f"{n}{'✓' if ok else '✗'}" for n, ok in att)
+                print(f"# {prob:32s} {tag:34s} {marks}"
+                      f"  -> {'recuperou' if recovered else 'PERDIDA'}", file=sys.stderr)
+            if not recovered:
+                casualties.append((prob, tag))
+    for prob, tag in casualties:
+        print(f"{prob}\t{tag}")
+    return 0
+
+if __name__ == "__main__":
+    pats = sys.argv[1:] or ["problems/*/runs/*/*"]
+    sys.exit(main(pats))
