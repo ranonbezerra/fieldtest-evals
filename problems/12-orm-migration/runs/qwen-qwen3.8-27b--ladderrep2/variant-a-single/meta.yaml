@@ -1,0 +1,183 @@
+{
+  "model": "qwen/qwen3.8-27b",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "12-orm-migration",
+  "variant": "variant-a",
+  "date": "2026-09-11T07:59:03+00:00",
+  "wall_seconds": 983,
+  "wall_minutes": 16.4,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": {
+    "total_usd": 0.1794,
+    "per_1k_output_usd": 0.0022
+  },
+  "runner": "api",
+  "spec_source": "ladder",
+  "shape": "single",
+  "asked_again_after_empty": false,
+  "manifest": {
+    "declared": 15,
+    "built": 0,
+    "truncated": true
+  },
+  "requests": 2,
+  "resumed": false,
+  "requests_this_invocation": 2,
+  "tokens": {
+    "prompt_total": 8716,
+    "completion_total": 80593,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 80593,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 74.7,
+    "output_tokens_per_second_overall": 82.6,
+    "generation_seconds": 975,
+    "model_load_seconds": 0,
+    "overhead_seconds": 7
+  },
+  "revisions": {
+    "self_repairs": 1,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": true,
+    "repairs": 1,
+    "skipped": null,
+    "gate_scaffold_added": []
+  },
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failed": 2,
+    "passed": 19,
+    "total": 21,
+    "failing": [
+      "behaviour the original suite never asserted > getInvoice on a missing invoice rejects with code invoice_not_found",
+      "behaviour the original suite never asserted > issue() on a missing invoice 404s with invoice_not_found (the P2025 path)"
+    ]
+  },
+  "failures": [],
+  "phases": [
+    {
+      "label": "solution",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 7454,
+      "completion_tokens": 80057,
+      "reasoning_chars": 251848,
+      "content_chars": 48138,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 967.2,
+      "server_seconds": 967.2,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 82.8,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/ladder/L2-spec.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/package.json",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/prisma/schema.prisma",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/prisma/seed.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/src/billing/billing.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/src/billing/billing.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/src/billing/prisma.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/src/common/errors.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/src/common/serializer.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/test/billing.spec.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/tsconfig.json"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.17791436,
+      "upstream_cost_usd": 0.17791436,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789112561-LqZY5dEsA7hZRfm8j3aW",
+      "upstream_provider": "Parasail",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair-schema",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 1262,
+      "completion_tokens": 536,
+      "reasoning_chars": 1400,
+      "content_chars": 580,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 8.1,
+      "server_seconds": 8.1,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 66.6,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/12-orm-migration/variants/variant-a.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.00148208,
+      "upstream_cost_usd": 0.00148208,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789113532-VBNrqWBxt9m4LGr17fWn",
+      "upstream_provider": "Parasail",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+[
+  "MIGRATION_NOTES.md",
+  "drizzle.config.ts",
+  "drizzle/migrations/0000_init.sql",
+  "drizzle/migrations/meta/0000_snapshot.json",
+  "drizzle/migrations/meta/_journal.json",
+  "package.json",
+  "src/billing/billing.client.ts",
+  "src/billing/billing.repository.ts",
+  "src/billing/billing.service.ts",
+  "src/billing/prisma.ts",
+  "src/common/errors.ts",
+  "src/db/index.ts",
+  "src/db/schema.ts",
+  "test/migration.spec.ts",
+  "tsconfig.json"
+]

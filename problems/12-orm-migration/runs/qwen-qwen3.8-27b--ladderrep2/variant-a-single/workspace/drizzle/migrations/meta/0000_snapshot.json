@@ -1,0 +1,78 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "id": "6f1c9a2e-4b7d-4e3a-9c5f-8a2d1e0b7c4f",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "accounts": {
+      "name": "accounts",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "currency": { "name": "currency", "type": "char(3)", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": 3 },
+        "invoice_count": { "name": "invoice_count", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": true, "default": { "kind": "sql", "value": "0" }, "isUnique": false, "unique": false, "typeLength": null },
+        "created_at": { "name": "created_at", "type": "timestamp(6) with time zone", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": true, "default": { "kind": "sql", "value": "now()" }, "isUnique": false, "unique": false, "typeLength": null }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "invoices": {
+      "name": "invoices",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "account_id": { "name": "account_id", "type": "uuid", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "number": { "name": "number", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": true, "unique": true, "typeLength": null },
+        "status": { "name": "status", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": true, "default": { "kind": "sql", "value": "'draft'" }, "isUnique": false, "unique": false, "typeLength": null },
+        "total_minor": { "name": "total_minor", "type": "bigint", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "issued_at": { "name": "issued_at", "type": "timestamp(6) with time zone", "primaryKey": false, "notNull": false, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "created_at": { "name": "created_at", "type": "timestamp(6) with time zone", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": true, "default": { "kind": "sql", "value": "now()" }, "isUnique": false, "unique": false, "typeLength": null }
+      },
+      "indexes": {
+        "invoices_account_id_idx": { "name": "invoices_account_id_idx", "columns": ["account_id"], "isUnique": false, "concurrently": false, "method": "btree", "with": {} },
+        "invoices_number_key": { "name": "invoices_number_key", "columns": ["number"], "isUnique": true, "concurrently": false, "method": "btree", "with": {} }
+      },
+      "foreignKeys": {
+        "invoices_account_id_accounts_id_fkey": { "name": "invoices_account_id_accounts_id_fkey", "fromTable": ["account_id"], "toTable": ["id"], "toTableSchema": "public", "onDelete": "no action", "onUpdate": "no action" }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "invoice_line_items": {
+      "name": "invoice_line_items",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "invoice_id": { "name": "invoice_id", "type": "uuid", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "position": { "name": "position", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "description": { "name": "description", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "quantity": { "name": "quantity", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null },
+        "unit_price_minor": { "name": "unit_price_minor", "type": "bigint", "primaryKey": false, "notNull": true, "autoincrement": false, "hasDefault": false, "isUnique": false, "unique": false, "typeLength": null }
+      },
+      "indexes": {
+        "invoice_line_items_invoice_id_idx": { "name": "invoice_line_items_invoice_id_idx", "columns": ["invoice_id"], "isUnique": false, "concurrently": false, "method": "btree", "with": {} }
+      },
+      "foreignKeys": {
+        "invoice_line_items_invoice_id_invoices_id_fkey": { "name": "invoice_line_items_invoice_id_invoices_id_fkey", "fromTable": ["invoice_id"], "toTable": ["id"], "toTableSchema": "public", "onDelete": "cascade", "onUpdate": "no action" }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "enums": {},
+  "_meta": { "schemas": {}, "tables": {}, "columns": {} },
+  "internal": {
+    "indexes": {
+      "invoices_account_id_idx": { "table": "invoices" },
+      "invoices_number_key": { "table": "invoices" },
+      "invoice_line_items_invoice_id_idx": { "table": "invoice_line_items" }
+    },
+    "foreignKeys": {
+      "invoices_account_id_accounts_id_fkey": { "table": "invoices" },
+      "invoice_line_items_invoice_id_invoices_id_fkey": { "table": "invoice_line_items" }
+    }
+  }
+}
