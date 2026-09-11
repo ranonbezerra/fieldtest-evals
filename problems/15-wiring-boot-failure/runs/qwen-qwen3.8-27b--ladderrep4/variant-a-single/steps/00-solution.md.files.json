@@ -1,0 +1,10 @@
+[
+  "DIAGNOSIS.md",
+  "package.json",
+  "scripts/wiring-check.mjs",
+  "src/jobs/jobs.module.ts",
+  "src/jobs/queues.constants.ts",
+  "src/notifications/notifications.module.ts",
+  "src/notifications/notifications.service.ts",
+  "src/users/users.module.ts"
+]
