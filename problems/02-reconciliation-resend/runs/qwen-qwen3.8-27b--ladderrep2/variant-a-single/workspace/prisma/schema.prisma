@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// State machine for a supplier payout order:
+//
+//   pending   -> in_flight (a send was claimed; attempt count stamped)
+//   in_flight -> accepted | unknown | rejected (classified bank outcome)
+//   accepted/unknown -> settled (statement matched by txid)
+//   accepted/unknown -> in_flight (reconcile proved absence past the
+//                     publishing lag -> resend with the same derived txid)
+//   accepted/unknown -> parked (attempts exhausted; manual review)
+//
+// Terminal for automation: settled, rejected, parked. No code path ever
+// leaves parked or rejected — the outcome may still be unknown, and the
+// safe direction is to stop and escalate.
+model PayoutOrder {
+  id            String    @id @default(uuid()) @map("id")
+  supplierKey   String    @map("supplier_key")
+  /// Money in minor units, integers only, end to end.
+  amount        BigInt    @map("amount")
+  /// UTC calendar date the payment is effective for.
+  effectiveDate DateTime  @db.Date @map("effective_date")
+  status        String    @default("pending") @map("status")
+  /// Number of bank.send calls made for this order. Capped at 5.
+  attemptCount  Int       @default(0) @map("attempt_count")
+  /// Deterministically derived from order id + effective date (never random).
+  txid          String    @unique @map("txid")
+  /// Classified outcome of the last bank.send: accepted | duplicate |
+  /// transient | permanent_rejection | attempts_exhausted.
+  lastOutcome   String?   @map("last_outcome")
+  /// When the last attempt was stamped; absence is only proof past this
+  /// plus the publishing lag.
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  settledAt     DateTime? @map("settled_at")
+  note          String?   @map("note")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([status], map: "payout_orders_status_idx")
+  @@map("payout_orders")
+}
