@@ -1,0 +1,5 @@
+[
+  "src/billing/client.ts",
+  "src/billing/drizzle-client.ts",
+  "src/billing/schema.ts"
+]

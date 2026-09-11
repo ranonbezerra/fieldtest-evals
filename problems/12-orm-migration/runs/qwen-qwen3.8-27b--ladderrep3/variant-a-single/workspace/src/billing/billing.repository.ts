@@ -1,23 +1,24 @@
-import type { AccountRow, InvoiceRow, LineItemRow, PrismaClient } from './prisma.js';
+import type { BillingClient } from './client.js';
+import type { AccountRow, InvoiceRow, LineItemRow } from './rows.js';
 
 export class BillingRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly db: BillingClient) {}
 
   /** Returns null when the account does not exist. Callers branch on that. */
   async findAccount(id: string): Promise<AccountRow | null> {
-    return this.prisma.account.findUnique({ where: { id } });
+    return this.db.account.findUnique({ where: { id } });
   }
 
   async findInvoice(id: string): Promise<InvoiceRow | null> {
-    return this.prisma.invoice.findUnique({ where: { id } });
+    return this.db.invoice.findUnique({ where: { id } });
   }
 
   async findLineItems(invoiceId: string): Promise<LineItemRow[]> {
-    return this.prisma.invoiceLineItem.findMany({ where: { invoiceId } });
+    return this.db.invoiceLineItem.findMany({ where: { invoiceId } });
   }
 
   async listInvoices(accountId: string): Promise<InvoiceRow[]> {
-    return this.prisma.invoice.findMany({ where: { accountId } });
+    return this.db.invoice.findMany({ where: { accountId } });
   }
 
   /**
@@ -27,7 +28,7 @@ export class BillingRepository {
     invoice: Omit<InvoiceRow, 'createdAt'>;
     lineItems: LineItemRow[];
   }): Promise<InvoiceRow> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.db.$transaction(async (tx) => {
       const invoice = await tx.invoice.create({ data: input.invoice });
       if (input.lineItems.length > 0) {
         await tx.invoiceLineItem.createMany({ data: input.lineItems });
@@ -41,7 +42,7 @@ export class BillingRepository {
   }
 
   async markIssued(id: string, issuedAt: Date): Promise<InvoiceRow> {
-    return this.prisma.invoice.update({
+    return this.db.invoice.update({
       where: { id },
       data: { status: 'issued', issuedAt },
     });

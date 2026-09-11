@@ -1,32 +1,11 @@
-// Trimmed to what this service uses, so the fixture typechecks without the
-// generated client. The real client is `@prisma/client`.
-export interface AccountRow {
-  id: string;
-  name: string;
-  currency: string;
-  invoiceCount: number;
-  createdAt: Date;
-}
+import type { AccountRow, InvoiceRow, LineItemRow } from './rows.js';
 
-export interface InvoiceRow {
-  id: string;
-  accountId: string;
-  number: string;
-  status: string;
-  totalMinor: bigint;
-  issuedAt: Date | null;
-  createdAt: Date;
-}
-
-export interface LineItemRow {
-  id: string;
-  invoiceId: string;
-  position: number;
-  description: string;
-  quantity: number;
-  unitPriceMinor: bigint;
-}
-
+/**
+ * The transactional subset of the data client: what a $transaction callback
+ * receives. Kept structurally identical to the interface the old data client
+ * exposed, so the existing (unmodifiable) test suite's in-memory fake remains
+ * a valid implementation.
+ */
 export interface Tx {
   invoice: {
     create(a: { data: Omit<InvoiceRow, 'createdAt'> }): Promise<InvoiceRow>;
@@ -42,7 +21,7 @@ export interface Tx {
   };
 }
 
-export interface PrismaClient extends Tx {
+export interface BillingClient extends Tx {
   account: Tx['account'] & {
     findUnique(a: { where: { id: string } }): Promise<AccountRow | null>;
   };
