@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tenant-scoped models carry tenantId in their composite primary key, so
+// "append tenantId to the where clause" is a valid unique filter on every
+// operation (findUnique, update, delete), and two tenants may hold rows with
+// the same id without collision.
+model Tenant {
+  id           String   @id @default(uuid())
+  domain       String   @unique
+  name         String
+  branding     Json
+  featureFlags Json     @map("feature_flags")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  customers Customer[]
+  plans     Plan[]
+  orders    Order[]
+
+  @@map("tenants")
+}
+
+model Customer {
+  id        String   @default(uuid())
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email     String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  orders Order[]
+
+  @@id([tenantId, id])
+  @@unique([tenantId, email])
+  @@map("customers")
+}
+
+model Plan {
+  id         String   @default(uuid())
+  tenantId   String   @map("tenant_id")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  slug       String
+  priceCents Int      @map("price_cents")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  orders Order[]
+
+  @@id([tenantId, id])
+  @@unique([tenantId, slug])
+  @@map("plans")
+}
+
+model Order {
+  id         String   @default(uuid())
+  tenantId   String   @map("tenant_id")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [tenantId, customerId], references: [tenantId, id], onDelete: Cascade)
+  planId     String   @map("plan_id")
+  plan       Plan     @relation(fields: [tenantId, planId], references: [tenantId, id], onDelete: Restrict)
+  status     String   @default("pending")
+  totalCents Int      @default(0) @map("total_cents")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@id([tenantId, id])
+  @@map("orders")
+}

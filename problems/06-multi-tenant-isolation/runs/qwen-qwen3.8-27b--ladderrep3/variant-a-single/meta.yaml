@@ -1,0 +1,170 @@
+{
+  "model": "qwen/qwen3.8-27b",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "06-multi-tenant-isolation",
+  "variant": "variant-a",
+  "date": "2026-09-11T10:22:56+00:00",
+  "wall_seconds": 780,
+  "wall_minutes": 13.0,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": {
+    "total_usd": 0.1814,
+    "per_1k_output_usd": 0.0022
+  },
+  "runner": "api",
+  "spec_source": "ladder",
+  "shape": "single",
+  "asked_again_after_empty": false,
+  "manifest": {
+    "declared": 30,
+    "built": 0,
+    "truncated": true
+  },
+  "requests": 2,
+  "resumed": false,
+  "requests_this_invocation": 2,
+  "tokens": {
+    "prompt_total": 6199,
+    "completion_total": 81760,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 81760,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 108.7,
+    "output_tokens_per_second_overall": 106.2,
+    "generation_seconds": 770,
+    "model_load_seconds": 0,
+    "overhead_seconds": 10
+  },
+  "revisions": {
+    "self_repairs": 1,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": true,
+    "repairs": 1,
+    "skipped": null,
+    "gate_scaffold_added": []
+  },
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failing": []
+  },
+  "failures": [],
+  "phases": [
+    {
+      "label": "solution",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 2181,
+      "completion_tokens": 78902,
+      "reasoning_chars": 251731,
+      "content_chars": 46397,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 744.4,
+      "server_seconds": 744.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 106.0,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/ladder/L2-spec.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.17410784,
+      "upstream_cost_usd": 0.17410784,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789121396-RJz8P0pdWCMfGCfUEs7J",
+      "upstream_provider": "Parasail",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-set",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 4018,
+      "completion_tokens": 2858,
+      "reasoning_chars": 6562,
+      "content_chars": 3784,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 25.6,
+      "server_seconds": 25.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 111.4,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/prisma/schema.prisma",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/src/customers/customers.repository.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/06-multi-tenant-isolation/runs/qwen-qwen3.8-27b--ladder/variant-a-single/workspace/src/errors/error-mapping.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.00725192,
+      "upstream_cost_usd": 0.00725192,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789122148-Zieu0I8spDq1aPnvcq6L",
+      "upstream_provider": "Parasail",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+[
+  "src/customers/customers.repository.ts",
+  "src/errors/error-mapping.ts"
+]
