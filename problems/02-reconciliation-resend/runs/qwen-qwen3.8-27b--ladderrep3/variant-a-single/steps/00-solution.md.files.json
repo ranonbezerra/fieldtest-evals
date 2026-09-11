@@ -1,0 +1,16 @@
+[
+  "prisma/migrations/20250115000000_init/migration.sql",
+  "prisma/migrations/migration_lock.txt",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/main.ts",
+  "src/payout/bank.client.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.processor.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "test/payout.processor.spec.ts",
+  "test/payout.service.spec.ts"
+]

@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Lifecycle of a payout order.
+//   pending   – not yet sent to the bank
+//   in_flight – the bank accepted the instruction (or confirmed it already
+//               held it); awaiting the statement
+//   unknown   – the last send's outcome is unknown (transient error);
+//               reconciliation must produce evidence before any action
+//   settled   – a statement entry matched the order's txid
+//   rejected  – the bank permanently rejected the instruction (terminal;
+//               human review; never auto-reverted)
+//   parked    – attempt cap reached without proof of landing (terminal;
+//               human review; never auto-reverted)
+enum OrderStatus {
+  pending
+  in_flight
+  unknown
+  settled
+  rejected
+  parked
+}
+
+model Order {
+  id            String      @id @default(uuid()) @map("id")
+  supplierKey   String      @map("supplier_key")
+  /// amount in minor units, integer
+  amountMinor   Int         @map("amount_minor")
+  /// the date this payment applies to
+  effectiveDate DateTime    @db.Date @map("effective_date")
+  /// derived from the order's stable attributes + effective date (see deriveTxid)
+  txid          String      @unique @map("txid")
+  status        OrderStatus @default(pending) @map("status")
+  attempts      Int         @default(0) @map("attempts")
+  lastAttemptAt DateTime?   @map("last_attempt_at")
+  lastOutcome   String?     @map("last_outcome")
+  settledAt     DateTime?   @map("settled_at")
+  parkedAt      DateTime?   @map("parked_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  settlementRecord SettlementRecord?
+
+  @@map("orders")
+}
+
+// Audit trail: the statement entry that matched and settled an order.
+// One row per order (an order settles at most once) and one per txid (a
+// bank instruction id is unique), so re-running reconcile over the same
+// or overlapping windows cannot duplicate it.
+model SettlementRecord {
+  id            String   @id @default(uuid()) @map("id")
+  orderId       String   @unique @map("order_id")
+  txid          String   @unique @map("txid")
+  statementDate String   @map("statement_date")
+  settledAt     DateTime @map("settled_at")
+  recordedAt    DateTime @default(now()) @map("recorded_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("settlement_records")
+}
