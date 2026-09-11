@@ -1,0 +1,7 @@
+[
+  "RUNBOOK.md",
+  "docker-compose.yml",
+  "drizzle/0004_fix_search_key_backfill.sql",
+  "drizzle/meta/_journal.json",
+  "scripts/verify.sh"
+]

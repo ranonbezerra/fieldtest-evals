@@ -1,0 +1,20 @@
+services:
+  db:
+    # 0003_embeddings.sql requires the `vector` extension. The previously
+    # pinned postgres:16-alpine does not ship it — see RUNBOOK.md, defect 3.
+    # This image is the same Postgres 16 base with pgvector included.
+    # ASSUMPTION: pgvector/pgvector:pg16-alpine is the closest available tag
+    # to the previously pinned postgres:16-alpine (same major version, same
+    # base) that ships the vector extension.
+    image: pgvector/pgvector:pg16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - '55432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app -d app']
+      interval: 2s
+      timeout: 3s
+      retries: 20
