@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  DONE
+  DEAD
+}
+
+enum LedgerAccount {
+  USER_AVAILABLE
+  USER_HELD
+  PAYOUTS_SENT
+}
+
+enum LedgerDirection {
+  DEBIT
+  CREDIT
+}
+
+model Account {
+  id                  String   @id @default(cuid())
+  settledBalanceMinor BigInt   @default(0) @map("settled_balance_minor")
+  heldBalanceMinor    BigInt   @default(0) @map("held_balance_minor")
+  version             Int      @default(0)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  payouts Payout[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String       @id @default(cuid())
+  accountId          String       @map("account_id")
+  amountMinor        BigInt       @map("amount_minor")
+  destinationAddress String       @map("destination_address")
+  idempotencyKey     String       @map("idempotency_key")
+  status             PayoutStatus @default(CREATED)
+  txHash             String?      @map("tx_hash")
+  errorMessage       String?      @map("error_message")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  sentAt             DateTime?    @map("sent_at")
+  completedAt        DateTime?    @map("completed_at")
+
+  account         Account         @relation(fields: [accountId], references: [id])
+  ledgerEntries   LedgerEntry[]
+
+  @@unique([accountId, idempotencyKey])
+  @@index([status])
+  @@map("payouts")
+}
+
+model LedgerEntry {
+  id          String          @id @default(cuid())
+  groupId     String          @map("group_id")
+  payoutId    String          @map("payout_id")
+  account     LedgerAccount
+  direction   LedgerDirection
+  amountMinor BigInt          @map("amount_minor")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@index([groupId])
+  @@index([payoutId])
+  @@map("ledger_entries")
+}
+
+model OutboxMessage {
+  id          String       @id @default(cuid())
+  type        String       @default("payout.process")
+  payload     Json
+  status      OutboxStatus @default(PENDING)
+  attempts    Int          @default(0)
+  availableAt DateTime     @default(now()) @map("available_at")
+  claimedAt   DateTime?    @map("claimed_at")
+  completedAt DateTime?    @map("completed_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@index([status, availableAt])
+  @@map("outbox_messages")
+}
