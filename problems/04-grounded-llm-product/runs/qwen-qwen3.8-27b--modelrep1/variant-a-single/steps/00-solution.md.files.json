@@ -1,0 +1,14 @@
+[
+  "package.json",
+  "src/assistant/assistant.grounding.ts",
+  "src/assistant/assistant.llm-client.ts",
+  "src/assistant/assistant.redactor.ts",
+  "src/assistant/assistant.service.ts",
+  "src/assistant/assistant.types.ts",
+  "src/eval/eval.harness.ts",
+  "src/eval/eval.judges.ts",
+  "src/eval/eval.scenarios.ts",
+  "test/assistant.spec.ts",
+  "test/eval.spec.ts",
+  "tsconfig.json"
+]
