@@ -1,0 +1,18 @@
+[
+  "package.json",
+  "src/app.module.ts",
+  "src/eval/eval.module.ts",
+  "src/eval/eval.service.ts",
+  "src/eval/golden-scenarios.ts",
+  "src/eval/judges.ts",
+  "src/guide/answer-result.ts",
+  "src/guide/grounding-gate.ts",
+  "src/guide/guide.module.ts",
+  "src/guide/guide.service.ts",
+  "src/guide/hint-redaction.ts",
+  "src/guide/llm-client.ts",
+  "test/eval.spec.ts",
+  "test/guide.spec.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
