@@ -1,0 +1,9 @@
+[
+  "RUNBOOK.md",
+  "docker-compose.yml",
+  "drizzle/0004_complete_search_key_backfill.sql",
+  "drizzle/meta/_journal.json",
+  "env.example",
+  "scripts/migrate.sh",
+  "scripts/verify.sh"
+]
