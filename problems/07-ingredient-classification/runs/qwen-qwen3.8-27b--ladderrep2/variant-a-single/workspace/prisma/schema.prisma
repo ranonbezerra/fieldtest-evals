@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MethodologyStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum Severity {
+  BANNED
+  RESTRICTED
+  WATCH
+}
+
+model Ingredient {
+  id         String    @id @default(uuid())
+  name       String    @unique
+  normalized String    @unique
+  createdAt  DateTime  @default(now()) @map("created_at")
+  synonyms   Synonym[]
+
+  @@map("ingredients")
+}
+
+model Synonym {
+  id           String     @id @default(uuid())
+  ingredientId String     @map("ingredient_id")
+  raw          String
+  normalized   String     @unique
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@map("synonyms")
+}
+
+model MethodologyVersion {
+  id          String            @id @default(uuid())
+  label       String
+  status      MethodologyStatus @default(DRAFT)
+  revision    Int               @default(autoincrement())
+  publishedAt DateTime?         @map("published_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  rules       Rule[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id                   String             @id @default(uuid())
+  methodologyVersionId String             @map("methodology_version_id")
+  ingredientId         String             @map("ingredient_id")
+  severity             Severity
+  source               String
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+
+  @@map("rules")
+}
+
+model Product {
+  id          String              @id @default(uuid())
+  name        String
+  createdAt   DateTime            @default(now()) @map("created_at")
+  ingredients ProductIngredient[]
+
+  @@map("products")
+}
+
+model ProductIngredient {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  position  Int     @default(0)
+  raw       String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_ingredients")
+}
+
+model Profile {
+  id        String            @id @default(uuid())
+  name      String
+  createdAt DateTime          @default(now()) @map("created_at")
+  modifiers ProfileModifier[]
+
+  @@map("profiles")
+}
+
+model ProfileModifier {
+  id           String   @id @default(uuid())
+  profileId    String   @map("profile_id")
+  ingredientId String   @map("ingredient_id")
+  severity     Severity
+  reason       String
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("profile_modifiers")
+}
+
+model ClassificationResult {
+  id                   String             @id @default(uuid())
+  productId            String             @map("product_id")
+  methodologyVersionId String             @map("methodology_version_id")
+  findings             Json
+  confidence           Float
+  disclaimer           String
+  createdAt            DateTime           @default(now()) @map("created_at")
+  product              Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, methodologyVersionId])
+  @@map("classification_results")
+}
