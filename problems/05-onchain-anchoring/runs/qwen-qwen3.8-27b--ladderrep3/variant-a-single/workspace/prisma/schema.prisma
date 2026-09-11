@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnchorStatus {
+  prepared
+  broadcast_sent
+  broadcast_unknown
+  confirmed
+  failed
+}
+
+/// A write-ahead anchor intent for one published report version.
+///
+/// Invariants, enforced at the schema level (not in application code):
+///  - exactly one anchor per (document, version)
+///  - a transaction identity anchors at most one row
+model DocumentAnchor {
+  id          String       @id @default(uuid()) @map("id")
+  documentId  String       @map("document_id")
+  version     Int
+  contentHash String       @map("content_hash")
+  txId        String       @unique @map("tx_id")
+  signedTx    String       @map("signed_tx")
+  status      AnchorStatus @default(prepared)
+  blockNumber BigInt?      @map("block_number")
+  txHash      String?      @map("tx_hash")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@unique([documentId, version], map: "document_anchors_document_id_version_key")
+  @@index([status], map: "document_anchors_status_idx")
+  @@map("document_anchors")
+}

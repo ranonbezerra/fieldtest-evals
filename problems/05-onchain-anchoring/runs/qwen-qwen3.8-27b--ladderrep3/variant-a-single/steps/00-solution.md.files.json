@@ -1,0 +1,9 @@
+[
+  "prisma/migrations/20250101000000_init/migration.sql",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/common/error-envelope.filter.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts"
+]

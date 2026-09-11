@@ -1,0 +1,5 @@
+[
+  "src/anchor/anchor.module.ts",
+  "src/anchor/anchor.types.ts",
+  "src/common/error-envelope.filter.ts"
+]
