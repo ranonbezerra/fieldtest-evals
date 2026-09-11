@@ -1,0 +1,11 @@
+[
+  "src/app/ActiveSessionBar.test.tsx",
+  "src/app/ActiveSessionBar.tsx",
+  "src/app/AppLayout.tsx",
+  "src/features/sessions/SessionDetailScreen.tsx",
+  "src/features/sessions/SessionsListScreen.tsx",
+  "src/features/sessions/queries.ts",
+  "src/mocks/db.ts",
+  "src/mocks/handlers.ts",
+  "src/test/setup.ts"
+]
