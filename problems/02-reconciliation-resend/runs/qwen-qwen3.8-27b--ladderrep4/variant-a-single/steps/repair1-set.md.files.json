@@ -1,0 +1,4 @@
+[
+  "src/common/exception-filter.ts",
+  "src/payout/payout.module.ts"
+]

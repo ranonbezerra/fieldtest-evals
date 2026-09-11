@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentOrderState {
+  PENDING
+  IN_FLIGHT
+  OUTCOME_UNKNOWN
+  SETTLED
+  REJECTED
+  NEEDS_REVIEW
+}
+
+/// A payment order to a supplier via the bank's instant-payment API.
+/// Money is held in minor units (cents), integers only.
+model PaymentOrder {
+  id            String            @id @default(cuid())
+  supplierKey   String            @map("supplier_key")
+  amountCents   Int               @map("amount_cents")
+  effectiveDate DateTime          @map("effective_date") @db.Date
+  state         PaymentOrderState @default(PENDING) @map("state")
+  attemptCount  Int               @default(0) @map("attempt_count")
+  lastAttemptAt DateTime?         @map("last_attempt_at")
+  lastResult    String?           @map("last_result")
+  rejectReason  String?           @map("reject_reason")
+  settleTxid    String?           @map("settle_txid")
+  settledAt     DateTime?         @map("settled_at")
+  parkedReason  String?           @map("parked_reason")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@index([effectiveDate, state], map: "payment_orders_effective_date_state_idx")
+  @@map("payment_orders")
+}
