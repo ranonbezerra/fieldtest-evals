@@ -1,0 +1,19 @@
+services:
+  db:
+    # pgvector build of Postgres 16. 0003_embeddings.sql runs
+    # `CREATE EXTENSION vector`; the previously pinned postgres:16-alpine
+    # image does not ship pgvector and cannot install it (see RUNBOOK.md,
+    # finding F-1). Same major version; the capability is provided and the
+    # migration is unchanged.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - '55432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app -d app']
+      interval: 2s
+      timeout: 3s
+      retries: 20
