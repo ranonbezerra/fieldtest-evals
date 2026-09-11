@@ -1,0 +1,19 @@
+[
+  "SECURITY.md",
+  "package.json",
+  "prisma/migrations/20250601000000_refresh_rotation/migration.sql",
+  "prisma/migrations/migration_lock.toml",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/auth/access-token.provider.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/auth/refresh-rejected.error.ts",
+  "src/common/all-exceptions.filter.ts",
+  "src/main.ts",
+  "test/auth.spec.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]

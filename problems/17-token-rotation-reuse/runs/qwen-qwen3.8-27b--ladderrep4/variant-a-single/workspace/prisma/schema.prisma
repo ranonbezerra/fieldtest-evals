@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A session family: created once at sign-in. `absoluteExpiryAt` is the
+/// session's hard deadline; rotation never changes it. Revoking the family
+/// kills every token descended from the sign-in in one operation.
+model RefreshFamily {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  absoluteExpiryAt DateTime  @map("absolute_expiry_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  revokedAt        DateTime? @map("revoked_at")
+
+  tokens RefreshToken[]
+
+  @@map("refresh_families")
+}
+
+/// One refresh token. Rotation retires the presented token and mints a
+/// successor into the same family. `retired` = consumed by a rotation;
+/// `revoked` = killed by reuse detection.
+model RefreshToken {
+  id         String        @id @default(uuid())
+  token      String        @unique
+  familyId   String        @map("family_id")
+  family     RefreshFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime      @map("expires_at")
+  retired    Boolean       @default(false)
+  retiredAt  DateTime?     @map("retired_at")
+  revoked    Boolean       @default(false)
+  revokedAt  DateTime?     @map("revoked_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+/// Audit trail for every rotation and rejection. `cause` separates
+/// rotated / reuse / expired / unknown / malformed; the client never sees
+/// this distinction — the rejection response is identical for all of them.
+model RefreshAuditEvent {
+  id         String   @id @default(uuid())
+  familyId   String?  @map("family_id")
+  userId     String?  @map("user_id")
+  cause      String
+  detail     Json     @default("{}")
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  @@index([familyId])
+  @@map("refresh_audit_events")
+}
