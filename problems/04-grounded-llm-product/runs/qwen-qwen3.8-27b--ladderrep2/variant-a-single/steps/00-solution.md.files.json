@@ -1,0 +1,17 @@
+[
+  "package.json",
+  "src/answer/answer.service.ts",
+  "src/answer/answer.types.ts",
+  "src/answer/grounding-gate.ts",
+  "src/answer/hint-redactor.ts",
+  "src/answer/text-utils.ts",
+  "src/eval/eval-harness.ts",
+  "src/eval/judges.ts",
+  "src/eval/scenarios.ts",
+  "src/llm/llm.client.ts",
+  "test/answer.service.spec.ts",
+  "test/eval-harness.spec.ts",
+  "test/hint-redactor.spec.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
