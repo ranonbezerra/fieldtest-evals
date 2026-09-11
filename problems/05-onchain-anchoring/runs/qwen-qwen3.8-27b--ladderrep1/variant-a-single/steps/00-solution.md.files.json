@@ -1,0 +1,8 @@
+[
+  "package.json",
+  "prisma/migrations/20250101000000_init/migration.sql",
+  "prisma/migrations/migration_lock.toml",
+  "prisma/schema.prisma",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
