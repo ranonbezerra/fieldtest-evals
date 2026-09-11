@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// One row per issued refresh token. A token is live while retired_at,
+// revoked_at are null and expires_at is in the future.
+model RefreshToken {
+  id           String    @id
+  tokenHash    String    @unique @map("token_hash")
+  familyId     String    @map("family_id")
+  userId       String    @map("user_id")
+  // The absolute session deadline, fixed at sign-in. Every rotation copies
+  // it verbatim; it is never extended.
+  expiresAt    DateTime  @map("expires_at")
+  retiredAt    DateTime? @map("retired_at")
+  replacedById String?   @map("replaced_by_id")
+  // Set when the family is invalidated after a reuse event.
+  revokedAt    DateTime? @map("revoked_at")
+  createdAt    DateTime  @map("created_at")
+
+  family RefreshTokenFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+// All tokens descended from one original sign-in. Revoking the family is one
+// statement over this id, not a walk.
+model RefreshTokenFamily {
+  id        String    @id
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @map("created_at")
+
+  tokens RefreshToken[]
+
+  @@index([userId])
+  @@map("refresh_token_families")
+}
+
+// Audit trail. Every rejection is a `refresh_rejected` row whose `reason`
+// distinguishes malformed | unknown | expired | reuse; the API response is
+// identical in all four cases.
+model SecurityEvent {
+  id         String   @id
+  kind       String
+  reason     String?
+  userId     String?  @map("user_id")
+  familyId   String?  @map("family_id")
+  tokenId    String?  @map("token_id")
+  source     String?
+  details    Json?
+  occurredAt DateTime @map("occurred_at")
+
+  @@index([familyId])
+  @@index([occurredAt])
+  @@map("security_events")
+}
