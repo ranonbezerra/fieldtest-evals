@@ -1,0 +1,8 @@
+[
+  "src/app.module.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.service.ts",
+  "src/main.ts",
+  "test/auth.spec.ts"
+]

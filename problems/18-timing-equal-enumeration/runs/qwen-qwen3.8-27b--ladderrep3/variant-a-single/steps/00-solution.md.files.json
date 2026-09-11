@@ -1,0 +1,15 @@
+[
+  "SECURITY.md",
+  "prisma/migrations/20250101000000_init/migration.sql",
+  "prisma/migrations/migration_lock.toml",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/auth/password-hash.ts",
+  "src/errors/all-exceptions.filter.ts",
+  "src/main.ts",
+  "test/auth.spec.ts"
+]
