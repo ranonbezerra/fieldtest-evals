@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutState {
+  // Created, not yet sent to the bank.
+  PENDING
+  // The bank acknowledged the send (or confirmed a duplicate); waiting for the statement.
+  AWAITING_SETTLEMENT
+  // Last send failed/timed out. May only be re-sent after reconciliation
+  // proves the txid absent from the statement past the publishing lag.
+  RETRYABLE
+  // Statement entry matched and the amount agrees.
+  SETTLED
+  // Terminal: attempts exhausted, permanent rejection, or amount mismatch.
+  // Never touched again by the automatic jobs.
+  NEEDS_MANUAL_REVIEW
+
+  @@map("payout_state")
+}
+
+model PayoutOrder {
+  id            String      @id @default(uuid())
+  supplierKey   String      @map("supplier_key")
+  // Money is handled in minor units only (integer cents), never floats.
+  amount        Int
+  effectiveDate DateTime    @map("effective_date") @db.Date
+  state         PayoutState @default(PENDING)
+  // Deterministic id derived from order + effective date; stable across resends.
+  txid          String?     @unique
+  // Total bank.send attempts that were not confirmed as duplicates.
+  attempts      Int         @default(0)
+  lastSendAt    DateTime?   @map("last_send_at")
+  lastOutcome   String?     @map("last_outcome")
+  // Set by reconciliation when absence past the publishing lag is proven.
+  resendEligibleAt DateTime? @map("resend_eligible_at")
+  parkedReason  String?     @map("parked_reason")
+  settledAt     DateTime?   @map("settled_at")
+  settlementAmount Int?     @map("settlement_amount")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@index([state])
+  @@map("payout_orders")
+}
