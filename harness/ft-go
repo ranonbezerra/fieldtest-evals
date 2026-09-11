@@ -226,6 +226,14 @@ def main():
                  and os.environ.get("FT_PROVIDER", "omlx") != "omlx" else "")
     tag = slug + ("" if a.runner == "api" else f"--{a.runner}") \
                + ("" if a.spec == "model" else f"--{a.spec}") + _eff_axis
+    # A repetition campaign needs somewhere to put its runs that is not on top of the
+    # single runs already recorded under the bare slug. The model axis has no suffix
+    # of its own -- it is the default -- so without this the fourth sample of a
+    # condition overwrites the first campaign's evidence. Set by the driver, never
+    # interactively, and absent from every run whose verdict is already written.
+    _sfx = os.environ.get("FT_TAG_SUFFIX", "").strip()
+    if _sfx:
+        tag += f"--{_sfx.lstrip('-')}"
     RUNNER = HARNESS / ("ft-run" if a.runner == "api" else "ft-aider")
     # A different shape is a different condition, not a different variant, and the
     # two must not overwrite each other: `variant-a` stays the phased run every
