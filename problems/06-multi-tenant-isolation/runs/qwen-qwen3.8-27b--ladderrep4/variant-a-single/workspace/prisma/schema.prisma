@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: tenant-scoped composites deliberately use snake_case names
+// (e.g. tenantId_email) so the @prisma/client generated types
+// (CustomerGetPayload / CustomerCreateInput) stay plain identifiers.
+
+model Tenant {
+  id            String   @id @default(cuid())
+  domain        String   @unique
+  name          String
+  branding      Json
+  featureFlags  Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  customers Customer[]
+  plans     Plan[]
+  orders    Order[]
+
+  @@map("tenants")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  email     String
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([tenantId, email])
+  @@map("customers")
+}
+
+model Plan {
+  id         String  @id @default(uuid())
+  tenantId   String  @map("tenant_id")
+  name       String
+  slug       String
+  priceCents Int     @default(0) @map("price_cents")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([tenantId, slug])
+  @@map("plans")
+}
+
+model Order {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  customerId String   @map("customer_id")
+  planId     String?  @map("plan_id")
+  status     String   @default("created")
+  totalCents Int      @default(0) @map("total_cents")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan     Plan?    @relation(fields: [planId], references: [id])
+
+  @@map("orders")
+}

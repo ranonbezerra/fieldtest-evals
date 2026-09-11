@@ -1,0 +1,10 @@
+[
+  "src/auth/auth.module.ts",
+  "src/customer/customer.module.ts",
+  "src/customer/customer.repository.ts",
+  "src/customer/customer.service.ts",
+  "src/errors/exception-envelope.filter.ts",
+  "src/order/order.module.ts",
+  "src/plan/plan.module.ts",
+  "src/tenant/tenant-prisma.provider.ts"
+]

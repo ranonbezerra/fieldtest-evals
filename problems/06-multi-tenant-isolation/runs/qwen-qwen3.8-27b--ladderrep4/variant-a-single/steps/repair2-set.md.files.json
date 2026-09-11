@@ -1,0 +1,4 @@
+[
+  "src/customer/customer.repository.ts",
+  "src/tenant/tenant-prisma.provider.ts"
+]
