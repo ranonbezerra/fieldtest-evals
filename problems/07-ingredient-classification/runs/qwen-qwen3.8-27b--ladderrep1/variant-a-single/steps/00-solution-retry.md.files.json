@@ -1,0 +1,23 @@
+[
+  "README.md",
+  "env.example",
+  "package.json",
+  "prisma/migrations/20250101000000_init/migration.sql",
+  "prisma/migrations/migration_lock.toml",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/classification/classification.controller.ts",
+  "src/classification/classification.module.ts",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/classification/fixtures.ts",
+  "src/classification/inci-normalizer.ts",
+  "src/common/all-exceptions.filter.ts",
+  "src/common/api-error.ts",
+  "src/common/prisma.module.ts",
+  "src/common/prisma.service.ts",
+  "src/main.ts",
+  "test/classification.spec.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]

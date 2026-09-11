@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VersionStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum RuleKind {
+  BASE
+  CONTEXT
+}
+
+enum RuleSeverity {
+  BANNED
+  RESTRICTED
+  WATCH
+}
+
+model MethodologyVersion {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  status      VersionStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  rules       Rule[]
+  results     ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+model Ingredient {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  normalized String    @unique
+  synonyms   Synonym[]
+  rules      Rule[]
+
+  @@map("ingredients")
+}
+
+model Synonym {
+  id           String     @id @default(cuid())
+  text         String
+  normalized   String     @unique
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@map("synonyms")
+}
+
+model Product {
+  id          String              @id @default(cuid())
+  name        String
+  brand       String?
+  createdAt   DateTime            @default(now())
+  ingredients ProductIngredient[]
+  results     ClassificationResult[]
+
+  @@map("products")
+}
+
+model ProductIngredient {
+  id        String  @id @default(cuid())
+  productId String
+  position  Int
+  raw       String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, position])
+  @@map("product_ingredients")
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  name      String
+  contexts  String[] @default([])
+  createdAt DateTime @default(now())
+
+  @@map("profiles")
+}
+
+model Rule {
+  id           String             @id @default(cuid())
+  versionId    String
+  ingredientId String
+  kind         RuleKind
+  context      String             @default("")
+  severity     RuleSeverity
+  source       String
+  version      MethodologyVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient         @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@unique([versionId, ingredientId, kind, context])
+  @@map("rules")
+}
+
+model ClassificationResult {
+  id        String   @id @default(cuid())
+  productId String
+  versionId String
+  payload   Json
+  createdAt DateTime @default(now())
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  version   MethodologyVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, versionId])
+  @@map("classification_results")
+}
