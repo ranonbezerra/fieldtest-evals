@@ -1842,3 +1842,44 @@ the gate only started firing at problem 04.
 
 *Changed:* a repair that hits the ceiling is retried once with reasoning off, same as
 a file phase, and recorded as `repair:<path>` in `ceiling_retries_without_reasoning`.
+
+## 4.22 Round two holds, and the one defect that survives everything
+
+Two full rounds of the ladder axis are on disk. Clean typecheck at the gate:
+
+| | round 1 | round 2 |
+|---|---|---|
+| compiled clean | **14 of 18** | **13 of 18** |
+
+The rate is stable across an independent sample. It is not a lucky round.
+
+Three round-1 runs were judged against their rubrics to test whether "compiles" was
+buying anything: 02 PASS (11 of 11), 09 PASS (19 of 19), 12 PASS_WITH_NOTES (17 of 17,
+including the two mid-transaction failure injections no earlier condition produced).
+What compiles on this axis also delivers.
+
+### The survivor
+
+Problem 07 went from clean in round 1 to **fifty** type errors in round 2. The fifty are
+one defect. `prisma generate` exited P1012:
+
+    The relation field `product` on model `ClassificationResult` is missing an
+    opposite relation field on the model `Product`.
+
+The Prisma client was therefore never generated, and every `import { … } from
+'@prisma/client'` in twenty-nine files failed with TS2305. Counting those as fifty
+failures overstates it by forty-nine.
+
+This is the **one-sided relation** — the same defect recorded in §4.9 and §4.17, now
+across three models, two axes and six runs. It is the single most reproducible thing
+this repository has measured. The level-2 issue does not prevent it, because the issue
+describes behaviour and the defect is grammar. The schema repair added for it fires and
+does not fix it: the repair ran, `prisma generate` failed again, and the gate went on
+typechecking against a client that did not exist.
+
+Problem 03 fails both rounds for the same family of reason.
+
+So the shape of the remaining failure is narrow and known. Two of the four or five
+problems that fail per round fail on one line of Prisma grammar that a `prisma format`
+call in the gate would fix outright — which is a harness correction, not a model
+limitation, and is queued in SECOND-PASS rather than applied mid-campaign.
