@@ -1,0 +1,16 @@
+[
+  "package.json",
+  "prisma/migrations/20250301000000_init/migration.sql",
+  "prisma/migrations/migration_lock.toml",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/classification/classification.controller.ts",
+  "src/classification/classification.module.ts",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/classification/inci-fixtures.ts",
+  "src/common/api-error.ts",
+  "src/main.ts",
+  "test/classification.spec.ts",
+  "tsconfig.json"
+]

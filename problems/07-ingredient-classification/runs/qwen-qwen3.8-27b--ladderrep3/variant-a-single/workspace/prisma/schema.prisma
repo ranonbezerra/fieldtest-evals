@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  banned
+  restricted
+  watch
+}
+
+enum RuleContext {
+  base
+  pregnancy
+  child_under_3
+}
+
+enum SynonymKind {
+  synonym
+  typo
+}
+
+enum MethodologyVersionStatus {
+  draft
+  published
+}
+
+model Ingredient {
+  id       String              @id @default(cuid())
+  name     String              @unique
+  synonyms IngredientSynonym[]
+  rules    Rule[]
+
+  @@map("ingredients")
+}
+
+// Synonyms and common OCR typos for a canonical ingredient; matching happens on
+// the normalized form (case, accents, hyphens, whitespace).
+model IngredientSynonym {
+  id           String      @id @default(cuid())
+  alias        String      @unique
+  kind         SynonymKind @default(synonym)
+  ingredientId String      @map("ingredient_id")
+  ingredient   Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@map("ingredient_synonyms")
+}
+
+// A published methodology version is immutable: its rules never change.
+// "Active" means the most recently published version.
+model MethodologyVersion {
+  id          String                     @id @default(cuid())
+  version     Int                        @unique
+  label       String
+  status      MethodologyVersionStatus   @default(draft)
+  publishedAt DateTime?                  @map("published_at")
+  rules       Rule[]
+  results     ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id                   String             @id @default(cuid())
+  methodologyVersionId String             @map("methodology_version_id")
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+  ingredientId         String             @map("ingredient_id")
+  ingredient           Ingredient         @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  context              RuleContext
+  severity             Severity
+  sourceCitation       String             @map("source_citation")
+
+  @@unique([methodologyVersionId, ingredientId, context])
+  @@index([methodologyVersionId])
+  @@map("rules")
+}
+
+// A profile is a named set of contexts; 'base' is never stored here because it
+// always applies.
+model Profile {
+  id       String   @id @default(cuid())
+  name     String   @unique
+  contexts String[]
+
+  @@map("profiles")
+}
+
+model Product {
+  id          String              @id @default(cuid())
+  name        String
+  brand       String?
+  ingredients ProductIngredient[]
+  results     ClassificationResult[]
+
+  @@map("products")
+}
+
+// Raw INCI strings exactly as listed; canonical resolution happens at
+// classification time, never at storage time.
+model ProductIngredient {
+  id            String  @id @default(cuid())
+  productId     String  @map("product_id")
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rawIncistring String  @map("raw_inci_string")
+  position      Int
+
+  @@unique([productId, position])
+  @@index([productId])
+  @@map("product_ingredients")
+}
+
+// ASSUMPTION: the spec keys stored results by (product, methodologyVersion). The
+// key is extended with a nullable profileId so a profile-affecting classification
+// never overwrites the profile-less one; (product, methodologyVersion) remains a
+// prefix of the key and the primary retrieval path, and every stored result stays
+// retrievable exactly as it was.
+model ClassificationResult {
+  id                   String             @id @default(cuid())
+  productId            String             @map("product_id")
+  product              Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  methodologyVersionId String             @map("methodology_version_id")
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+  profileId            String?            @map("profile_id")
+  payload              Json
+
+  @@unique([productId, methodologyVersionId, profileId])
+  @@index([productId])
+  @@map("classification_results")
+}
