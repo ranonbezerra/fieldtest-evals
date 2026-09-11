@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  PENDING
+  SENT
+  OUTCOME_UNKNOWN
+  SETTLED
+  REJECTED
+  PARKED
+}
+
+/// A payment to a supplier through the bank's instant-payment API.
+///
+/// `effective_date` is a calendar date stored at UTC midnight; together with
+/// the order id it determines the derived txid. `amount_minor` is an integer
+/// amount in the currency's minor units (cents) — no floats anywhere.
+model PayoutOrder {
+  id              String       @id @default(cuid()) @map("id")
+  supplierId      String       @map("supplier_id")
+  /// Beneficiary account key submitted to the bank.
+  key             String       @map("key")
+  amountMinor     Int          @map("amount_minor")
+  currency        String       @default("EUR") @map("currency")
+  effectiveDate   DateTime     @map("effective_date")
+  status          PayoutStatus @default(PENDING) @map("status")
+  /// The txid actually submitted to the bank; null before the first send.
+  txid            String?      @map("txid")
+  attemptCount    Int          @default(0) @map("attempt_count")
+  lastAttemptAt   DateTime?    @map("last_attempt_at")
+  rejectionReason String?      @map("rejection_reason")
+  settledAt       DateTime?    @map("settled_at")
+  parkedAt        DateTime?    @map("parked_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@index([status, effectiveDate], map: "payout_orders_status_effective_date_idx")
+  @@index([txid], map: "payout_orders_txid_idx")
+  @@map("payout_orders")
+}
