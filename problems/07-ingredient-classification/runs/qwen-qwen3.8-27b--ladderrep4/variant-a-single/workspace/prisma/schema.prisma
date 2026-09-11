@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Canonical ingredients. `name` is the canonical INCI name.
+model Ingredient {
+  id        String              @id @default(uuid())
+  name      String              @unique
+  synonyms  IngredientSynonym[]
+  rules     Rule[]
+  modifiers ContextualModifier[]
+
+  @@map("ingredients")
+}
+
+// Alternate surface forms: synonyms, spacing variants, common OCR typos.
+// Matched only after normalization (case, accents, whitespace).
+model IngredientSynonym {
+  id           String     @id @default(uuid())
+  ingredientId String     @map("ingredient_id")
+  variant      String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([ingredientId, variant])
+  @@map("ingredient_synonyms")
+}
+
+// A methodology version groups one immutable rule set. A published version
+// never changes: there is no update path for its rules, only for status.
+model MethodologyVersion {
+  id          String    @id @default(uuid())
+  version     Int       @unique
+  name        String?
+  status      String    @default("draft") // "draft" | "published"
+  publishedAt DateTime? @map("published_at")
+  rules       Rule[]
+  results     ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+// Base rule: one ingredient, one severity, one source citation.
+model Rule {
+  id                   String             @id @default(uuid())
+  methodologyVersionId String             @map("methodology_version_id")
+  ingredientId         String             @map("ingredient_id")
+  severity             String // "banned" | "restricted" | "watch"
+  sourceCitation       String             @map("source_citation")
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+  ingredient           Ingredient         @relation(fields: [ingredientId], references: [id])
+
+  @@unique([methodologyVersionId, ingredientId])
+  @@map("rules")
+}
+
+// Profile contextual modifier: under a family context (e.g. "child_under_3",
+// "pregnancy"), tighten the finding for one ingredient.
+model ContextualModifier {
+  id             String     @id @default(uuid())
+  context        String
+  ingredientId   String     @map("ingredient_id")
+  severity       String // "banned" | "restricted" | "watch"
+  sourceCitation String     @map("source_citation")
+  ingredient     Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([context, ingredientId])
+  @@map("contextual_modifiers")
+}
+
+model FamilyProfile {
+  id       String           @id @default(uuid())
+  name     String           @unique
+  contexts ProfileContext[]
+
+  @@map("family_profiles")
+}
+
+model ProfileContext {
+  id        String        @id @default(uuid())
+  profileId String        @map("profile_id")
+  context   String
+  profile   FamilyProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, context])
+  @@map("profile_contexts")
+}
+
+model Product {
+  id          String              @id @default(uuid())
+  name        String
+  ingredients ProductIngredient[]
+  results     ClassificationResult[]
+
+  @@map("products")
+}
+
+// Raw INCI strings exactly as listed on the product label.
+model ProductIngredient {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  inci      String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_ingredients")
+}
+
+// Stored classification output.
+// ASSUMPTION: the spec keys results by (product, methodologyVersion); the
+// optional profile is an orthogonal axis, so the stored key extends it to
+// (product, methodologyVersion, profileId) with profileId = "" encoding the
+// profile-less ("base") classification. That keeps profiled results
+// independently retrievable and re-scoring idempotent under Postgres
+// NULL-unique semantics.
+model ClassificationResult {
+  id                   String             @id @default(uuid())
+  productId            String             @map("product_id")
+  methodologyVersionId String             @map("methodology_version_id")
+  version              Int
+  profileId            String             @default("") @map("profile_id")
+  confidence           Float
+  payload              String // canonical classification output, JSON
+  classifiedAt         DateTime           @default(now()) @map("classified_at")
+  product              Product            @relation(fields: [productId], references: [id])
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+
+  @@unique([productId, methodologyVersionId, profileId])
+  @@map("classification_results")
+}
