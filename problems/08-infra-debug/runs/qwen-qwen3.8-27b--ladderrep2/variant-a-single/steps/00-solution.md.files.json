@@ -1,0 +1,8 @@
+[
+  "diagnosis.md",
+  "kubeconfig",
+  "manifests/api-deployment.yaml",
+  "manifests/api-ingress.yaml",
+  "manifests/api-service.yaml",
+  "runbook.md"
+]

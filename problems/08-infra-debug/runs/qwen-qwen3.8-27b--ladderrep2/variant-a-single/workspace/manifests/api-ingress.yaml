@@ -1,0 +1,21 @@
+# UNCHANGED — no fault in the Ingress.
+# # ASSUMPTION: host, ingress class, backend port and namespace are not given
+# in the task; the values below are placeholders consistent with the other manifests.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  namespace: staging
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.staging.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 80

@@ -1,0 +1,30 @@
+# # ASSUMPTION: namespace, image and replica count are not given in the task;
+# the values below are placeholders consistent with the described setup.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: staging
+  labels:
+    app: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: registry.internal/staging/api:1.14.2
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000            # FIX (Fault 3): was 8080; the container listens on 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
