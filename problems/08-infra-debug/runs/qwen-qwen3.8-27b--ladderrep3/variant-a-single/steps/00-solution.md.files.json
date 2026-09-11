@@ -1,0 +1,7 @@
+[
+  "api-deployment.yaml",
+  "api-service.yaml",
+  "diagnosis.md",
+  "runbook.md",
+  "staging.kubeconfig"
+]

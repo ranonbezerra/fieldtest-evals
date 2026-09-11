@@ -1,0 +1,27 @@
+# ASSUMPTION: the task identifies only the pod label, readiness path, and container port; image and replica count are represented minimally and should retain the existing values.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    app: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: __EXISTING_API_IMAGE__
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000

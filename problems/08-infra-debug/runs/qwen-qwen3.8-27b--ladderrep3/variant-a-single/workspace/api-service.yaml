@@ -1,0 +1,13 @@
+# ASSUMPTION: the Service name and target port are identified by the task; the exposed Service port is assumed to be 80 to match the Ingress/backend convention.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector:
+    app: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
