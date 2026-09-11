@@ -1,0 +1,4 @@
+[
+  "src/transfers/accounts.repository.ts",
+  "src/transfers/transfers.service.ts"
+]

@@ -1,0 +1,12 @@
+[
+  "accounts.repository.ts",
+  "notifications/notifications.service.ts",
+  "prisma/prisma.service.ts",
+  "risk/risk.client.ts",
+  "src/notifications/notifications.service.ts",
+  "src/prisma/prisma.service.ts",
+  "src/risk/risk.client.ts",
+  "src/transfers/serializer.ts",
+  "src/types/pg.d.ts",
+  "transfers.service.ts"
+]
