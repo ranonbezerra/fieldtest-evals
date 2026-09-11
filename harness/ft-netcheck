@@ -38,20 +38,30 @@ def attempts(steps_dir):
             continue
         u = md + ".usage.json"
         if not os.path.exists(u):
-            out.append((base, False))          # died before recording: the network
+            out.append((base, "lost"))         # died before recording: the network
             continue
         try:
             d = json.load(open(u))
         except Exception:
-            out.append((base, False)); continue
+            out.append((base, "lost")); continue
         cc = d.get("content_chars") or 0
         fj = md + ".files.json"
         try:
             nfiles = len(json.load(open(fj))) if os.path.exists(fj) else 0
         except Exception:
             nfiles = 0
-        ok = d.get("finish_reason") == "stop" and cc > 0 and nfiles > 0
-        out.append((base, ok))
+        # Three states, not two. A provider that ends a generation with an error
+        # after delivering a full payload has not cost us the sample: 06 rep4's retry
+        # carried 36,239 characters and 28 files, in family with the 36k/53k/46k the
+        # other three repetitions produced, and it compiled clean. Rerunning it would
+        # throw away a good draw. What actually destroys a run is extracting nothing,
+        # because the repair phase then works from an empty workspace and writes
+        # whatever it likes.
+        if nfiles > 0 and cc > 0:
+            state = "ok" if d.get("finish_reason") == "stop" else "degraded"
+        else:
+            state = "lost"
+        out.append((base, state))
     return out
 
 def main(patterns):
@@ -63,14 +73,24 @@ def main(patterns):
             tag = os.path.basename(os.path.dirname(var))
             prob = var.split(os.sep)[1]
             att = attempts(steps)
-            if not att or all(ok for _, ok in att):
+            if not att or all(s == "ok" for _, s in att):
                 continue
-            recovered = any(ok for _, ok in att)
+            states = [s for _, s in att]
+            if "ok" in states:
+                verdict = "recuperou"
+            elif "degraded" in states:
+                # Some code arrived, but the generation did not end cleanly. Not
+                # obviously lost and not obviously sound -- worth a human reading
+                # before it counts, and never an automatic re-run, because deciding
+                # by the gate's outcome would select on the very thing being measured.
+                verdict = "degradada"
+            else:
+                verdict = "PERDIDA"
             if verbose:
-                marks = " ".join(f"{n}{'✓' if ok else '✗'}" for n, ok in att)
-                print(f"# {prob:32s} {tag:34s} {marks}"
-                      f"  -> {'recuperou' if recovered else 'PERDIDA'}", file=sys.stderr)
-            if not recovered:
+                mark = {"ok": "✓", "degraded": "~", "lost": "✗"}
+                marks = " ".join(f"{n}{mark[s]}" for n, s in att)
+                print(f"# {prob:32s} {tag:34s} {marks}  -> {verdict}", file=sys.stderr)
+            if verdict == "PERDIDA":
                 casualties.append((prob, tag))
     for prob, tag in casualties:
         print(f"{prob}\t{tag}")
