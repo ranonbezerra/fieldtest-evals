@@ -1,0 +1,20 @@
+[
+  "src/app.module.ts",
+  "src/classification/classification.controller.ts",
+  "src/classification/classification.module.ts",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/classification/dto/classification-result.dto.ts",
+  "src/classification/dto/classify.dto.ts",
+  "src/ingredients/ingredients.module.ts",
+  "src/ingredients/ingredients.repository.ts",
+  "src/main.ts",
+  "src/methodologies/methodologies.module.ts",
+  "src/methodologies/methodology.repository.ts",
+  "src/methodologies/modifiers.repository.ts",
+  "src/methodologies/rules.repository.ts",
+  "src/products/products.module.ts",
+  "src/products/products.repository.ts",
+  "src/profiles/profiles.module.ts",
+  "src/profiles/profiles.repository.ts"
+]

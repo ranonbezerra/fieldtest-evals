@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  BANNED
+  RESTRICTED
+  WATCH
+}
+
+model Ingredient {
+  id       Int                 @id @default(autoincrement())
+  name     String              @unique @map("name")
+  synonyms IngredientSynonym[]
+  Rule     Rule[]
+  Modifier Modifier[]
+
+  @@map("ingredients")
+}
+
+model IngredientSynonym {
+  id           Int        @id @default(autoincrement())
+  name         String     @unique @map("name")
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId Int
+
+  @@map("ingredient_synonyms")
+}
+
+model MethodologyVersion {
+  id                    Int                    @id @default(autoincrement())
+  versionNumber         Int                    @unique
+  name                  String?
+  publishedAt           DateTime               @default(now())
+  active                Boolean                @default(false)
+  rules                 Rule[]
+  classificationResults ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id                   Int                @id @default(autoincrement())
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+  methodologyVersionId Int
+  ingredient           Ingredient         @relation(fields: [ingredientId], references: [id])
+  ingredientId         Int
+  severity             Severity
+  sourceCitation       String
+
+  @@map("rules")
+}
+
+model Profile {
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  description           String?
+  modifiers             Modifier[]
+  classificationResults ClassificationResult[]
+
+  @@map("profiles")
+}
+
+model Modifier {
+  id             Int        @id @default(autoincrement())
+  profile        Profile    @relation(fields: [profileId], references: [id])
+  profileId      Int
+  ingredient     Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId   Int
+  newSeverity    Severity
+  sourceCitation String
+
+  @@map("modifiers")
+}
+
+model Product {
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  ingredients           ProductIngredient[]
+  classificationResults ClassificationResult[]
+
+  @@map("products")
+}
+
+model ProductIngredient {
+  id        Int     @id @default(autoincrement())
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  rawName   String
+
+  @@map("product_ingredients")
+}
+
+model ClassificationResult {
+  id                   Int                @id @default(autoincrement())
+  product              Product            @relation(fields: [productId], references: [id])
+  productId            Int
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+  methodologyVersionId Int
+  profile              Profile?           @relation(fields: [profileId], references: [id])
+  profileId            Int?
+  findings             Json
+  confidence           Float
+  disclaimer           String
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@unique([productId, methodologyVersionId, profileId], name: "product_methodology_profile_unique")
+  @@map("classification_results")
+}

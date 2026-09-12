@@ -1,0 +1,6 @@
+[
+  "src/classification/classification.controller.ts",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/classification/dto/classify.dto.ts"
+]
