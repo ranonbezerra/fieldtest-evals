@@ -1,0 +1,9 @@
+[
+  "src/mock/class-transformer.ts",
+  "src/mock/class-validator.ts",
+  "src/payout/dto/create-payout.dto.ts",
+  "src/payout/payout.processor.ts",
+  "src/payout/payout.service.ts",
+  "src/payout/validators/is-bigint.validator.ts",
+  "src/prisma.service.ts"
+]

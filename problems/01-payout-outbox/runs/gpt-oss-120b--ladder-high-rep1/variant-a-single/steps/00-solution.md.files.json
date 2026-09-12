@@ -1,0 +1,17 @@
+[
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/main.ts",
+  "src/payout/dto/create-payout.dto.ts",
+  "src/payout/dto/payout.dto.ts",
+  "src/payout/errors.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.processor.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/payout/validators/is-bigint.validator.ts",
+  "src/prisma.service.ts",
+  "src/provider/provider.service.ts",
+  "test/payout.spec.ts"
+]
