@@ -1,0 +1,8 @@
+[
+  "src/customer/customer.repository.ts",
+  "src/order/order.repository.ts",
+  "src/plan/plan.repository.ts",
+  "src/tenant/tenant-resolution.middleware.ts",
+  "test/customer.spec.ts",
+  "test/test-helpers.ts"
+]
