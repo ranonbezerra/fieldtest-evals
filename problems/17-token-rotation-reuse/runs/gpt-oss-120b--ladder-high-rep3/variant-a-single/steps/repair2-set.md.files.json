@@ -1,0 +1,6 @@
+[
+  "src/cookie-parser.d.ts",
+  "src/express.d.ts",
+  "src/supertest.d.ts",
+  "test/auth-refresh.spec.ts"
+]
