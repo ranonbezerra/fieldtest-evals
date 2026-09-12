@@ -1,0 +1,5 @@
+[
+  "src/auth/dto/sign-in.dto.ts",
+  "src/auth/dto/sign-up.dto.ts",
+  "test/auth.spec.ts"
+]
