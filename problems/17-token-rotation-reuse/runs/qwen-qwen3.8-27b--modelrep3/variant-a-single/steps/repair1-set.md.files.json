@@ -1,0 +1,11 @@
+[
+  "src/app.module.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/main.ts",
+  "src/prisma.module.ts",
+  "src/types/express.d.ts",
+  "test/auth.spec.ts"
+]
