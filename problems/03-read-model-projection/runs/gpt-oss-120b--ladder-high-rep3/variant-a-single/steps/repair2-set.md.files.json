@@ -1,0 +1,9 @@
+[
+  "src/app.module.ts",
+  "src/operations/operations.drift-repair.service.ts",
+  "src/operations/operations.module.ts",
+  "src/operations/operations.repository.ts",
+  "src/operations/operations.service.ts",
+  "src/payment-order/payment-order.service.ts",
+  "test/operations.spec.ts"
+]

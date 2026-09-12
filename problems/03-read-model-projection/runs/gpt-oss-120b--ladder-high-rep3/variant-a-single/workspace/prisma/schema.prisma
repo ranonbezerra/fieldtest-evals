@@ -1,0 +1,57 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model PaymentOrder {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  status    String   @map("status")
+  amount    Decimal  @map("amount")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("payment_order")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  type      String   @map("type")
+  timestamp DateTime @default(now()) @map("timestamp")
+
+  @@map("event")
+}
+
+model Worker {
+  id   String @id @default(uuid())
+  name String
+
+  @@map("worker")
+}
+
+model OperationProjection {
+  id             String    @id @default(uuid())
+  orderId        String    @unique @map("order_id")
+  companyId      String    @map("company_id")
+  status         String    @map("status")
+  amount         Decimal   @map("amount")
+  workerId       String?   @map("worker_id")
+  eventType      String?   @map("event_type")
+  eventTimestamp DateTime? @map("event_timestamp")
+  createdAt      DateTime  @map("created_at")
+
+  @@index([companyId, status, createdAt(sort: Desc)], name: "idx_company_status_created_at_desc")
+  @@index([companyId, createdAt(sort: Desc)], name: "idx_company_created_at_desc")
+  @@map("operation_projection")
+}
+
+model OperationCompanyTotal {
+  companyId   String  @id @map("company_id")
+  totalAmount Decimal @map("total_amount")
+
+  @@map("operation_company_total")
+}

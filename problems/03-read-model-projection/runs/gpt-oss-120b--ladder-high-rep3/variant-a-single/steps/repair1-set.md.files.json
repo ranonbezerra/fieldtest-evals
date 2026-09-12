@@ -1,0 +1,14 @@
+[
+  "src/app.module.ts",
+  "src/main.ts",
+  "src/operations/operations.controller.ts",
+  "src/operations/operations.drift-repair.service.ts",
+  "src/operations/operations.module.ts",
+  "src/operations/operations.repository.ts",
+  "src/operations/operations.service.ts",
+  "src/payment-order/payment-order.module.ts",
+  "src/payment-order/payment-order.repository.ts",
+  "src/payment-order/payment-order.service.ts",
+  "src/prisma/prisma.module.ts",
+  "test/operations.spec.ts"
+]
