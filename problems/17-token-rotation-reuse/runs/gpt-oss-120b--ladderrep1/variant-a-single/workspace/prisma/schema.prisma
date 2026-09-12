@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String               @id @default(uuid())
+  email                String               @unique
+  // other fields …
+  refreshTokenFamilies RefreshTokenFamily[]
+  refreshTokens        RefreshToken[]
+}
+
+model RefreshTokenFamily {
+  /// Identifier for the whole token family (original sign‑in session)
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  createdAt         DateTime  @default(now())
+  /// Absolute session deadline – never moves after sign‑in
+  absoluteExpiresAt DateTime
+  /// If set, the entire family has been revoked (reuse detected)
+  revokedAt         DateTime?
+
+  tokens RefreshToken[]
+
+  @@map("refresh_token_families")
+}
+
+model RefreshToken {
+  id        String             @id @default(uuid())
+  /// The opaque token value presented by the client (stored plain for simplicity)
+  token     String             @unique
+  familyId  String
+  family    RefreshTokenFamily @relation(fields: [familyId], references: [id])
+  userId    String
+  user      User               @relation(fields: [userId], references: [id])
+  createdAt DateTime           @default(now())
+  /// When the token is no longer usable (rotation or explicit revocation)
+  retiredAt DateTime?
+  /// Hard expiry – independent of rotation
+  expiresAt DateTime
+
+  @@map("refresh_tokens")
+}
+
+model RefreshTokenAudit {
+  id        String   @id @default(uuid())
+  /// The token string that was presented (may be null if malformed)
+  token     String?
+  /// The family the token belonged to (if known)
+  familyId  String?
+  /// The user that owned the token (if known)
+  userId    String?
+  /// Event type – e.g. 'reuse', 'expired', 'unknown', 'malformed', 'revoked'
+  event     String
+  /// Additional context for auditors
+  details   Json
+  createdAt DateTime @default(now())
+
+  @@map("refresh_token_audits")
+}

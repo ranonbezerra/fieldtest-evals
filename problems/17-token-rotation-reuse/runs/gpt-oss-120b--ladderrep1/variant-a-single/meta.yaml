@@ -1,0 +1,223 @@
+{
+  "model": "gpt-oss-120b",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "17-token-rotation-reuse",
+  "variant": "variant-a",
+  "date": "2026-09-12T14:59:41+00:00",
+  "wall_seconds": 352,
+  "wall_minutes": 5.9,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": {
+    "total_usd": 0.0022,
+    "per_1k_output_usd": 0.0002
+  },
+  "runner": "api",
+  "spec_source": "ladder",
+  "shape": "single",
+  "asked_again_after_empty": false,
+  "manifest": {
+    "declared": 9,
+    "built": 0,
+    "truncated": true
+  },
+  "requests": 3,
+  "resumed": false,
+  "requests_this_invocation": 3,
+  "tokens": {
+    "prompt_total": 13845,
+    "completion_total": 10515,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 10515,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 43.9,
+    "output_tokens_per_second_overall": 30.6,
+    "generation_seconds": 344,
+    "model_load_seconds": 0,
+    "overhead_seconds": 9
+  },
+  "revisions": {
+    "self_repairs": 2,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": false,
+    "repairs": 2,
+    "skipped": null,
+    "gate_scaffold_added": [
+      "package.json",
+      "tsconfig.json"
+    ]
+  },
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failing": []
+  },
+  "failures": [
+    {
+      "phase": "gate",
+      "exit": null,
+      "reason": "typecheck still failing after 2 repairs"
+    }
+  ],
+  "phases": [
+    {
+      "label": "solution",
+      "model": "gpt-oss-120b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 2234,
+      "completion_tokens": 5982,
+      "reasoning_chars": 6132,
+      "content_chars": 19500,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 111.4,
+      "server_seconds": 111.4,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 53.7,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/ladder/L2-spec.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.00108396,
+      "upstream_cost_usd": 0.00108396,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789224829-qy3CAybwXzfHeSehfy88",
+      "upstream_provider": "AkashML",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair1-set",
+      "model": "gpt-oss-120b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 6411,
+      "completion_tokens": 2387,
+      "reasoning_chars": 1866,
+      "content_chars": 8229,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 35.6,
+      "server_seconds": 35.6,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 67.1,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/prisma/schema.prisma",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/src/auth/auth.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/test/auth.refresh.spec.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/src/auth/auth.controller.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/src/auth/auth.module.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/src/auth/auth.repository.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.00059812,
+      "upstream_cost_usd": 0.00059812,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789224947-F4Ww3c2Xzd0nrKpibtH8",
+      "upstream_provider": "AkashML",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    },
+    {
+      "label": "repair2-set",
+      "model": "gpt-oss-120b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "low",
+      "prompt_tokens": 5200,
+      "completion_tokens": 2146,
+      "reasoning_chars": 3406,
+      "content_chars": 6010,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 196.9,
+      "server_seconds": 196.9,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 10.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/variants/variant-a.md",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/prisma/schema.prisma",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/src/auth/auth.service.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/src/auth/auth.controller.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/test/auth.refresh.spec.ts",
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/17-token-rotation-reuse/runs/gpt-oss-120b--ladder/variant-a-single/workspace/src/auth/auth.module.ts"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.00052082,
+      "upstream_cost_usd": 0.00052082,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789224983-id6ZAwkKSTLeNFuGLHCr",
+      "upstream_provider": "AkashML",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}

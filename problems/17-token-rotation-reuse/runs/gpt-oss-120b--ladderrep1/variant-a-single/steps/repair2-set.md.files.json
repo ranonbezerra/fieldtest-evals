@@ -1,0 +1,7 @@
+[
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.service.ts",
+  "src/auth/dto/refresh.dto.ts",
+  "src/utils/token.utils.ts"
+]
