@@ -1892,9 +1892,9 @@ harness — that claim does not hold. Every `prisma generate` failure, classifie
 
 | run | cause |
 |---|---|
-| 03 ladder rep1 | grammar: a block attribute split across two lines |
-| 03 ladder rep2 | array value where a constant literal is expected |
-| 03 ladder rep4 | grammar: a block attribute split across two lines |
+| 03 ladder rep1 | **invented feature**: 61 partial indexes via `where:` |
+| 03 ladder rep2 | **invented feature**: `@@index` sort directives where a literal is expected |
+| 03 ladder rep4 | **invented feature**: 46 partial indexes via `where:` |
 | 05 model rep1 | **Environment variable not found: DATABASE_URL** |
 | 06 ladder rep1 | **Environment variable not found: DATABASE_URL** |
 | 07 ladder rep2 | relation field missing its opposite |
@@ -1914,21 +1914,24 @@ dominant now, and the axis has nothing to do with it.
 
 The ladder fails 03 three times out of four, and not on relations. The level-2 issue for
 that problem asks for recency ordering and stable pagination, and the model answers with
-a covering index:
+a **partial index** — a PostgreSQL feature Prisma's schema language does not have:
 
-    @@index([companyId, createdAt(sort: Desc), id(sort: Desc)],
-            map: "ops_company_recency_covering")
+    @@index([companyId, createdAt(sort: Desc)],
+            where: [status: "pending"], map: "ops_company_pending")
 
-Prisma requires a block attribute on a single line. Split across two, the second line is
-not a valid field definition and the whole schema fails to parse. The model axis, asked
-for the same feature without the performance requirement spelled out, writes a plainer
-index and never trips.
+Sixty-one of them in rep1, forty-six in rep4. rep2 fails the same way in a different
+place, passing sort directives where the parser wants a constant literal. The model axis,
+not told to care about read performance, writes plain indexes and never trips.
 
 So the ladder's one clear loss is **the cost of asking for more**: the issue demands a
-performance characteristic, the model reaches for the construct that provides it, and
-gets its grammar wrong. That is a real cost of the level-2 format on this problem, and
-it is worth a great deal less than it looks, because `prisma format` fixes it in one
-call and the gate does not run it.
+performance characteristic, and the model reaches past the edge of the schema language
+for a construct that would provide it in raw SQL.
+
+This is not a formatting problem and `prisma format` does not touch it — measured, not
+assumed: a schema carrying a `where:` index fails to parse, so the formatter returns it
+unchanged. It is the same defect as gpt-oss inventing `.isOk` on the scaffold's own
+`ApiResult` type in §4.14: **the model reaches for the API it wishes existed.** That is a
+model limitation, and no harness correction addresses it.
 
 ### An explanation that did not survive
 

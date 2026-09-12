@@ -828,9 +828,39 @@ def main():
             # never generated — leaving the typecheck unable to see the very thing
             # the gate exists to catch, since an invented Prisma option is only
             # visible against the client generated from the model's own schema.
+            prisma_ok = True   # a problem with no Prisma cannot fail its schema
             if (ws / "prisma" / "schema.prisma").exists() and (ws / "node_modules").is_dir():
+                # The schema declares `url = env("DATABASE_URL")` and nothing in this
+                # harness ever set it, so `prisma generate` exited P1012 on three runs
+                # that had typechecked clean. They cost nothing but a misleading line
+                # in the log -- and three entries in a tally of "the model broke the
+                # schema" that I then reasoned from. Nothing connects to this URL; it
+                # only has to parse.
+                penv = {"DATABASE_URL": os.environ.get(
+                    "FT_DATABASE_URL",
+                    "postgresql://fieldtest:fieldtest@127.0.0.1:5432/fieldtest")}
+
+                # `prisma format` fixes the one-sided relation outright -- Prisma's
+                # own error says so ("Either run `prisma format` or add it manually")
+                # and it does: it writes the opposite field into the other model and
+                # the schema validates. Verified on the shape that broke 07 on both
+                # axes.
+                #
+                # It does NOT fix what broke 03, which is the model inventing options
+                # Prisma does not have -- partial indexes, 61 of them in one run:
+                #
+                #     @@index([companyId, createdAt(sort: Desc)],
+                #             where: [status: "pending"], map: "ops_company_pending")
+                #
+                # A schema it cannot parse comes back untouched, so this is free: it
+                # removes the failures that are grammar and leaves the ones that are
+                # the model reaching for a feature that does not exist.
+                rc_f, out_f = run(["npx", "--no-install", "prisma", "format"],
+                                  cwd=ws, timeout=300, env=penv)
+                gate["log"] += f"$ prisma format -> {rc_f}\n{out_f[-600:]}\n"
+
                 rc, out = run(["npx", "--no-install", "prisma", "generate"],
-                              cwd=ws, timeout=600)
+                              cwd=ws, timeout=600, env=penv)
                 gate["log"] += f"$ prisma generate -> {rc}\n{out[-1500:]}\n"
                 prisma_error = ""
                 if rc != 0:
@@ -857,11 +887,16 @@ def main():
                                reads=[variant] + ([plan_md] if plan_md.is_file()
                                                   else []),
                                out_file=schema_f, system=cheatsheet, effort="low")
+                        run(["npx", "--no-install", "prisma", "format"],
+                            cwd=ws, timeout=300, env=penv)
                         rc, out = run(["npx", "--no-install", "prisma", "generate"],
-                                      cwd=ws, timeout=600)
+                                      cwd=ws, timeout=600, env=penv)
                         gate["log"] += (f"$ prisma generate (after schema repair) -> "
                                         f"{rc}\n{out[-1500:]}\n")
                         say(f"[gate] prisma generate after schema repair -> {rc}")
+                    prisma_ok = (rc == 0)
+                else:
+                    prisma_ok = True
 
             # A problem whose deliverable is a diagnosis, a runbook and three diffs
             # has no TypeScript, and running `tsc` on it produces TS18003 — "no
@@ -886,6 +921,14 @@ def main():
                 gate["skipped"] = "no TypeScript in the workspace"
             elif (ws / "tsconfig.json").exists():
                 gate["ran"] = True
+                # When `prisma generate` never produced a client, every import from
+                # `@prisma/client` fails and the count means nothing: problem 07 once
+                # recorded fifty errors across twenty-nine files, all of them one
+                # broken relation wearing fifty masks. Repairing TypeScript cannot
+                # help either -- the file that has to change is the schema, and the
+                # repair only ever sees `.ts` paths from the compiler's own output.
+                # So the typecheck still runs, once, to record the state honestly, and
+                # the repair loop is skipped rather than spent on an impossible task.
                 for attempt in range(MAX_REPAIRS + 1):
                     rc, out = run(["npx", "--no-install", "tsc", "--noEmit"], cwd=ws, timeout=900)
                     gate["log"] += f"\n$ tsc --noEmit (attempt {attempt}) -> {rc}\n{out[-6000:]}\n"
@@ -894,6 +937,15 @@ def main():
                         say(f"[gate] typecheck clean{' after repair' if attempt else ''}")
                         break
                     say(f"[gate] typecheck failed ({out.count('error TS')} errors)")
+                    if not prisma_ok:
+                        gate["passed"] = False
+                        gate["cause"] = "prisma schema: the client was never generated"
+                        gate["log"] += ("\n[gate] the schema never generated a client; "
+                                        "these errors are downstream of that and the "
+                                        "repair loop is skipped\n")
+                        say("[gate] errors are downstream of the schema; not repairing "
+                            "TypeScript for a schema defect")
+                        break
                     if attempt == MAX_REPAIRS:
                         gate["passed"] = False
                         break
