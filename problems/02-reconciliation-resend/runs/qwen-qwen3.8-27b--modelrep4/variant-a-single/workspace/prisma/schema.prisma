@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Payout {
+  id             String    @id @default(uuid()) @db.Uuid
+  supplierId     String?   @map("supplier_id")
+  bankKey        String    @map("bank_key")
+  amountMinor    Int       @map("amount_minor")
+  effectiveDate  DateTime  @db.Date @map("effective_date")
+  status         String    @default("pending")
+  attempts       Int       @default(0)
+  lastTxId       String?   @map("last_tx_id")
+  lastAttemptAt  DateTime? @map("last_attempt_at")
+  lastError      String?   @map("last_error")
+  resendProvenAt DateTime? @map("resend_proven_at")
+  settledAt      DateTime? @map("settled_at")
+  settlementId   String?   @db.Uuid @map("settlement_id")
+  reviewReason   String?   @map("review_reason")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, lastAttemptAt])
+  @@index([lastTxId])
+  @@map("payouts")
+}
+
+model Settlement {
+  id            String    @id @default(uuid()) @db.Uuid
+  statementDate DateTime  @db.Date @map("statement_date")
+  txId          String    @map("tx_id")
+  amountMinor   Int       @map("amount_minor")
+  settledAt     DateTime? @map("settled_at")
+  bankReference String?   @map("bank_reference")
+  receivedAt    DateTime  @default(now()) @map("received_at")
+
+  @@unique([statementDate, txId])
+  @@map("settlements")
+}
+
+model StatementCoverage {
+  date      DateTime @db.Date @map("date")
+  checkedAt DateTime @map("checked_at")
+
+  @@id([date])
+  @@map("statement_coverage")
+}
