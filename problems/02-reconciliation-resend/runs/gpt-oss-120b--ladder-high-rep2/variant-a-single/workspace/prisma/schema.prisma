@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  pending
+  sent
+  settled
+  waiting_evidence
+  permanent_rejection
+  exhausted
+}
+
+model Payout {
+  id            String       @id @default(uuid()) @map("id")
+  supplierKey   String       @map("supplier_key")
+  amount        Int
+  effectiveDate DateTime     @map("effective_date")
+  status        PayoutStatus @default(pending)
+  attempts      Int          @default(0)
+  txid          String?      @map("txid")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("payouts")
+}

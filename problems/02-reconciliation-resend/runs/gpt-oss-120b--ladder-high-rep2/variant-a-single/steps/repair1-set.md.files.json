@@ -1,0 +1,11 @@
+[
+  "src/app.module.ts",
+  "src/bank/bank.module.ts",
+  "src/main.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.reconcile.job.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/schedule.mock.ts",
+  "test/payout.spec.ts"
+]
