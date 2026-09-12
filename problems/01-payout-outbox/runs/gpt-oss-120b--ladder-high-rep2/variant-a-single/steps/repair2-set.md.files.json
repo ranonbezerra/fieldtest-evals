@@ -1,0 +1,6 @@
+[
+  "prisma/schema.prisma",
+  "src/payout/dto/create-payout.dto.ts",
+  "src/payout/provider.service.ts",
+  "test/payout.spec.ts"
+]

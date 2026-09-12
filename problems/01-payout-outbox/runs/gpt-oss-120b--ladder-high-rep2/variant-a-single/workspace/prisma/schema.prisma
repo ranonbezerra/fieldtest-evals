@@ -1,0 +1,55 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String   @id @default(uuid()) @map("id")
+  balance           BigInt   // settled balance
+  available_balance BigInt   // available for reservation
+  reserved_balance  BigInt   @default(0) // amount currently reserved
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  payouts       Payout[]
+  ledgerEntries LedgerEntry[]
+}
+
+model Payout {
+  id                   String   @id @default(uuid()) @map("id")
+  account_id           String   @map("account_id")
+  amount               BigInt
+  destination_address  String
+  status               String   @default("PENDING")
+  idempotency_key      String   @unique
+  retries              Int      @default(0)
+  provider_tx_hash     String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  account          Account       @relation(fields: [account_id], references: [id])
+  ledgerEntries    LedgerEntry[] @relation("LedgerEntryToPayout")
+  ledgerEntriesOpt LedgerEntry[] @relation("LedgerEntryToPayoutOptional")
+}
+
+model LedgerEntry {
+  id            String   @id @default(uuid()) @map("id")
+  // required relation to Payout
+  payout_id     String   @map("payout_id")
+  payout        Payout   @relation("LedgerEntryToPayout", fields: [payout_id], references: [id])
+  // optional relation to Payout
+  payout_id_opt String?  @map("payout_id_opt")
+  payout_opt    Payout?  @relation("LedgerEntryToPayoutOptional", fields: [payout_id_opt], references: [id])
+  account_id    String   @map("account_id")
+  amount        BigInt
+  type          String
+  description   String
+  created_at    DateTime @default(now())
+  Account       Account  @relation(fields: [account_id], references: [id])
+}
