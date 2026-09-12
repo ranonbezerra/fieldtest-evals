@@ -1,0 +1,16 @@
+[
+  "src/app.module.ts",
+  "src/customers/customers.controller.ts",
+  "src/customers/customers.module.ts",
+  "src/customers/customers.repository.ts",
+  "src/customers/customers.service.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "src/tenant-config/tenant-config.controller.ts",
+  "src/tenant-config/tenant-config.service.ts",
+  "src/tenant/tenant-resolver.middleware.ts",
+  "src/tenant/tenant.module.ts",
+  "src/tenant/tenant.repository.ts",
+  "test/tenant-isolation.spec.ts"
+]

@@ -1,0 +1,5 @@
+[
+  "src/prisma/prisma.service.ts",
+  "src/tenant/tenant-resolver.middleware.ts",
+  "test/tenant-isolation.spec.ts"
+]

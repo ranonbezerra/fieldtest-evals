@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           Int    @id @default(autoincrement())
+  org          String @unique
+  domain       String @unique
+  name         String
+  branding     Json?
+  featureFlags Json?
+
+  customers Customer[]
+  plans     Plan[]
+  orders    Order[]
+
+  @@map("tenant")
+}
+
+model Customer {
+  id       Int    @id @default(autoincrement())
+  tenantId Int    @map("tenant_id")
+  email    String
+  name     String
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  Order  Order[]
+
+  @@unique([tenantId, email], name: "customer_tenant_email_unique")
+  @@map("customer")
+}
+
+model Plan {
+  id       Int    @id @default(autoincrement())
+  tenantId Int    @map("tenant_id")
+  name     String
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  Order  Order[]
+
+  @@unique([tenantId, name], name: "plan_tenant_name_unique")
+  @@map("plan")
+}
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @map("tenant_id")
+  customerId Int      @map("customer_id")
+  planId     Int      @map("plan_id")
+  createdAt  DateTime @default(now())
+  status     String
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  plan     Plan     @relation(fields: [planId], references: [id])
+
+  @@map("order")
+}
