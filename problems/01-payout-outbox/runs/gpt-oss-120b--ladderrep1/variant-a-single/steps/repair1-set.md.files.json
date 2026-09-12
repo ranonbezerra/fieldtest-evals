@@ -1,0 +1,9 @@
+[
+  "src/app.module.ts",
+  "src/mock.provider.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.worker.ts",
+  "src/provider/provider.interface.ts",
+  "test/payout.spec.ts"
+]

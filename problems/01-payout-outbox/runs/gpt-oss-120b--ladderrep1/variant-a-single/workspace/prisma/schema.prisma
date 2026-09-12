@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id               String        @id @default(uuid())
+  settled_balance  BigInt        @default(0) @map("settled_balance")
+  reserved_balance BigInt        @default(0) @map("reserved_balance")
+  payouts          Payout[]
+  ledgerEntries    LedgerEntry[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                  String       @id @default(uuid())
+  accountId           String       @map("account_id")
+  amount              BigInt
+  destination_address String       @map("destination_address")
+  idempotency_key     String       @unique @map("idempotency_key")
+  status              PayoutStatus @default(CREATED)
+  tx_hash             String?      @map("tx_hash")
+  created_at          DateTime     @default(now()) @map("created_at")
+  updated_at          DateTime     @updatedAt @map("updated_at")
+
+  account       Account        @relation(fields: [accountId], references: [id])
+  outboxMessage OutboxMessage?
+
+  @@map("payouts")
+}
+
+model OutboxMessage {
+  id              String        @id @default(uuid())
+  payoutId        String        @unique @map("payout_id")
+  attempts        Int           @default(0)
+  max_attempts    Int           @default(3) @map("max_attempts")
+  next_attempt_at DateTime      @default(now()) @map("next_attempt_at")
+  status          MessageStatus @default(PENDING)
+  created_at      DateTime      @default(now()) @map("created_at")
+  updated_at      DateTime      @updatedAt @map("updated_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@map("outbox_messages")
+}
+
+model LedgerEntry {
+  id          String   @id @default(uuid())
+  accountId   String   @map("account_id")
+  amount      BigInt
+  description String
+  created_at  DateTime @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@map("ledger_entries")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum MessageStatus {
+  PENDING
+  DONE
+  FAILED
+}

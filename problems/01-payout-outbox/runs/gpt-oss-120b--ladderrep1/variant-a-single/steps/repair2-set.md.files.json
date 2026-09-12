@@ -1,0 +1,4 @@
+[
+  "src/app.module.ts",
+  "src/mock.provider.ts"
+]
