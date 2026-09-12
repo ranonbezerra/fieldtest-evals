@@ -1,0 +1,14 @@
+[
+  "MIGRATION_NOTES.md",
+  "drizzle/migrations/001_initial.sql",
+  "package.json",
+  "src/billing/billing.service.ts",
+  "src/billing/prisma.ts",
+  "src/common/errors.ts",
+  "src/db/client.ts",
+  "src/db/schema.ts",
+  "test/create_invoice_transaction.spec.ts",
+  "test/issue_missing_invoice.spec.ts",
+  "test/missing_account.spec.ts",
+  "test/serializer.spec.ts"
+]
