@@ -1,0 +1,33 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AnchorState {
+  prepared
+  broadcasted
+  unknown
+  confirmed
+  failed
+}
+
+model Anchor {
+  id          String      @id @default(uuid()) @map("id")
+  documentId  String      @map("document_id")
+  version     Int         @map("version")
+  contentHash String      @map("content_hash")
+  txId        String      @map("tx_id")
+  signedTx    String      @map("signed_tx")
+  state       AnchorState @map("state")
+  blockNumber Int?        @map("block_number")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@unique([documentId, version])
+  @@unique([txId])
+  @@map("anchor")
+}

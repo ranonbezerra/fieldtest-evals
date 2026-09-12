@@ -1,0 +1,4 @@
+[
+  "src/anchor/anchor.service.ts",
+  "src/anchor/anchor.worker.ts"
+]
