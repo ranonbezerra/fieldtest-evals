@@ -83,6 +83,13 @@ model and expect back.**
 
 ### The scoreboard
 
+> **First campaign, superseded for rates.** One run per problem per condition, on a
+> harness with seven defects since corrected — including a routing bug that reached an
+> fp4 endpoint and a repair loop that could not see the file it needed to change. The
+> per-failure findings below are the durable part and still hold. For *rates*, read
+> [the paired campaign](#the-paired-campaign--2026-09-12): 120 cells, four repetitions,
+> one corrected harness.
+
 Eighteen problems, three conditions, every run judged by hand against a written rubric.
 
 | | local, phased | qwen hosted, single | gpt-oss-120b hosted |
@@ -125,6 +132,68 @@ real tests passing, and failed on 25 typecheck errors of which 24 were a missing
 **Neither model is better; they fail at different halves of the same job.** A benchmark
 reporting one number per model hides that entirely, which is most of why this
 repository exists.
+
+### The paired campaign — 2026-09-12
+
+The scoreboard above is the **first** campaign: one run per problem per condition, on a
+harness that has since been corrected seven times. Everything below supersedes it for
+any question about rates.
+
+A closed grid, run to answer one question: **does writing the problem as a diagnosed
+issue change what the model delivers?**
+
+    15 problems x 4 repetitions x 2 axes = 120 graded cells
+    132 run directories (12 outside the grid: 08, 14 and 16 produce no TypeScript)
+    one model, one harness, providers pinned, generation at temperature 1.0
+
+| | compiles clean | green test suite | schema failures |
+|---|---|---|---|
+| **ladder** (given a level-2 issue) | **51/60 — 85%** | 40% | 6 of 32 |
+| **model** (given the variant only) | **48/60 — 80%** | 38% | 2 of 36 |
+| | Fisher **p = 0.632** | p = 0.838 | p = 0.135 |
+
+**Nothing.** On every measure available without reading code, the issue buys nothing.
+And the jump from the first campaign's 22–25% to the eighties is not the issue either —
+it belongs to **pinning the provider** (routing had been silently reaching an fp4
+endpoint) and to **repairing the file set as a set** instead of file by file. Both axes
+share those, which is what makes the comparison mean anything.
+
+Anyone stopping at the table concludes the format is not worth writing. Then four
+matched pairs were read rather than counted:
+
+| problem | what happened |
+|---|---|
+| **12** orm-migration | Both green. The ladder preserved insertion order for line items; the model axis added the `orderBy` that looked missing and wrote a **passing test asserting the new contract**. The original reads with no `orderBy` and its suite records the consequence in a comment: *insertion order, as the database returns it*. |
+| **09** feature-in-conventions | Both green. The ladder answers a non-member with the same not-found a missing trip gets. The model axis returns **403**, in both runs read, with *more* tests than the ladder — 18 and 16 against 19 — certifying an enumeration oracle as correct. |
+| **03** read-model-projection | The model axis wins on substance: tenant isolation, out-of-order events, rename sync, stable pagination. The ladder loses three of four to Prisma — the issue asks for read performance and the model answers with a **partial index**, a feature Prisma's schema language does not have. |
+| **02** reconciliation-resend | The control. Both compile 3 of 4 and **both implement the requirement correctly**. The ladder also tests it by name; the model axis leaves it unasserted. |
+
+The two wins share a shape: the model axis produced a **green suite asserting the wrong
+contract**, which is worse than an untested gap because it survives every gate anyone
+would run and reaches a reviewer wearing a check mark.
+
+The control decides what the answer is worth. Where the right answer is deducible from
+the code, the issue buys a test name. **It pays where the difficulty is judging what not
+to change, or where the requirement cannot be read off the code at all** — and that is
+legible before you write it.
+
+Full reasoning in [`analysis/PAIRED-SUMMARY.md`](analysis/PAIRED-SUMMARY.md).
+
+### In progress: does a bigger model beat a better one?
+
+The question behind the hardware: a 27B at 6-bit is 22 GiB and already fits a 48 GB
+machine, so what 96 or 128 GB buys is the **120B class**. `openai/gpt-oss-120b` is being
+run on the same grid, same axis, pinned to **bf16** endpoints and `reasoning_effort:
+high` — better than the 6-bit a 128 GB machine could give it, so the run is an upper
+bound. Two rounds in:
+
+    gpt-oss-120b   12/28 = 43%        qwen3.8-27b   88% on the same problems
+                                      Fisher p < 0.0001
+
+Six problems the 120B has never once compiled are problems the 27B compiles almost
+every time. Provisional — two rounds of four — and one caveat carried openly: even at
+its maximum this model reasons 73k characters where qwen reasons 187k, which may be the
+dial's limit rather than the model's.
 
 ### What is being measured, and on what
 
@@ -312,6 +381,11 @@ then mapped back to model ids.
 
 ## What has been measured so far
 
+> **This section describes the first campaign — one run per problem, on a harness since
+> corrected seven times.** Its per-failure observations still hold and are worth reading;
+> its *rates* are superseded by the paired campaign above. The seven defects it ran with
+> are named in [`SECOND-PASS.md`](SECOND-PASS.md).
+
 **Seventeen of eighteen problems, one variant each, one fixed configuration.** Full
 record in [`FINDINGS.md`](FINDINGS.md); every claim below comes from a `verdict.md` on
 disk.
@@ -466,10 +540,61 @@ pass for the wrong reason does not get to exempt its own.
 
 ### What is not settled
 
-Whether *"builds beside instead of changing"* is a property of the model or of this
-harness's one-file-per-request shape. An agentic loop would let it re-read what it
-wrote. [`SECOND-PASS.md`](SECOND-PASS.md) names the experiment that separates them, and
-it costs one variant rather than eighteen.
+**Whether any of this transfers to a machine on your desk.** Everything that produced
+85% ran *hosted*. The only local campaign — 18 runs on a 48 GB M4 Pro — scored 4/18 on a
+harness that has since been corrected seven times, and nobody has re-run it. That is the
+largest open question in the repository, and it is the one the hardware decision
+actually rests on.
+
+**Whether `gpt-oss-120b` loses because it is worse or because it reasons less.** Two
+rounds put it at 43% against the 27B's 88%, at bf16 and maximum effort. But it emits 73k
+characters of reasoning where qwen emits 187k, and no dial closes that. Design or
+ceiling is undetermined.
+
+**Whether *"builds beside instead of changing"* is the model or the shape.** The
+one-file-per-request decomposition may cause it; an agentic loop would let the model
+re-read what it wrote. [`SECOND-PASS.md`](SECOND-PASS.md) names the experiment.
+
+**What the paired judging generalizes to.** Four pairs read, two favouring the issue,
+one against, one drawn. The two wins fail in the same direction for the same reason and
+the control behaves as the theory predicts — which is why the conclusion is stated at
+all — but four is four.
+
+## The ladder: the same problem, posed two ways
+
+Every problem here can be handed to a model at one of two levels, and the difference is
+the repository's second axis.
+
+**`--spec model`** gives the model the variant: the situation, as a developer would meet
+it. Whatever specification exists, the model writes for itself.
+
+**`--spec ladder`** replaces that with `problems/NN/ladder/L2-spec.md` — the same
+problem written as **an issue somebody already diagnosed**. Not a solution, and not a
+hint: an issue of the kind you would file for a colleague after doing the reading.
+
+All eighteen exist, 1,475 lines, and they are written to one discipline: **a card may
+leave a body unwritten and never a reference unresolved.** Each carries an issue number
+and labels, who reported it and **who diagnosed it**, the concrete incident that
+produced it, requirements that say *why* and not only *what*, and acceptance criteria
+that can be checked. Every distinctive identifier one names is an identifier that
+exists in its variant — verified, not assumed.
+
+The point is not to make the problem easier. Problem 12's issue never names the trap; it
+says only:
+
+    look for behaviour that consumers depend on and no test asserts
+
+and the model went and found the missing `orderBy` on its own. Problem 09's hands the
+answer over — *a non-member gets not-found, not forbidden* — and without being told, the
+model axis chose 403 in three clean runs out of three.
+
+Those are the two kinds, and both matter: the issue can teach a habit, or it can carry a
+requirement that no amount of reading the code would reveal.
+
+**This axis exists because of a question that was put to the repository directly:** if
+the point is to spend expensive tokens diagnosing a problem and cheap local tokens
+executing it, then the problems have to be posed the way that workflow would pose them.
+The first campaign was not measuring that workflow. This one is.
 
 ## How to use this repo
 
@@ -497,8 +622,26 @@ harness/ft-go harness/selftest a  # a tiny task through every phase
 . harness/ft-env.sh
 harness/ft-go 01 a                  # runner=api, spec=model — the default pairing
 harness/ft-go 01 a --runner aider   # same phases, through aider
-harness/ft-go 01 a --spec ladder    # implementation only, from the reference's spec
+harness/ft-go 01 a --spec ladder    # implementation only, from the diagnosed issue
+harness/ft-go 01 a --shape single   # the whole solution in one reply, no plan phase
 ```
+
+`--spec ladder` and `--shape single` are the pairing the paired campaign used: the
+level-2 issue replaces the plan phase, and the solution comes back in one request.
+Environment that shapes a run:
+
+| | |
+|---|---|
+| `FT_MODEL` | model id, e.g. `qwen/qwen3.8-27b` |
+| `FT_PROVIDERS` | comma-separated OpenRouter providers, pinned with no fallback. **Set it.** Unpinned routing reached an fp4 endpoint and the difference was mistaken for the model |
+| `FT_REASONING_EFFORT` | `low`/`medium`/`high`. Models differ enormously here: at its own default `gpt-oss-120b` reasons 2,849 characters where `qwen3.8-27b` reasons 187,062 |
+| `FT_REQUEST_TIMEOUT` | seconds. A dropped connection leaves the socket open and silent until this expires |
+| `FT_TAG_SUFFIX` | appended to the run directory, so a repetition campaign cannot land on runs whose verdicts are already written |
+
+After a campaign, `harness/ft-netcheck` lists the runs the network cost you — cells where
+**no** attempt extracted anything, because the repair phase then works from an empty
+workspace. Cells that lost a request and retried cleanly are left alone: those are real
+samples.
 
 An agentic loop is not used, and cannot be: it grows its own context until the
 conversation is trimmed, and the first thing trimmed is the problem statement. A
@@ -508,7 +651,7 @@ work is **decomposed without being designed**:
 
 | Phase | What happens |
 |---|---|
-| 0 | The model writes `PLAN.md` — files, schema, types, signatures, error codes, state machine. No bodies. It is a level-2 specification and **the model under test is the one who writes it**. |
+| 0 | The model writes `PLAN.md` — files, schema, types, signatures, error codes, state machine. No bodies. Same discipline as a ladder issue, except **the model under test is the one who writes it** — which is the whole difference between the two axes. `--spec ladder` skips this phase and supplies the issue instead. |
 | 1..N | One file per request. Context is the cheatsheet, the variant, the model's own plan, and the already-written files this one depends on, read-only. No tools, no exploration. |
 | gate | Typecheck, then up to two revisions carrying the compiler's exact messages and the files those messages name. |
 
