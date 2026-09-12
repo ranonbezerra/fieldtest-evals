@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  watch
+  restricted
+  banned
+}
+
+enum MethodologyStatus {
+  draft
+  active
+  retired
+}
+
+model Ingredient {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  synonyms  IngredientSynonym[]
+  rules     Rule[]
+  modifiers ProfileModifier[]
+
+  @@map("ingredients")
+}
+
+// Matching terms (lower-case, accent-free form recommended); resolution
+// normalises both the raw input and the stored term before lookup.
+model IngredientSynonym {
+  id           String     @id @default(uuid()) @db.Uuid
+  term         String     @unique
+  ingredientId String     @map("ingredient_id") @db.Uuid
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@map("ingredient_synonyms")
+}
+
+// A methodology version is immutable once published: rules are only ever
+// created, never updated. At most one version holds the "active" status.
+model MethodologyVersion {
+  id          String            @id @default(uuid()) @db.Uuid
+  code        String            @unique
+  status      MethodologyStatus @unique @default(draft)
+  publishedAt DateTime?         @map("published_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  rules   Rule[]
+  results ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id                   String   @id @default(uuid()) @db.Uuid
+  methodologyVersionId String   @map("methodology_version_id") @db.Uuid
+  ingredientId         String   @map("ingredient_id") @db.Uuid
+  severity             Severity
+  source               String
+
+  methodologyVersion MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+  ingredient         Ingredient         @relation(fields: [ingredientId], references: [id])
+
+  @@unique([methodologyVersionId, ingredientId])
+  @@map("rules")
+}
+
+model FamilyProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+
+  modifiers ProfileModifier[]
+
+  @@map("family_profiles")
+}
+
+// Contextual modifier: under this profile the ingredient is flagged at at
+// least `severity`. Modifiers tighten base rules; they never loosen them.
+model ProfileModifier {
+  id           String   @id @default(uuid()) @db.Uuid
+  profileId    String   @map("profile_id") @db.Uuid
+  ingredientId String   @map("ingredient_id") @db.Uuid
+  severity     Severity
+  source       String
+  reason       String?
+
+  profile    FamilyProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  ingredient Ingredient    @relation(fields: [ingredientId], references: [id])
+
+  @@unique([profileId, ingredientId])
+  @@map("profile_modifiers")
+}
+
+model Product {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ingredients ProductIngredient[]
+  results     ClassificationResult[]
+
+  @@map("products")
+}
+
+model ProductIngredient {
+  id        String  @id @default(uuid()) @db.Uuid
+  productId String  @map("product_id") @db.Uuid
+  position  Int
+  rawName   String  @map("raw_name")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, position])
+  @@map("product_ingredients")
+}
+
+// Profile-independent base classification, keyed by (product,
+// methodologyVersion): re-scoring is an idempotent upsert.
+model ClassificationResult {
+  id                   String    @id @default(uuid()) @db.Uuid
+  productId            String    @map("product_id") @db.Uuid
+  methodologyVersionId String    @map("methodology_version_id") @db.Uuid
+  payload              Json
+  confidence           Float
+  worstSeverity        Severity? @map("worst_severity")
+  computedAt           DateTime  @default(now()) @map("computed_at")
+
+  product            Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  methodologyVersion MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+
+  @@unique([productId, methodologyVersionId])
+  @@map("classification_results")
+}

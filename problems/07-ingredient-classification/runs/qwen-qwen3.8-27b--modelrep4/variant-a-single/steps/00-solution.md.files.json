@@ -1,0 +1,21 @@
+[
+  "package.json",
+  "prisma/migrations/20240601000000_init/migration.sql",
+  "prisma/migrations/migration_lock.toml",
+  "prisma/schema.prisma",
+  "prisma/seed.ts",
+  "src/app.module.ts",
+  "src/classification/classification.controller.ts",
+  "src/classification/classification.module.ts",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/common/api-error.filter.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "test/classification.spec.ts",
+  "test/fake-repository.ts",
+  "test/fixtures.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
