@@ -1,0 +1,8 @@
+[
+  "MIGRATION_NOTES.md",
+  "migrations/001_initial.sql",
+  "package.json",
+  "src/billing/billing.service.ts",
+  "src/drizzle/schema.ts",
+  "test/billing.additional.spec.ts"
+]
