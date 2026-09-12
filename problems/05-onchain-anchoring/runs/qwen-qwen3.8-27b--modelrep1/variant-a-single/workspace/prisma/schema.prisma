@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnchorState {
+  pending
+  confirmed
+}
+
+// One row per anchored (document, version). The anchor intent — including the
+// chain tx identity and the signed payload — is written BEFORE the tx is
+// broadcast, so a crash at any point after that is recoverable.
+//
+// `version` is the integer report version (reports are versioned 1..n).
+model Anchor {
+  id          String      @id @map("id")
+  documentId  String      @map("document_id")
+  version     Int
+  contentHash String      @map("content_hash")
+  txId        String      @map("tx_id")
+  signedTx    String      @map("signed_tx")
+  state       AnchorState @default(pending)
+  blockNumber Int?        @map("block_number")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  broadcastAt DateTime?   @map("broadcast_at")
+  confirmedAt DateTime?   @map("confirmed_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Exactly one anchor per (document, version), enforced at the schema level.
+  @@unique([documentId, version])
+  @@map("anchors")
+}
