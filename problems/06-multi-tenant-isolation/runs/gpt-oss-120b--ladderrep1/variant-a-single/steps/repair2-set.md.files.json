@@ -1,0 +1,6 @@
+[
+  "src/customer/customer.repository.ts",
+  "src/main.ts",
+  "src/tenant/tenant.middleware.ts",
+  "test/tenant-isolation.spec.ts"
+]

@@ -1,0 +1,23 @@
+[
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/customer/customer.controller.ts",
+  "src/customer/customer.module.ts",
+  "src/customer/customer.repository.ts",
+  "src/customer/customer.service.ts",
+  "src/customer/dto/create-customer.dto.ts",
+  "src/customer/dto/update-customer.dto.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "src/tenant-config/tenant-config.controller.ts",
+  "src/tenant-config/tenant-config.module.ts",
+  "src/tenant-config/tenant-config.repository.ts",
+  "src/tenant-config/tenant-config.service.ts",
+  "src/tenant/tenant.context.ts",
+  "src/tenant/tenant.middleware.ts",
+  "src/tenant/tenant.module.ts",
+  "src/tenant/tenant.repository.ts",
+  "src/tenant/tenant.service.ts",
+  "test/tenant-isolation.spec.ts"
+]
