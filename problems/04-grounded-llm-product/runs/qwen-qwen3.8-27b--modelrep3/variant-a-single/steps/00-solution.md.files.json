@@ -1,0 +1,16 @@
+[
+  "package.json",
+  "src/eval/harness.ts",
+  "src/eval/judges.ts",
+  "src/eval/scenarios.ts",
+  "src/guide/fixtures.ts",
+  "src/guide/grounder.ts",
+  "src/guide/guide.service.ts",
+  "src/guide/guide.types.ts",
+  "src/guide/redactor.ts",
+  "src/guide/scripted-llm-client.ts",
+  "test/eval.spec.ts",
+  "test/guide.spec.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]

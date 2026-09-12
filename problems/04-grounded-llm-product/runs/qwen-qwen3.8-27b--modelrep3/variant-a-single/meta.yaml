@@ -1,0 +1,136 @@
+{
+  "model": "qwen/qwen3.8-27b",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "04-grounded-llm-product",
+  "variant": "variant-a",
+  "date": "2026-09-12T07:06:15+00:00",
+  "wall_seconds": 822,
+  "wall_minutes": 13.7,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": {
+    "total_usd": 0.18,
+    "per_1k_output_usd": 0.0022
+  },
+  "runner": "api",
+  "spec_source": "model",
+  "shape": "single",
+  "asked_again_after_empty": false,
+  "manifest": {
+    "declared": 14,
+    "built": 0,
+    "truncated": true
+  },
+  "requests": 1,
+  "resumed": false,
+  "requests_this_invocation": 1,
+  "tokens": {
+    "prompt_total": 1298,
+    "completion_total": 81670,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 81670,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": 99.9,
+    "output_tokens_per_second_overall": 99.9,
+    "generation_seconds": 818,
+    "model_load_seconds": 0,
+    "overhead_seconds": 4
+  },
+  "revisions": {
+    "self_repairs": 0,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": true,
+    "repairs": 0,
+    "skipped": null,
+    "gate_scaffold_added": []
+  },
+  "tests": {
+    "ran": true,
+    "exit": 1,
+    "failed": 2,
+    "passed": 18,
+    "total": 20,
+    "failing": [
+      "hint mode > keeps a quantity the player already mentioned",
+      "hint mode > redacts boss names, place names and unknown quantities from the grounded answer"
+    ]
+  },
+  "failures": [],
+  "phases": [
+    {
+      "label": "solution",
+      "model": "qwen/qwen3.8-27b",
+      "provider": "openrouter",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "max_tokens": null,
+      "context_window": 1000000,
+      "thinking": true,
+      "reasoning_effort": "model default",
+      "prompt_tokens": 1298,
+      "completion_tokens": 81670,
+      "reasoning_chars": 254478,
+      "content_chars": 37432,
+      "finish_reason": "stop",
+      "output_ceiling_hit": false,
+      "wall_seconds": 817.8,
+      "server_seconds": 817.8,
+      "model_load_seconds": 0.0,
+      "output_tokens_per_second": 99.9,
+      "reads": [
+        "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/problems/04-grounded-llm-product/variants/variant-a.md"
+      ],
+      "system": "/Users/ranonbezerra/RnnDev_local/fieldtest-evals/harness/cheatsheet/typescript-nestjs.md",
+      "host_pressure_at_send": [],
+      "cost_usd": 0.17998552,
+      "upstream_cost_usd": 0.17998552,
+      "reasoning_tokens": null,
+      "cached_tokens": null,
+      "generation_id": "gen-1789195953-ohIxEuUwx6JSQFQIta3V",
+      "upstream_provider": "Parasail",
+      "reasoning_effort_semantics": "fraction of max_tokens reserved for thinking (OpenRouter), not the model's own dial",
+      "exit": 0,
+      "runner": "api"
+    }
+  ]
+}
