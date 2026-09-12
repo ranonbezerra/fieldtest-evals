@@ -1,0 +1,4 @@
+[
+  "src/modules/trips/trips.repository.ts",
+  "src/modules/trips/trips.service.ts"
+]
