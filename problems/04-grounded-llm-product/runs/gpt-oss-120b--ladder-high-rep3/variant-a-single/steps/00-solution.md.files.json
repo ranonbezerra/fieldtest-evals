@@ -1,0 +1,9 @@
+[
+  "src/guide-assistant/eval.ts",
+  "src/guide-assistant/guide-assistant.controller.ts",
+  "src/guide-assistant/guide-assistant.module.ts",
+  "src/guide-assistant/guide-assistant.repository.ts",
+  "src/guide-assistant/guide-assistant.service.ts",
+  "src/guide-assistant/llm-client.interface.ts",
+  "test/guide-assistant.spec.ts"
+]

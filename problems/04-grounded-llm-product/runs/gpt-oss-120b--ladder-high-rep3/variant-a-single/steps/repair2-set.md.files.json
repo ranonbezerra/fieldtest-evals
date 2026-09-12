@@ -1,0 +1,7 @@
+[
+  "src/guide-assistant/eval.ts",
+  "src/guide-assistant/guide-assistant.controller.ts",
+  "src/guide-assistant/guide-assistant.module.ts",
+  "src/guide-assistant/guide-assistant.service.ts",
+  "test/guide-assistant.spec.ts"
+]
