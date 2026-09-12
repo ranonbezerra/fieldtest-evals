@@ -1,0 +1,6 @@
+[
+  "src/app/AppLayout.tsx",
+  "src/features/sessions/ActiveSessionBar.test.tsx",
+  "src/features/sessions/ActiveSessionBar.tsx",
+  "src/features/sessions/queries.ts"
+]
