@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           String   @id @default(uuid())
+  slug         String   @unique
+  host         String   @unique
+  name         String
+  branding     Json     @default("{}")
+  featureFlags Json     @map("feature_flags") @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  customers Customer[]
+  plans     Plan[]
+  orders    Order[]
+
+  @@map("tenants")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  email     String
+  name      String
+  planId    String?  @map("plan_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   Plan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, email], map: "customers_tenant_id_email_key")
+  @@index([tenantId], map: "customers_tenant_id_idx")
+  @@map("customers")
+}
+
+model Plan {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  name       String
+  priceCents Int      @map("price_cents")
+  currency   String   @default("usd")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customers Customer[]
+  orders    Order[]
+
+  @@unique([tenantId, name], map: "plans_tenant_id_name_key")
+  @@index([tenantId], map: "plans_tenant_id_idx")
+  @@map("plans")
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  reference   String
+  customerId  String   @map("customer_id")
+  planId      String?  @map("plan_id")
+  amountCents Int      @map("amount_cents")
+  currency    String   @default("usd")
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  plan     Plan?    @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, reference], map: "orders_tenant_id_reference_key")
+  @@index([tenantId], map: "orders_tenant_id_idx")
+  @@index([customerId], map: "orders_customer_id_idx")
+  @@index([planId], map: "orders_plan_id_idx")
+  @@map("orders")
+}
