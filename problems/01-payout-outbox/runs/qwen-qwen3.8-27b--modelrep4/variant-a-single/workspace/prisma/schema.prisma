@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Payout lifecycle:
+///   created    -> funds reserved, outbox message queued
+///   processing -> worker claimed the message, provider call in flight
+///   sent       -> provider confirmed with a txHash (same transaction as completed)
+///   completed  -> ledger settled, final success
+///   failed     -> definitive provider rejection, reservation released
+///   needs_review -> retries exhausted without a definitive outcome, funds held
+enum PayoutStatus {
+  created
+  processing
+  sent
+  completed
+  failed
+  needs_review
+}
+
+/// Outbox message state.
+///   pending    -> waiting to be claimed (next_attempt_at reached)
+///   processing -> claimed by a worker (claim_token + locked_at)
+///   done       -> payout reached a terminal state, delivery finished
+///   dead       -> no further delivery (retries exhausted / unrecoverable)
+enum MessageStatus {
+  pending
+  processing
+  done
+  dead
+}
+
+enum LedgerDirection {
+  debit
+  credit
+}
+
+model Account {
+  id             String   @id @default(uuid())
+  availableMinor BigInt   @default(0) @map("available_minor")
+  pendingMinor   BigInt   @default(0) @map("pending_minor")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  payouts Payout[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String       @id @default(uuid())
+  accountId          String       @map("account_id")
+  amountMinor        BigInt       @map("amount_minor")
+  destinationAddress String       @map("destination_address")
+  idempotencyKey     String       @unique @map("idempotency_key")
+  status             PayoutStatus @default(created)
+  txHash             String?      @map("tx_hash")
+  failureReason      String?      @map("failure_reason")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  account Account          @relation(fields: [accountId], references: [id])
+  message PayoutMessage?
+  entries LedgerEntry[]
+
+  @@index([accountId])
+  @@map("payouts")
+}
+
+model PayoutMessage {
+  id            String        @id @default(uuid())
+  payoutId      String        @unique @map("payout_id")
+  status        MessageStatus @default(pending)
+  claimToken    String?       @map("claim_token")
+  lockedAt      DateTime?     @map("locked_at")
+  attempts      Int           @default(0)
+  nextAttemptAt DateTime      @default(now()) @map("next_attempt_at")
+  lastError     String?       @map("last_error")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@map("payout_messages")
+}
+
+model LedgerEntry {
+  id          String          @id @default(uuid())
+  payoutId    String          @map("payout_id")
+  event       String
+  accountCode String          @map("account_code")
+  direction   LedgerDirection
+  amountMinor BigInt          @map("amount_minor")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id])
+
+  @@unique([payoutId, event, accountCode])
+  @@index([payoutId])
+  @@map("ledger_entries")
+}
