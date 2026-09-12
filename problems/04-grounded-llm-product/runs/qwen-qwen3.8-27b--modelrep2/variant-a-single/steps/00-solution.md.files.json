@@ -1,0 +1,20 @@
+[
+  "package.json",
+  "src/app.module.ts",
+  "src/assistant/assistant.controller.ts",
+  "src/assistant/assistant.module.ts",
+  "src/assistant/assistant.service.ts",
+  "src/assistant/grounding.ts",
+  "src/assistant/llm-client.ts",
+  "src/assistant/spoiler-redactor.ts",
+  "src/assistant/types.ts",
+  "src/eval/eval-harness.ts",
+  "src/eval/golden-scenarios.ts",
+  "src/eval/judges.ts",
+  "src/eval/types.ts",
+  "src/main.ts",
+  "test/assistant.spec.ts",
+  "test/eval.spec.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
