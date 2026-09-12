@@ -1,0 +1,5 @@
+[
+  "src/billing/billing.repository.ts",
+  "src/types/pg.d.ts",
+  "test/billing.spec.ts"
+]
