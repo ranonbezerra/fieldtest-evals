@@ -1,0 +1,18 @@
+[
+  "SECURITY.md",
+  "prisma/migrations/20250101000000_init/migration.sql",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/common/app.error.ts",
+  "src/common/exception.filter.ts",
+  "src/mail/mail.module.ts",
+  "src/mail/mail.port.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "test/auth.spec.ts"
+]

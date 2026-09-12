@@ -1,0 +1,6 @@
+[
+  "src/common/app.error.ts",
+  "src/mail/mail.port.ts",
+  "src/main.ts",
+  "src/prisma/prisma.service.ts"
+]
