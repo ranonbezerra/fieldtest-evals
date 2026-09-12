@@ -1,0 +1,11 @@
+[
+  "prisma/schema.prisma",
+  "src/auth/token.utils.ts",
+  "src/prisma.service.ts",
+  "src/refresh/invalid-refresh-token.exception.ts",
+  "src/refresh/refresh.controller.ts",
+  "src/refresh/refresh.module.ts",
+  "src/refresh/refresh.repository.ts",
+  "src/refresh/refresh.service.ts",
+  "test/refresh.spec.ts"
+]

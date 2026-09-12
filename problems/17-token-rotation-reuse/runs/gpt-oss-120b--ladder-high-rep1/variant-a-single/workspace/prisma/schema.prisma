@@ -1,0 +1,32 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model RefreshToken {
+  id            String    @id @default(uuid()) @map("id")
+  token         String    @unique @map("token")
+  userId        String    @map("user_id")
+  familyId      String    @map("family_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  expiresAt     DateTime  @map("expires_at")
+  retiredAt     DateTime? @map("retired_at")
+  invalidatedAt DateTime? @map("invalidated_at")
+
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @map("id")
+  eventType String   @map("event_type")
+  userId    String?  @map("user_id")
+  tokenId   String?  @map("token_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  details   Json?    @map("details")
+
+  @@map("audit_logs")
+}
