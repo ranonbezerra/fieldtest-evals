@@ -1,6 +1,6 @@
-import { NotFoundError, mapPrismaError } from '../common/errors.js';
+import { NotFoundError, mapDbError } from '../common/errors.js';
 import { BillingRepository } from './billing.repository.js';
-import type { InvoiceRow, LineItemRow } from './prisma.js';
+import type { InvoiceRow, LineItemRow } from './schema.js';
 
 export interface InvoiceView {
   id: string;
@@ -50,7 +50,7 @@ export class BillingService {
     try {
       return await this.repo.markIssued(id, new Date());
     } catch (e) {
-      throw mapPrismaError(e);
+      throw mapDbError(e);
     }
   }
 }
