@@ -1,0 +1,4 @@
+[
+  "src/payout/dto/create-payout.dto.ts",
+  "test/payout.spec.ts"
+]

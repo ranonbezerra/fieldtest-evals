@@ -1,0 +1,77 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum PayoutStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  NEEDS_REVIEW
+}
+
+enum MessageStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model Account {
+  id               String        @id @default(uuid())
+  settled_balance  BigInt
+  reserved_balance BigInt        @default(0)
+  version          Int           @default(0)
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  payouts          Payout[]
+  ledger_entries   LedgerEntry[]
+
+  @@map("account")
+}
+
+model Payout {
+  id                  String       @id @default(uuid())
+  account             Account      @relation(fields: [account_id], references: [id])
+  account_id          String
+  amount              BigInt
+  destination_address String
+  status              PayoutStatus @default(QUEUED)
+  idempotency_key     String       @unique
+  tx_hash             String?
+  created_at          DateTime     @default(now())
+  updated_at          DateTime     @updatedAt
+  messages            Message[]
+
+  @@map("payout")
+}
+
+model Message {
+  id           String        @id @default(uuid())
+  payout       Payout        @relation(fields: [payout_id], references: [id])
+  payout_id    String
+  status       MessageStatus @default(PENDING)
+  attempts     Int           @default(0)
+  max_attempts Int           @default(3)
+  last_error   String?
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  @@unique([payout_id])
+  @@map("message")
+}
+
+model LedgerEntry {
+  id          String   @id @default(uuid())
+  account     Account  @relation(fields: [account_id], references: [id])
+  account_id  String
+  amount      BigInt
+  description String?
+  created_at  DateTime @default(now())
+
+  @@map("ledger_entry")
+}
