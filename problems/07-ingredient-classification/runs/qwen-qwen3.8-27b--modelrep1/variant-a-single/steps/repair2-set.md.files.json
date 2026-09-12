@@ -1,0 +1,12 @@
+[
+  "prisma/schema.prisma",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/methodology/methodology.repository.ts",
+  "src/methodology/methodology.service.ts",
+  "src/products/products.repository.ts",
+  "src/products/products.service.ts",
+  "src/profiles/profiles.repository.ts",
+  "src/profiles/profiles.service.ts",
+  "test/helpers/in-memory.ts"
+]
