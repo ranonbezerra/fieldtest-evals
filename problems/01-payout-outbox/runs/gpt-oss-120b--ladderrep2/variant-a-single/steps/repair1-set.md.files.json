@@ -1,0 +1,10 @@
+[
+  "src/app.module.ts",
+  "src/express.js",
+  "src/main.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.service.ts",
+  "src/payout/payout.worker.ts",
+  "test/payout.spec.ts"
+]

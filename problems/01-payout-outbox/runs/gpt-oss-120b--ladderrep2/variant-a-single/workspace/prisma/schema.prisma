@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+model Account {
+  id              String        @id @default(uuid())
+  settledBalance  BigInt        @map("settled_balance")
+  reservedBalance BigInt        @map("reserved_balance")
+  payouts         Payout[]
+  ledgerEntries   LedgerEntry[]
+
+  @@map("account")
+}
+
+model Payout {
+  id                 String        @id @default(uuid())
+  accountId          String        @map("account_id")
+  account            Account       @relation(fields: [accountId], references: [id])
+  amount             BigInt
+  destinationAddress String        @map("destination_address")
+  idempotencyKey     String        @map("idempotency_key")
+  status             PayoutStatus  @default(CREATED)
+  txHash             String?       @map("tx_hash")
+  attempts           Int           @default(0)
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  message            Message?
+  LedgerEntry        LedgerEntry[]
+
+  @@unique([accountId, idempotencyKey])
+  @@map("payout")
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  payoutId    String    @map("payout_id")
+  payout      Payout    @relation(fields: [payoutId], references: [id])
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  processedAt DateTime? @map("processed_at")
+
+  @@unique([payoutId])
+  @@map("message")
+}
+
+model LedgerEntry {
+  id          String   @id @default(uuid())
+  accountId   String   @map("account_id")
+  account     Account  @relation(fields: [accountId], references: [id])
+  amount      BigInt
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  payoutId    String?  @map("payout_id")
+  payout      Payout?  @relation(fields: [payoutId], references: [id])
+
+  @@map("ledger_entry")
+}
