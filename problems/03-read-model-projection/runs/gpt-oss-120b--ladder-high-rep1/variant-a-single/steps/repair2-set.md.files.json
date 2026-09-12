@@ -1,0 +1,6 @@
+[
+  "src/drift-repair/drift-repair.service.ts",
+  "src/operations/operations.service.ts",
+  "src/orders/orders.service.ts",
+  "test/operations.spec.ts"
+]

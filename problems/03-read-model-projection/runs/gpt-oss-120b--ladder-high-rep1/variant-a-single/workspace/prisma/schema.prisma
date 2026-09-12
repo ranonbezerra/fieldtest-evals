@@ -1,0 +1,52 @@
+// ASSUMPTION: The original system includes additional tables (events, workers, etc.).
+// For this implementation we model only the fields needed for the dashboard.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PaymentOrder {
+  id         Int       @id @default(autoincrement()) @map("order_id")
+  companyId  Int       @map("company_id")
+  status     String    @map("status")
+  amount     Decimal   @map("amount")
+  createdAt  DateTime  @map("created_at")
+  approvedAt DateTime? @map("approved_at")
+  workerId   Int?      @map("worker_id")
+
+  @@index([companyId])
+  @@map("payment_order")
+}
+
+model Worker {
+  id   Int    @id @default(autoincrement()) @map("worker_id")
+  name String @map("name")
+
+  @@map("worker")
+}
+
+model OperationDashboard {
+  id         Int       @id @default(autoincrement())
+  orderId    Int       @unique @map("order_id")
+  companyId  Int       @map("company_id")
+  status     String    @map("status")
+  amount     Decimal   @map("amount")
+  createdAt  DateTime  @map("created_at")
+  approvedAt DateTime? @map("approved_at")
+  workerId   Int?      @map("worker_id")
+
+  @@index([companyId, status, createdAt(sort: Desc)], name: "idx_company_status_createdat")
+  @@map("operation_dashboard")
+}
+
+model CompanyFinancialTotal {
+  companyId   Int     @id @map("company_id")
+  totalAmount Decimal @default(0) @map("total_amount")
+
+  @@map("company_financial_total")
+}

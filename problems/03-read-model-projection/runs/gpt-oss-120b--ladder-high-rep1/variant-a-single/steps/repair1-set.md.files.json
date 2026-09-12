@@ -1,0 +1,14 @@
+[
+  "src/app.module.ts",
+  "src/drift-repair/drift-repair.module.ts",
+  "src/drift-repair/drift-repair.service.ts",
+  "src/main.ts",
+  "src/operations/operations.controller.ts",
+  "src/operations/operations.module.ts",
+  "src/operations/operations.repository.ts",
+  "src/operations/operations.service.ts",
+  "src/orders/orders.module.ts",
+  "src/orders/orders.repository.ts",
+  "src/orders/orders.service.ts",
+  "test/operations.spec.ts"
+]
