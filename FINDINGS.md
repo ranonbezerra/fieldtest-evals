@@ -1887,8 +1887,8 @@ limitation, and is queued in SECOND-PASS rather than applied mid-campaign.
 ## 4.23 The one-sided relation was not the dominant defect, and three of the failures were mine
 
 §4.22 called the one-sided Prisma relation "the single most reproducible thing this
-repository has measured." Across the paired campaign — 119 runs, both axes, same
-harness — that claim does not hold. Every `prisma generate` failure, classified:
+repository has measured." Across the closed paired campaign — 132 run directories, 120
+graded cells, both axes, same harness — that claim does not hold. Every `prisma generate` failure, classified:
 
 | run | cause |
 |---|---|
@@ -1944,3 +1944,49 @@ is not size.
 
 The overall difference — 6 of 32 against 2 of 36 — is p = 0.135, and three of the six
 are the DATABASE_URL noise. There is no established axis effect on schema failure.
+
+## 4.24 The closed grid, and the two cells taken twice
+
+    grid              15 problems x 4 repetitions x 2 axes = 120 graded cells
+    run directories   132 (ladder 72, model 60)
+    cells graded      120 (ladder 60, model 60)
+
+    compile rate      ladder 51/60 = 85%   model 48/60 = 80%   Fisher p = 0.632
+
+Twelve directories sit outside the grid. Problems **08**, **16** and **14** produce no
+TypeScript — a diagnosis, a runbook, a code review — so `tsc` does not apply and never
+did. They are excluded from every rate, on both axes equally, and judged by hand.
+
+Two cells were taken twice. Both re-runs are in the grid; neither replaced its original
+quietly.
+
+**14 ladder rep3.** Our connection dropped. The retry hung on an open, silent socket
+until the hour-long request ceiling expired; the solution never extracted a file, and
+the repair phase, working from an empty workspace, wrote `src/`, `prisma/`,
+`notifications/` and `risk/` for a problem whose only deliverable is `REVIEW.md`. I had
+this on the record as an open question — the model ignoring an instruction, or the
+harness losing state. The re-run answered it: **186 lines of `REVIEW.md`**. Harness
+damage, not the model. rep1 and rep2 had produced `REVIEW.md` all along.
+
+**05 ladder rep4.** `IncompleteRead(6776 bytes read)` at 1848s, and then the provider
+ended the retry with `finish_reason=error` and no content at all. The re-run **failed
+legitimately**, on four type errors. That is worth stating plainly: taking a cell again
+is not a way of improving it, and this one came back worse.
+
+### The rule, and what it deliberately leaves alone
+
+`harness/ft-netcheck` selects the cells. A network casualty leaves *absence* behind —
+ft-run dies at the ceiling without writing its usage record — so the signature is a step
+with no `.usage.json` beside it, which is why a sweep of the usage records missed 14 and
+found it only because I was already reading that run.
+
+A cell is re-run only when **no** attempt extracted anything. Six cells lost a request
+to the network, retried, and returned: 02 rep1, 03 rep2, 03 rep3, 07 rep1, 07 rep3,
+15 rep3. Those are real samples and were left alone. Two more were *degraded* — code
+arrived, the generation did not end cleanly — and were read rather than re-run: 05 rep3
+and 06 rep4, the latter carrying 36,239 characters and 28 files, in family with the
+36k/53k/46k of its siblings, and compiling clean. An earlier version of the rule called
+it lost and would have thrown away a good draw.
+
+Degraded cells are deliberately **not** decided by whether the gate passed. Re-running
+only the ones that failed would select on the very number the campaign measures.

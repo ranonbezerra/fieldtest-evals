@@ -1,13 +1,41 @@
 # What four paired readings say, after every number said nothing
 
-## The numbers, first, because they are the honest starting point
+## Closing figures — 2026-09-12, grid complete
 
-119 runs, both axes, same harness, same pinned providers, four repetitions each.
+These supersede every partial count in this directory, including the mid-campaign
+snapshot at the top of `PAIRED-JUDGING.md`.
 
-    compile rate        ladder 85%   model 80%   Fisher p = 0.632
-    green test suite    ladder 40%   model 38%   Fisher p = 0.838
-    suite that fails    11 runs      11 runs
-    schema failures     6 of 32      2 of 36     Fisher p = 0.135
+    grid                15 problems x 4 repetitions x 2 axes = 120 graded cells
+    run directories     132 (ladder 72, model 60)
+    cells graded        120 (ladder 60, model 60)
+
+Twelve of the 132 directories are not in the grid: problems **08**, **14** and **16**
+produce no TypeScript, so `tsc` does not apply and never did. They are judged by hand
+and excluded from every rate below, on both axes equally.
+
+    compile rate        ladder 51/60 = 85%   model 48/60 = 80%   Fisher p = 0.632
+    green test suite    ladder 40%           model 38%           Fisher p = 0.838
+    suite that fails    11 runs              11 runs
+    schema failures     6 of 32              2 of 36             Fisher p = 0.135
+
+Two cells were taken twice, and both re-runs are recorded in the grid rather than
+quietly replacing the originals:
+
+| cell | why it was taken again | outcome |
+|---|---|---|
+| **14 ladder rep3** | our connection dropped; the retry hung on a dead socket until the request ceiling expired, the solution never extracted, and the repair phase wrote source files for a problem whose only deliverable is `REVIEW.md` | re-run delivered `REVIEW.md`, 186 lines — confirming harness damage, not the model |
+| **05 ladder rep4** | `IncompleteRead(6776 bytes)` at 1848s, then the provider ended the retry with `finish_reason=error` and no content | re-run **failed legitimately** on 4 type errors; 05 is 4/4 on the ladder because a *separate* provider cut was also taken again |
+
+The rule that selected them is in `harness/ft-netcheck` and is deliberately narrow: a
+cell is re-run only when **no** attempt extracted anything, because the repair phase then
+works from an empty workspace. Six other cells lost a request to the network, retried,
+and were left alone — those are real samples. Two more were degraded (code arrived, the
+generation did not end cleanly) and were read rather than re-run; re-running those by
+whether the gate passed would have selected on the very number being measured.
+
+Nothing else was re-run. No cell was dropped.
+
+## What the numbers say
 
 Nothing. On every measure available without reading code, the level-2 issue buys
 nothing. The jump from the earlier campaigns' 22–25% to the eighties belongs to

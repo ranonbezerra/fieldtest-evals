@@ -451,3 +451,71 @@ the boundary failure is cleanest.
 per million that is about **$5** for a full hosted pass, plus input. The machine time
 was always the expensive part.
 
+
+---
+
+# Post-campaign corrections — 2026-09-12
+
+Three gate defects the paired campaign exposed. All three were found **during** the
+campaign and deliberately not applied until it closed, so that all 120 cells ran under
+one harness. They are in `harness/ft-go` as of this commit, and **no result in
+FINDINGS.md was produced with them**.
+
+## 1. `DATABASE_URL` is now set
+
+Three of the eight recorded `prisma generate` failures were this:
+
+    Environment variable not found: DATABASE_URL.
+
+Nothing in `ft-go` or `ft-env.sh` ever set it, and a schema declaring
+`url = env("DATABASE_URL")` cannot generate without one. The three runs — 05 model rep1,
+06 ladder rep1, 17 ladder rep1 — typechecked clean anyway, so the defect cost nothing
+except a misleading line in each gate log and **three entries in a tally of "the model
+broke the schema" that I then reasoned from.** Nothing connects to this URL; it only has
+to parse.
+
+## 2. `prisma format` runs before `prisma generate`
+
+It fixes the one-sided relation outright. Prisma's own error recommends it — *"Either
+run `prisma format` or add it manually"* — and it does: the formatter writes the opposite
+field into the other model and the schema validates. Verified on the shape that broke 07
+on both axes.
+
+**It does not fix what breaks problem 03**, and the first version of this note claimed it
+would. Tested rather than assumed: a schema carrying the offending index fails to parse,
+so the formatter returns it untouched and `validate` still rejects it. What breaks 03 is
+the model inventing a feature Prisma's schema language does not have —
+
+    @@index([companyId, createdAt(sort: Desc)],
+            where: [status: "pending"], map: "ops_company_pending")
+
+partial indexes, sixty-one of them in rep1 and forty-six in rep4. That is the same defect
+as gpt-oss inventing `.isOk` on the scaffold's own `ApiResult` (§4.14): the model reaches
+for the API it wishes existed. No harness correction addresses it.
+
+Since a schema it cannot parse comes back unchanged, running the formatter is free.
+
+## 3. The gate stops repairing TypeScript once the schema has failed
+
+When `prisma generate` produces no client, every import from `@prisma/client` fails and
+the error count means nothing: problem 07 once recorded **fifty errors across twenty-nine
+files**, all of them one broken relation wearing fifty masks. Repairing TypeScript cannot
+help either — the repair only ever sees `.ts` paths from the compiler's own output, and
+the file that has to change is the schema.
+
+The typecheck still runs once, so the state is recorded honestly. The repair loop is
+skipped, and the gate records the cause.
+
+## What these would have changed
+
+Corrections 1 and 2 remove **five of the eight** recorded schema failures: the three
+`DATABASE_URL` entries, which were mine, and the two one-sided relations, one per axis.
+The three remaining are problem 03 reaching past the schema language, and no harness
+change touches those.
+
+Correction 3 changes no verdict. It stops the gate spending repair requests on an
+impossible task and stops the logs overstating a single defect fifty-fold.
+
+**The headline result is unaffected.** Ladder 85% against model 80%, p = 0.632, is a
+null result, and removing five schema failures distributed 3-2 across the axes does not
+make it less null.

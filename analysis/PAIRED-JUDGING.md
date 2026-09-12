@@ -1,5 +1,12 @@
 # The paired judging — does the issue buy quality, when it does not buy compilation?
 
+> **This is the plan, written mid-campaign on 2026-09-12, and its numbers are a
+> snapshot.** At the time the model axis was three rounds in: 50/59 against 38/49,
+> p = 0.456. The closed grid is 51/60 against 48/60, p = 0.632 — the same null result
+> on a full grid. `PAIRED-SUMMARY.md` carries the final figures and supersedes every
+> number below. The reasoning that selected the four problems is unchanged.
+
+
 The four-round comparison answered one question and left the important one open.
 
     LADDER 50/59 = 85%     MODEL 38/49 = 78%     Fisher p = 0.456
