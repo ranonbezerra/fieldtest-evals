@@ -1,0 +1,8 @@
+[
+  "drizzle.config.ts",
+  "package.json",
+  "src/billing/billing.repository.ts",
+  "src/common/errors.ts",
+  "src/db/db.ts",
+  "src/db/schema.ts"
+]
