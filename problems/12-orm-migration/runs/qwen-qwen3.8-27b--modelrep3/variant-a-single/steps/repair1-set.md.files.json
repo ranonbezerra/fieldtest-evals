@@ -1,0 +1,4 @@
+[
+  "src/db/db.schema.ts",
+  "test/db.ts"
+]
