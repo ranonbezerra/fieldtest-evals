@@ -1,0 +1,12 @@
+[
+  "src/app.module.ts",
+  "src/bank/bank.service.ts",
+  "src/main.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.reconcile.job.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/prisma/prisma.service.ts",
+  "test/payout.spec.ts"
+]

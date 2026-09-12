@@ -1,0 +1,4 @@
+[
+  "src/bank/bank.service.ts",
+  "src/shims.d.ts"
+]
