@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// One on-chain anchor per published (document, version).
+/// The @@unique constraint is the schema-level enforcement of
+/// "exactly one anchor per (document, version)".
+model DocumentAnchor {
+  id         String @id @default(uuid())
+
+  documentId String @map("document_id")
+
+  /// Published report version (immutable per version).
+  version String
+
+  /// sha256 over the canonical (document, version, content) payload.
+  anchorHash String @map("anchor_hash")
+
+  /// Deterministic tx identity from chain.prepare(), persisted BEFORE broadcast.
+  txId String @map("tx_id")
+
+  /// State machine: PENDING_BROADCAST | BROADCAST | LIMBO | CONFIRMED | FAILED
+  state String @default("PENDING_BROADCAST")
+
+  blockNumber Int? @map("block_number")
+
+  /// "success" or "failure" as reported by the chain receipt.
+  chainStatus String? @map("chain_status")
+
+  /// Last broadcast/receipt error, for LIMBO and FAILED rows.
+  lastError String? @map("last_error")
+
+  /// How many times the tx was (re)broadcast; each attempt is idempotent by txId.
+  broadcastAttempts Int @default(0) @map("broadcast_attempts")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  confirmedAt DateTime? @map("confirmed_at")
+
+  @@unique([documentId, version])
+  @@map("document_anchors")
+}
