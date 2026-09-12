@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           String     @id @default(uuid()) @map("tenant_id")
+  domain       String     @unique @map("domain")
+  branding     String?    @map("branding")
+  featureFlags Json?      @map("feature_flags")
+  customers    Customer[]
+  plans        Plan[]
+  orders       Order[]
+
+  @@map("tenants")
+}
+
+model Customer {
+  id        String   @id @default(uuid()) @map("customer_id")
+  tenantId  String   @map("tenant_id")
+  email     String   @map("email")
+  name      String   @map("name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  Order  Order[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model Plan {
+  id        String   @id @default(uuid()) @map("plan_id")
+  tenantId  String   @map("tenant_id")
+  name      String   @map("name")
+  price     Decimal  @map("price")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  Order  Order[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("plans")
+}
+
+model Order {
+  id         String   @id @default(uuid()) @map("order_id")
+  tenantId   String   @map("tenant_id")
+  customerId String   @map("customer_id")
+  planId     String   @map("plan_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  plan     Plan     @relation(fields: [planId], references: [id])
+
+  @@index([tenantId])
+  @@map("orders")
+}

@@ -1,0 +1,16 @@
+[
+  "src/auth/auth.middleware.ts",
+  "src/common/filters/http-exception.filter.ts",
+  "src/customers/customers.repository.ts",
+  "src/customers/dto/create-customer.dto.ts",
+  "src/customers/dto/update-customer.dto.ts",
+  "src/orders/dto/create-order.dto.ts",
+  "src/orders/orders.repository.ts",
+  "src/plans/dto/create-plan.dto.ts",
+  "src/plans/dto/update-plan.dto.ts",
+  "src/plans/plans.repository.ts",
+  "src/prisma/prisma.service.ts",
+  "src/tenant-config/tenant-config.repository.ts",
+  "src/tenant/tenant.middleware.ts",
+  "test/tenant-isolation.spec.ts"
+]
