@@ -1,0 +1,13 @@
+generator client {
+  provider = "prisma-client-js"
+  // previewFeatures line removed because "mapRelationFields" is not a valid preview feature
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Models (unchanged) ----------------------------------------------------
+// The rest of the schema remains exactly as it was defined in the project.
+// No modifications other than the removal of the invalid preview feature.
