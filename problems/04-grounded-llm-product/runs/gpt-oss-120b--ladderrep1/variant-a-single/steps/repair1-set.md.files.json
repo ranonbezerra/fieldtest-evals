@@ -1,0 +1,7 @@
+[
+  "src/eval/evaluator.ts",
+  "src/eval/judge.ts",
+  "src/guide/guide.module.ts",
+  "src/guide/guide.service.ts",
+  "test/guide.spec.ts"
+]

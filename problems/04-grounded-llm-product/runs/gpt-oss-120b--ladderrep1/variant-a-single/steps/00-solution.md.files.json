@@ -1,0 +1,9 @@
+[
+  "src/eval/evaluator.ts",
+  "src/eval/judge.ts",
+  "src/eval/scenario.ts",
+  "src/guide/guide.module.ts",
+  "src/guide/guide.service.ts",
+  "src/guide/llm-client.interface.ts",
+  "test/guide.spec.ts"
+]
