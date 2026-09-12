@@ -1,0 +1,14 @@
+[
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/classification/classification.controller.ts",
+  "src/classification/classification.module.ts",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/classification/dto/classify-query.dto.ts",
+  "src/classification/interfaces.ts",
+  "src/main.ts",
+  "src/prisma.service.ts",
+  "src/utils/normalize.ts",
+  "test/classification.spec.ts"
+]
