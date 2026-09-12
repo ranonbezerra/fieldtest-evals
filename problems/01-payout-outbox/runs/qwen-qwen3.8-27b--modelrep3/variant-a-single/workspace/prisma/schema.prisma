@@ -1,0 +1,115 @@
+// Payout service schema.
+//
+// Money is stored in minor units as bigint — never floating point.
+//
+// Balance model (per account):
+//   settled_minor = funds the platform owes the customer (available + on hold)
+//   held_minor    = portion reserved for in-flight payouts
+//   available     = settled_minor - held_minor   (the check for new payouts)
+// settled_minor changes only when the provider confirms a transfer.
+//
+// Ledger accounts (double entry, one table, balanced postings):
+//   settled:{accountId}  available portion of the customer balance
+//   held:{accountId}     customer funds on hold for payouts
+//   transfers_out        funds that left the platform via the provider
+// Invariant: accounts.settled_minor = bal(settled:{acct}) + bal(held:{acct})
+// and the whole ledger always sums to zero (debits == credits).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id           String   @id @default(uuid())
+  settledMinor BigInt   @default(0) @map("settled_minor")
+  heldMinor    BigInt   @default(0) @map("held_minor")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  payouts Payout[]
+
+  @@map("accounts")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum MessageStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  DEAD
+}
+
+enum LedgerAction {
+  RESERVE
+  COMPLETE
+  RELEASE
+}
+
+model Payout {
+  id                 String       @id @default(uuid())
+  accountId          String       @map("account_id")
+  amountMinor        BigInt       @map("amount_minor")
+  destinationAddress String       @map("destination_address")
+  idempotencyKey     String       @unique @map("idempotency_key")
+  status             PayoutStatus @default(CREATED)
+  txHash             String?      @map("tx_hash")
+  error              String?
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @default(now()) @map("updated_at")
+  sentAt             DateTime?    @map("sent_at")
+  completedAt        DateTime?    @map("completed_at")
+
+  account       Account         @relation(fields: [accountId], references: [id])
+  message       PayoutMessage?
+  ledgerEntries LedgerEntry[]
+
+  @@index([accountId])
+  @@map("payouts")
+}
+
+model PayoutMessage {
+  id            String        @id @default(uuid())
+  payoutId      String        @unique @map("payout_id")
+  payload       Json
+  status        MessageStatus @default(PENDING)
+  attempts      Int           @default(0)
+  nextAttemptAt DateTime      @default(now()) @map("next_attempt_at")
+  claimedAt     DateTime?     @map("claimed_at")
+  processedAt   DateTime?     @map("processed_at")
+  lastError     String?       @map("last_error")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@map("payout_messages")
+}
+
+model LedgerEntry {
+  id          String       @id @default(uuid())
+  payoutId    String       @map("payout_id")
+  action      LedgerAction
+  account     String
+  debitMinor  BigInt       @default(0) @map("debit_minor")
+  creditMinor BigInt       @default(0) @map("credit_minor")
+  memo        String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@unique([payoutId, action, account])
+  @@map("ledger_entries")
+}
