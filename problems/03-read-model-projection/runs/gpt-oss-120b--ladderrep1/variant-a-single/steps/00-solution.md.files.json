@@ -1,0 +1,12 @@
+[
+  "DESIGN.md",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/operations/drift-repair.job.ts",
+  "src/operations/operations.controller.ts",
+  "src/operations/operations.module.ts",
+  "src/operations/operations.repository.ts",
+  "src/operations/operations.service.ts",
+  "src/prisma.service.ts",
+  "test/operations.spec.ts"
+]

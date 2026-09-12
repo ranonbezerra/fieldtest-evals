@@ -1,0 +1,14 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+# -------------------------------------------------
+# Existing models, enums, and other definitions follow.
+# They are kept unchanged.
+# -------------------------------------------------
