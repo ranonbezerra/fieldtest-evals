@@ -1,0 +1,4 @@
+[
+  "src/anchoring/anchoring.repository.ts",
+  "src/anchoring/anchoring.worker.ts"
+]
