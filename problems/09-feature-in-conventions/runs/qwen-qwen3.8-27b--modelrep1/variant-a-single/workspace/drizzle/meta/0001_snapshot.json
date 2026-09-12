@@ -1,0 +1,127 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "id": "8f2a6c1e-4b7d-4e9f-a3c5-6d8e0f1a2b3c",
+  "prevId": "5d1e9c3b-8a2f-4c6e-b0d7-3f5a7c9e1d2b",
+  "tables": {
+    "users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true },
+        "email": { "name": "email", "type": "text", "primaryKey": false, "notNull": true },
+        "display_name": { "name": "display_name", "type": "text", "primaryKey": false, "notNull": true },
+        "created_at": { "name": "created_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {
+        "users_email_key": { "name": "users_email_key", "columns": ["email"], "isUnique": true, "isPrimary": false }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "trips": {
+      "name": "trips",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true },
+        "destination": { "name": "destination", "type": "text", "primaryKey": false, "notNull": true },
+        "start_date": { "name": "start_date", "type": "date", "primaryKey": false, "notNull": true },
+        "end_date": { "name": "end_date", "type": "date", "primaryKey": false, "notNull": true },
+        "created_at": { "name": "created_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "trip_members": {
+      "name": "trip_members",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true },
+        "trip_id": { "name": "trip_id", "type": "uuid", "primaryKey": false, "notNull": true },
+        "user_id": { "name": "user_id", "type": "uuid", "primaryKey": false, "notNull": true },
+        "role": { "name": "role", "type": "text", "primaryKey": false, "notNull": true },
+        "created_at": { "name": "created_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {
+        "trip_members_trip_id_user_id_key": { "name": "trip_members_trip_id_user_id_key", "columns": ["trip_id", "user_id"], "isUnique": true, "isPrimary": false }
+      },
+      "foreignKeys": {
+        "trip_members_trip_id_trips_id_fk": {
+          "name": "trip_members_trip_id_trips_id_fk",
+          "fromTable": ["trip_members"],
+          "fromColumns": ["trip_id"],
+          "toTable": ["trips"],
+          "toColumns": ["id"],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "trip_members_user_id_users_id_fk": {
+          "name": "trip_members_user_id_users_id_fk",
+          "fromTable": ["trip_members"],
+          "fromColumns": ["user_id"],
+          "toTable": ["users"],
+          "toColumns": ["id"],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "trip_invites": {
+      "name": "trip_invites",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true },
+        "trip_id": { "name": "trip_id", "type": "uuid", "primaryKey": false, "notNull": true },
+        "email": { "name": "email", "type": "text", "primaryKey": false, "notNull": true },
+        "token": { "name": "token", "type": "text", "primaryKey": false, "notNull": true },
+        "status": { "name": "status", "type": "text", "primaryKey": false, "notNull": true, "default": "'pending'::text" },
+        "invited_by": { "name": "invited_by", "type": "uuid", "primaryKey": false, "notNull": true },
+        "created_at": { "name": "created_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {
+        "trip_invites_token_key": { "name": "trip_invites_token_key", "columns": ["token"], "isUnique": true, "isPrimary": false }
+      },
+      "foreignKeys": {
+        "trip_invites_trip_id_trips_id_fk": {
+          "name": "trip_invites_trip_id_trips_id_fk",
+          "fromTable": ["trip_invites"],
+          "fromColumns": ["trip_id"],
+          "toTable": ["trips"],
+          "toColumns": ["id"],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "trip_invites_invited_by_users_id_fk": {
+          "name": "trip_invites_invited_by_users_id_fk",
+          "fromTable": ["trip_invites"],
+          "fromColumns": ["invited_by"],
+          "toTable": ["users"],
+          "toColumns": ["id"],
+          "onUpdate": "cascade",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "_meta": { "columns": {}, "indexes": {} }
+}

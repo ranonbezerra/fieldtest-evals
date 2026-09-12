@@ -1,0 +1,17 @@
+[
+  "drizzle/0001_trips.sql",
+  "drizzle/meta/0001_snapshot.json",
+  "drizzle/meta/_journal.json",
+  "drizzle/schema.ts",
+  "src/app.module.ts",
+  "src/modules/trips/dto/create-trip.dto.ts",
+  "src/modules/trips/dto/invite-trip.dto.ts",
+  "src/modules/trips/entities/invite.entity.ts",
+  "src/modules/trips/entities/member.entity.ts",
+  "src/modules/trips/entities/trip.entity.ts",
+  "src/modules/trips/trips.controller.ts",
+  "src/modules/trips/trips.module.ts",
+  "src/modules/trips/trips.repository.ts",
+  "src/modules/trips/trips.service.spec.ts",
+  "src/modules/trips/trips.service.ts"
+]
