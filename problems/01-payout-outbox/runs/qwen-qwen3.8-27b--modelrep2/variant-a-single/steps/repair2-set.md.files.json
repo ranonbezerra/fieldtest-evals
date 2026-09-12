@@ -1,0 +1,6 @@
+[
+  "src/main.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.exception-filter.ts",
+  "src/payout/payout.repository.ts"
+]

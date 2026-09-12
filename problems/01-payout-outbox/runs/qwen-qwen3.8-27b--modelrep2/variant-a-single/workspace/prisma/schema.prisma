@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Amounts are integer minor units. Never floating point.
+
+model Account {
+  id            String @id @default(cuid())
+  accountNumber String @unique @map("account_number")
+  balance       BigInt @default(0) @map("balance") // available balance, minor units
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("accounts")
+}
+
+enum PayoutStatus {
+  created
+  processing
+  sent
+  completed
+  failed
+  needs_review
+}
+
+model Payout {
+  id                String       @id @default(cuid())
+  accountId         String       @map("account_id")
+  amount            BigInt       @map("amount") // minor units
+  destinationAddress String      @map("destination_address")
+  idempotencyKey    String       @unique @map("idempotency_key")
+  status            PayoutStatus @default(created) @map("status")
+  txHash            String?      @map("tx_hash")
+  sentAt            DateTime?    @map("sent_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  @@index([accountId])
+  @@map("payouts")
+}
+
+model LedgerEntry {
+  id        BigInt   @id @default(autoincrement())
+  batchId   String   @map("batch_id")
+  entryType String   @map("entry_type") // 'debit' | 'credit'
+  accountId String   @map("account_id")
+  amount    BigInt   @map("amount") // debits positive, credits negative
+  memo      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([batchId])
+  @@map("ledger_entries")
+}
+
+model OutboxMessage {
+  id            BigInt    @id @default(autoincrement())
+  payoutId      String    @unique @map("payout_id")
+  kind          String    @default("payout.transfer") @map("kind")
+  status        String    @default("pending") // pending | processing | handled | dead
+  attemptCount  Int       @default(0) @map("attempt_count")
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([status, nextAttemptAt])
+  @@map("outbox_messages")
+}

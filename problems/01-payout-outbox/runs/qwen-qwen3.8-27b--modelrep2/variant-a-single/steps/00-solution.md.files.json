@@ -1,0 +1,18 @@
+[
+  "prisma/migrations/20250101000000_initial/migration.sql",
+  "prisma/schema.prisma",
+  "src/accounts/accounts.controller.ts",
+  "src/accounts/accounts.module.ts",
+  "src/app.module.ts",
+  "src/main.ts",
+  "src/payout/dto-payout.ts",
+  "src/payout/payout-transfer.provider.ts",
+  "src/payout/payout.config.service.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.repository.ts",
+  "src/payout/payout.service.ts",
+  "src/payout/payout.worker.ts",
+  "src/payout/transfer.provider.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts"
+]
