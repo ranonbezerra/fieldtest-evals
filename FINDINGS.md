@@ -1883,3 +1883,61 @@ So the shape of the remaining failure is narrow and known. Two of the four or fi
 problems that fail per round fail on one line of Prisma grammar that a `prisma format`
 call in the gate would fix outright — which is a harness correction, not a model
 limitation, and is queued in SECOND-PASS rather than applied mid-campaign.
+
+## 4.23 The one-sided relation was not the dominant defect, and three of the failures were mine
+
+§4.22 called the one-sided Prisma relation "the single most reproducible thing this
+repository has measured." Across the paired campaign — 119 runs, both axes, same
+harness — that claim does not hold. Every `prisma generate` failure, classified:
+
+| run | cause |
+|---|---|
+| 03 ladder rep1 | grammar: a block attribute split across two lines |
+| 03 ladder rep2 | array value where a constant literal is expected |
+| 03 ladder rep4 | grammar: a block attribute split across two lines |
+| 05 model rep1 | **Environment variable not found: DATABASE_URL** |
+| 06 ladder rep1 | **Environment variable not found: DATABASE_URL** |
+| 07 ladder rep2 | relation field missing its opposite |
+| 07 model rep1 | relation field missing its opposite |
+| 17 ladder rep1 | **Environment variable not found: DATABASE_URL** |
+
+**Three of the eight are the harness.** Nothing in `ft-go` or `ft-env.sh` sets
+`DATABASE_URL`, and a schema that declares `url = env("DATABASE_URL")` cannot be
+generated without it. All three runs typechecked clean anyway, so they cost nothing but
+a misleading line in the gate log -- and three entries in a tally I then reasoned from.
+
+**The one-sided relation is two of eight, one per axis.** It was the dominant defect in
+the earlier campaigns, on a different harness, before the set repair existed. It is not
+dominant now, and the axis has nothing to do with it.
+
+### What actually breaks problem 03
+
+The ladder fails 03 three times out of four, and not on relations. The level-2 issue for
+that problem asks for recency ordering and stable pagination, and the model answers with
+a covering index:
+
+    @@index([companyId, createdAt(sort: Desc), id(sort: Desc)],
+            map: "ops_company_recency_covering")
+
+Prisma requires a block attribute on a single line. Split across two, the second line is
+not a valid field definition and the whole schema fails to parse. The model axis, asked
+for the same feature without the performance requirement spelled out, writes a plainer
+index and never trips.
+
+So the ladder's one clear loss is **the cost of asking for more**: the issue demands a
+performance characteristic, the model reaches for the construct that provides it, and
+gets its grammar wrong. That is a real cost of the level-2 format on this problem, and
+it is worth a great deal less than it looks, because `prisma format` fixes it in one
+call and the gate does not run it.
+
+### An explanation that did not survive
+
+Schemas that fail carry 3.0 relations on average in both axes; schemas that survive
+carry 1.7 and 2.1. Complexity does predict breakage. It does not explain the axis
+difference: on 03 the model axis writes *more* relations (4.0 against 3.8) and breaks
+none of four, while the ladder breaks three. And the ladder's schemas are smaller on
+average overall (1.9 against 2.2) while failing more often. Whatever separates them, it
+is not size.
+
+The overall difference — 6 of 32 against 2 of 36 — is p = 0.135, and three of the six
+are the DATABASE_URL noise. There is no established axis effect on schema failure.

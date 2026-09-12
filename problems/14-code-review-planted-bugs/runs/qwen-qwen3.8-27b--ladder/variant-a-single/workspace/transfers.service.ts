@@ -1,10 +1,10 @@
 // transfers.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
-import { AccountsRepository } from './accounts.repository.js';
-import { RiskClient } from '../risk/risk.client.js';
-import { NotificationsService } from '../notifications/notifications.service.js';
-import { serializeResponse } from './serializer.js';
+import { PrismaService } from '../prisma/prisma.service';
+import { AccountsRepository } from './accounts.repository';
+import { RiskClient } from '../risk/risk.client';
+import { NotificationsService } from '../notifications/notifications.service';
+import { serializeResponse } from './serializer';
 
 const LARGE_TRANSFER_THRESHOLD = 1_000_000n; // minor units
 

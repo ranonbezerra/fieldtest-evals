@@ -1,6 +1,6 @@
 // accounts.repository.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService, Tx } from './prisma/prisma.service.js';
+import { PrismaService, Tx } from '../prisma/prisma.service';
 import { Pool, PoolClient } from 'pg';
 
 export interface AccountRow {
