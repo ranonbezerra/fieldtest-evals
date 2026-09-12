@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DocumentVersion {
+  id          String   @id @default(uuid())
+  document_id String   @map("document_id")
+  version     Int      @map("version")
+  content     Json     @map("content")
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+
+  anchor Anchor?
+
+  @@unique([document_id, version], name: "document_version_unique")
+  @@map("document_version")
+}
+
+model Anchor {
+  id                  String       @id @default(uuid())
+  document_version_id String       @map("document_version_id")
+  content_hash        String       @map("content_hash")
+  tx_id               String       @map("tx_id")
+  signed_tx           String       @map("signed_tx")
+  status              AnchorStatus @map("status")
+  block_number        Int?         @map("block_number")
+  created_at          DateTime     @default(now()) @map("created_at")
+  updated_at          DateTime     @updatedAt @map("updated_at")
+
+  document_version DocumentVersion @relation(fields: [document_version_id], references: [id])
+
+  @@unique([document_version_id], name: "anchor_document_version_unique")
+  @@unique([tx_id], name: "anchor_tx_id_unique")
+  @@map("anchor")
+}
+
+enum AnchorStatus {
+  PREPARED
+  SENT
+  CONFIRMED
+  FAILED
+}
