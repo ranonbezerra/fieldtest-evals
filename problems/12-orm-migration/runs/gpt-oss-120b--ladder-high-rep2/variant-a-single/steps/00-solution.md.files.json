@@ -1,0 +1,10 @@
+[
+  "drizzle/migrations/20240912_initial.sql",
+  "package.json",
+  "src/billing/billing.service.ts",
+  "src/billing/drizzleAdapter.ts",
+  "src/common/errors.ts",
+  "src/database.ts",
+  "src/db/schema.ts",
+  "test/transaction.spec.ts"
+]
