@@ -1,0 +1,9 @@
+[
+  "src/eval/eval-harness.ts",
+  "src/guide-assistant/guide-assistant.module.ts",
+  "src/guide-assistant/guide-assistant.service.ts",
+  "src/guide-assistant/hint-redactor.ts",
+  "src/llm/fake-llm-client.ts",
+  "src/llm/llm-client.interface.ts",
+  "test/guide-assistant.spec.ts"
+]
