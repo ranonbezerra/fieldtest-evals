@@ -1,0 +1,4 @@
+[
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts"
+]
