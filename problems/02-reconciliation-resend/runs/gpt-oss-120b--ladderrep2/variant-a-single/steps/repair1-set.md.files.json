@@ -1,0 +1,4 @@
+[
+  "src/types/nestjs-schedule.d.ts",
+  "src/types/nestjs-testing.d.ts"
+]

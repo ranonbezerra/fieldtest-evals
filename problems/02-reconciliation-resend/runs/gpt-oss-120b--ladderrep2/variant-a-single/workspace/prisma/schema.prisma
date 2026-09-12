@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PayoutStatus {
+  pending // order has not been sent yet
+  sent // send request issued, awaiting bank statement
+  settled // statement confirmed
+  failed // permanent rejection from bank
+  parked // attempts exhausted, needs manual review
+}
+
+model Payout {
+  id            Int          @id @default(autoincrement())
+  orderId       String       @unique @map("order_id")
+  supplierKey   String       @map("supplier_key")
+  amount        Int // minor units, integer
+  effectiveDate DateTime     @map("effective_date")
+  txid          String?      @unique
+  status        PayoutStatus @default(pending) @map("status")
+  attempts      Int          @default(0) @map("attempts")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("payouts")
+}

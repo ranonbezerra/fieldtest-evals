@@ -1,0 +1,9 @@
+[
+  "src/app.module.ts",
+  "src/main.ts",
+  "src/payout/payout.controller.ts",
+  "src/payout/payout.module.ts",
+  "src/payout/payout.scheduler.ts",
+  "src/payout/payout.service.ts",
+  "test/payout.spec.ts"
+]
