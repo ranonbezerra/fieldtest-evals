@@ -1,0 +1,19 @@
+[
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/auth/auth.middleware.ts",
+  "src/common/all-exceptions.filter.ts",
+  "src/customers/customers.controller.ts",
+  "src/customers/customers.module.ts",
+  "src/customers/customers.repository.ts",
+  "src/customers/customers.service.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "src/tenant/tenant-config.controller.ts",
+  "src/tenant/tenant-config.service.ts",
+  "src/tenant/tenant.middleware.ts",
+  "src/tenant/tenant.module.ts",
+  "src/tenant/tenant.service.ts",
+  "test/multi-tenant.spec.ts"
+]

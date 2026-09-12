@@ -1,0 +1,5 @@
+[
+  "src/express.d.ts",
+  "src/nest-testing.d.ts",
+  "src/supertest.d.ts"
+]

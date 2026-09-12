@@ -1,0 +1,69 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id            Int    @id @default(autoincrement())
+  org           String @unique
+  host          String @unique
+  name          String
+  branding      Json?
+  feature_flags Json?
+
+  customers Customer[]
+  plans     Plan[]
+  orders    Order[]
+
+  @@map("tenants")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @map("tenant_id")
+  email     String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  Order  Order[]
+
+  @@unique([tenantId, email])
+  @@map("customers")
+}
+
+model Plan {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @map("tenant_id")
+  name       String
+  priceCents Int      @map("price_cents")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  Order  Order[]
+
+  @@unique([tenantId, name])
+  @@map("plans")
+}
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @map("tenant_id")
+  customerId Int      @map("customer_id")
+  planId     Int      @map("plan_id")
+  status     String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  plan     Plan     @relation(fields: [planId], references: [id])
+
+  @@map("orders")
+}
