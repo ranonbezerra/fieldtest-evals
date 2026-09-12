@@ -1,0 +1,7 @@
+[
+  "scripts/reporting.ts",
+  "src/orders/orders.status.ts",
+  "src/payouts/payouts.status.ts",
+  "src/shared/payment-status-mapper.ts",
+  "test/reporting.status.spec.ts"
+]
