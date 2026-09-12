@@ -1,0 +1,8 @@
+[
+  "nest-modules.d.ts",
+  "src/app.module.ts",
+  "src/operations/operations-rebuilder.service.ts",
+  "src/operations/operations.scheduler.ts",
+  "src/operations/operations.service.ts",
+  "test/operations.spec.ts"
+]

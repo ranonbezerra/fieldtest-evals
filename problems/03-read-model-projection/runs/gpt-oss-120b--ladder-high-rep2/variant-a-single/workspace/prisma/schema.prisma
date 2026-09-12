@@ -1,0 +1,71 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Company {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  paymentOrders           PaymentOrder[]
+  operationProjections    OperationProjection[]
+  financialTotal          CompanyFinancialTotal? @relation(fields: [companyFinancialTotalId], references: [id])
+  companyFinancialTotalId Int?
+
+  @@map("company")
+}
+
+model Worker {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  paymentOrders PaymentOrder[]
+
+  @@map("worker")
+}
+
+model PaymentOrder {
+  id         Int      @id @default(autoincrement())
+  company_id Int      @map("company_id")
+  worker_id  Int?     @map("worker_id")
+  status     String
+  amount     Decimal  @db.Decimal(10, 2)
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [company_id], references: [id])
+  worker  Worker? @relation(fields: [worker_id], references: [id])
+
+  @@map("payment_order")
+}
+
+model OperationProjection {
+  id         Int      @id @default(autoincrement())
+  order_id   Int      @unique @map("order_id")
+  company_id Int      @map("company_id")
+  worker_id  Int?     @map("worker_id")
+  status     String
+  amount     Decimal  @db.Decimal(10, 2)
+  created_at DateTime @map("created_at")
+  updated_at DateTime @map("updated_at")
+  Company    Company? @relation(fields: [companyId], references: [id])
+  companyId  Int?
+
+  @@index([company_id, status, created_at], name: "idx_op_proj_company_status_created_at")
+  @@index([created_at], name: "idx_op_proj_created_at")
+  @@map("operation_projection")
+}
+
+model CompanyFinancialTotal {
+  id           Int       @id @default(autoincrement())
+  company_id   Int       @unique @map("company_id")
+  total_amount Decimal   @default(0) @db.Decimal(15, 2)
+  updated_at   DateTime  @updatedAt @map("updated_at")
+  Company      Company[]
+
+  @@map("company_financial_total")
+}

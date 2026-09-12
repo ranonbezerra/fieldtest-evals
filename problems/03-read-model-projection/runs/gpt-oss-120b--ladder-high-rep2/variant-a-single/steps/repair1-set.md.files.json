@@ -1,0 +1,12 @@
+[
+  "src/app.module.ts",
+  "src/operations/operations-drift-repair.service.ts",
+  "src/operations/operations-projection.service.ts",
+  "src/operations/operations-rebuilder.service.ts",
+  "src/operations/operations.controller.ts",
+  "src/operations/operations.module.ts",
+  "src/operations/operations.repository.ts",
+  "src/operations/operations.scheduler.ts",
+  "src/prisma/prisma.module.ts",
+  "test/operations.spec.ts"
+]
