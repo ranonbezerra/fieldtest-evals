@@ -1,0 +1,5 @@
+[
+  "src/payout/payout.module.ts",
+  "src/payout/reconcile-window.dto.ts",
+  "test/payout.spec.ts"
+]
