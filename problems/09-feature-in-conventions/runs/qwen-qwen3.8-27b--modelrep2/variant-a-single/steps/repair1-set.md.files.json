@@ -1,0 +1,4 @@
+[
+  "drizzle/schema.ts",
+  "src/modules/trips/trips.service.ts"
+]
