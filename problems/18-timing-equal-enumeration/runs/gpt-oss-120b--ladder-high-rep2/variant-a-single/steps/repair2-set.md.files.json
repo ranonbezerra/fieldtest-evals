@@ -1,0 +1,5 @@
+[
+  "src/types/argon2.d.ts",
+  "src/types/class-validator.d.ts",
+  "src/types/supertest.d.ts"
+]

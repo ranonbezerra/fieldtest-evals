@@ -1,0 +1,14 @@
+[
+  "SECURITY.md",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/mail/mail.service.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "test/auth.spec.ts"
+]
