@@ -1,0 +1,108 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "accounts": {
+      "name": "accounts",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": null },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true, "default": null },
+        "currency": { "name": "currency", "type": "char(3)", "primaryKey": false, "notNull": true, "default": null },
+        "invoice_count": { "name": "invoice_count", "type": "integer", "primaryKey": false, "notNull": true, "default": "0" },
+        "created_at": { "name": "created_at", "type": "timestamp(6) with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "invoices": {
+      "name": "invoices",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": null },
+        "account_id": { "name": "account_id", "type": "uuid", "primaryKey": false, "notNull": true, "default": null },
+        "number": { "name": "number", "type": "text", "primaryKey": false, "notNull": true, "default": null },
+        "status": { "name": "status", "type": "text", "primaryKey": false, "notNull": true, "default": "'draft'" },
+        "total_minor": { "name": "total_minor", "type": "bigint", "primaryKey": false, "notNull": true, "default": null },
+        "issued_at": { "name": "issued_at", "type": "timestamp(6) with time zone", "primaryKey": false, "notNull": false, "default": null },
+        "created_at": { "name": "created_at", "type": "timestamp(6) with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {
+        "invoices_account_id_idx": {
+          "name": "invoices_account_id_idx",
+          "columns": ["account_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "invoices_account_id_accounts_id_fk": {
+          "name": "invoices_account_id_accounts_id_fk",
+          "tableFrom": "invoices",
+          "tableTo": "accounts",
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invoices_number_key": {
+          "name": "invoices_number_key",
+          "columns": ["number"],
+          "nullsNotDistinct": false
+        }
+      },
+      "checkConstraints": {}
+    },
+    "invoice_line_items": {
+      "name": "invoice_line_items",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": null },
+        "invoice_id": { "name": "invoice_id", "type": "uuid", "primaryKey": false, "notNull": true, "default": null },
+        "position": { "name": "position", "type": "integer", "primaryKey": false, "notNull": true, "default": null },
+        "description": { "name": "description", "type": "text", "primaryKey": false, "notNull": true, "default": null },
+        "quantity": { "name": "quantity", "type": "integer", "primaryKey": false, "notNull": true, "default": null },
+        "unit_price_minor": { "name": "unit_price_minor", "type": "bigint", "primaryKey": false, "notNull": true, "default": null }
+      },
+      "indexes": {
+        "invoice_line_items_invoice_id_idx": {
+          "name": "invoice_line_items_invoice_id_idx",
+          "columns": ["invoice_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "invoice_line_items_invoice_id_invoices_id_fk": {
+          "name": "invoice_line_items_invoice_id_invoices_id_fk",
+          "tableFrom": "invoice_line_items",
+          "tableTo": "invoices",
+          "columnsFrom": ["invoice_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {},
+    "foreignKeys": {}
+  }
+}
