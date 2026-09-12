@@ -1,0 +1,4 @@
+[
+  "src/auth/auth.service.ts",
+  "test/auth.spec.ts"
+]
