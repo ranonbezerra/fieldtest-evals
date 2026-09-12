@@ -1,0 +1,11 @@
+[
+  "src/anchor/anchor.controller.ts",
+  "src/anchor/anchor.module.ts",
+  "src/anchor/anchor.repository.ts",
+  "src/anchor/anchor.service.ts",
+  "src/anchor/anchor.worker.ts",
+  "src/anchor/fake-chain-client.service.ts",
+  "src/app.module.ts",
+  "src/main.ts",
+  "test/anchor.spec.ts"
+]
