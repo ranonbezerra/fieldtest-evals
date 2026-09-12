@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  BANNED
+  RESTRICTED
+  WATCH
+}
+
+model MethodologyVersion {
+  id String @id @default(cuid()) @map("id")
+  version Int @unique @map("version")
+  active Boolean @default(false) @map("active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  rules Rule[]
+  results ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id String @id @default(cuid()) @map("id")
+  methodologyVersionId String @map("methodology_version_id")
+  methodologyVersion MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+  ingredientId String @map("ingredient_id")
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  severity Severity @map("severity")
+  sourceCitation String @map("source_citation")
+
+  @@unique([methodologyVersionId, ingredientId])
+  @@index([methodologyVersionId])
+  @@index([ingredientId])
+  @@map("rules")
+}
+
+model Ingredient {
+  id String @id @default(cuid()) @map("id")
+  name String @map("name")
+  normalized String @unique @map("normalized")
+
+  synonyms IngredientSynonym[]
+  rules Rule[]
+  modifiers ProfileRuleModifier[]
+
+  @@map("ingredients")
+}
+
+model IngredientSynonym {
+  id String @id @default(cuid()) @map("id")
+  ingredientId String @map("ingredient_id")
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  synonym String @map("synonym")
+  normalizedSynonym String @unique @map("normalized_synonym")
+
+  @@map("ingredient_synonyms")
+}
+
+model FamilyProfile {
+  id String @id @default(cuid()) @map("id")
+  name String @map("name")
+  context String @unique @map("context")
+
+  modifiers ProfileRuleModifier[]
+  results ClassificationResult[]
+
+  @@map("family_profiles")
+}
+
+model ProfileRuleModifier {
+  id String @id @default(cuid()) @map("id")
+  profileId String @map("profile_id")
+  profile FamilyProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  ingredientId String @map("ingredient_id")
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  severity Severity @map("severity")
+  sourceCitation String @map("source_citation")
+
+  @@unique([profileId, ingredientId])
+  @@index([profileId])
+  @@index([ingredientId])
+  @@map("profile_rule_modifiers")
+}
+
+model Product {
+  id String @id @default(cuid()) @map("id")
+  name String @map("name")
+
+  ingredients ProductIngredient[]
+  results ClassificationResult[]
+
+  @@map("products")
+}
+
+model ProductIngredient {
+  id String @id @default(cuid()) @map("id")
+  productId String @map("product_id")
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rawIngredient String @map("raw_ingredient")
+  position Int @default(0) @map("position")
+
+  @@index([productId])
+  @@map("product_ingredients")
+}
+
+model ClassificationResult {
+  id String @id @default(cuid()) @map("id")
+  productId String @map("product_id")
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  methodologyVersionId String @map("methodology_version_id")
+  methodologyVersion MethodologyVersion @relation(fields: [methodologyVersionId], references: [id], onDelete: Cascade)
+  profileId String? @map("profile_id")
+  profile FamilyProfile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  payload Json @map("payload")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([productId, methodologyVersionId, profileId])
+  @@index([productId, methodologyVersionId])
+  @@map("classification_results")
+}
