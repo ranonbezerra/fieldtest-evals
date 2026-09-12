@@ -1,0 +1,12 @@
+[
+  "src/app.module.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/auth/dto/sign-in.dto.ts",
+  "src/auth/dto/sign-up.dto.ts",
+  "src/main.ts",
+  "src/types.d.ts",
+  "test/auth.e2e.spec.ts"
+]
