@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Versioned structured report content. This is the source of truth; the PDF is
+// only a rendering. Versions are immutable once stored.
+model ReportVersion {
+  id         String   @id @default(uuid())
+  documentId String   @map("document_id")
+  version    Int
+  content    Json
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([documentId, version])
+  @@map("report_versions")
+}
+
+// One anchor intent per (document, version) — enforced at the schema level.
+// The row (content hash + tx identity) is persisted BEFORE the tx is broadcast.
+model DocumentAnchor {
+  id            String       @id @default(uuid())
+  documentId    String       @map("document_id")
+  version       Int
+  contentHash   String       @map("content_hash") @db.VarChar(64)
+  txId          String       @unique @map("tx_id") @db.VarChar(128)
+  signedTx      String       @map("signed_tx")
+  status        AnchorStatus @default(PREPARED)
+  attempt       Int          @default(0)
+  blockNumber   Int?         @map("block_number")
+  blockHash     String?      @map("block_hash") @db.VarChar(128)
+  failureReason String?      @map("failure_reason")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  confirmedAt   DateTime?    @map("confirmed_at")
+
+  @@unique([documentId, version])
+  @@index([status, updatedAt])
+  @@map("document_anchors")
+}
+
+enum AnchorStatus {
+  PREPARED // intent + tx identity persisted; broadcast not yet (re)attempted
+  BROADCAST // broadcast attempted; receipt awaited (or outcome unknown)
+  CONFIRMED // receipt seen: tx included in a block
+  FAILED // terminal: chain rejected / on-chain failure / limbo exhausted
+}
