@@ -1,0 +1,13 @@
+[
+  "drizzle/migrations/20240913_initial.sql",
+  "package.json",
+  "prisma/schema.prisma",
+  "src/billing/client.ts",
+  "src/billing/drizzle-client.ts",
+  "src/billing/prisma.ts",
+  "src/billing/schema.ts",
+  "src/common/errors.ts",
+  "test/billing.missing-account.spec.ts",
+  "test/billing.serializer.spec.ts",
+  "test/billing.transaction.spec.ts"
+]
