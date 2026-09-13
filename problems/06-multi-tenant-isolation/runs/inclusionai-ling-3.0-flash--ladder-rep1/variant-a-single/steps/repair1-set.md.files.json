@@ -1,0 +1,14 @@
+[
+  "src/app.module.ts",
+  "src/common/app-exception.ts",
+  "src/common/error-format.filter.ts",
+  "src/common/prisma.module.ts",
+  "src/common/prisma.service.ts",
+  "src/common/tenant-middleware.ts",
+  "src/common/tenant-resolution.middleware.ts",
+  "src/customers/customers.module.ts",
+  "src/main.ts",
+  "src/tenant/tenant.controller.ts",
+  "src/tenant/tenant.module.ts",
+  "src/tenant/tenant.service.ts"
+]
