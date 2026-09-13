@@ -1,0 +1,92 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                              String                  @id @default(uuid())
+  name                            String
+  createdAt                       DateTime                @default(now())
+  updatedAt                       DateTime                @updatedAt
+  orders                          PaymentOrder[]
+  workers                         Worker[]
+  totals                          CompanyFinancialTotals? @relation(fields: [companyFinancialTotalsCompanyId], references: [companyId])
+  companyFinancialTotalsCompanyId String?
+
+  @@map("companies")
+}
+
+model Worker {
+  id        String         @id @default(uuid())
+  name      String
+  companyId String
+  company   Company        @relation(fields: [companyId], references: [id])
+  createdAt DateTime       @default(now())
+  orders    PaymentOrder[]
+
+  @@map("workers")
+}
+
+model PaymentOrder {
+  id        String   @id @default(uuid())
+  companyId String
+  workerId  String
+  amount    Decimal
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  worker  Worker  @relation(fields: [workerId], references: [id])
+  events  Event[]
+
+  @@index([companyId, status, createdAt])
+  @@map("payment_orders")
+}
+
+model Event {
+  id        String       @id @default(uuid())
+  orderId   String
+  order     PaymentOrder @relation(fields: [orderId], references: [id])
+  type      String
+  data      Json         @default("{}")
+  createdAt DateTime     @default(now())
+
+  @@map("events")
+}
+
+// ── Projection tables ──────────────────────────────────
+
+model OrderDashboard {
+  id          String   @id @default(uuid())
+  orderId     String   @unique
+  companyId   String
+  workerId    String
+  workerName  String
+  companyName String
+  amount      Decimal
+  status      String
+  createdAt   DateTime
+  updatedAt   DateTime
+  eventCount  Int      @default(0)
+
+  @@index([companyId, status, createdAt])
+  @@map("order_dashboard")
+}
+
+model CompanyFinancialTotals {
+  companyId      String    @id
+  totalOrders    Int       @default(0)
+  totalAmount    Decimal   @default(0)
+  approvedCount  Int       @default(0)
+  approvedAmount Decimal   @default(0)
+  updatedAt      DateTime  @default(now())
+  Company        Company[]
+
+  @@map("company_financial_totals")
+}
