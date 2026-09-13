@@ -1,0 +1,81 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Company {
+  id                             Int                    @id @default(autoincrement()) @map("id")
+  name                           String                 @map("name")
+  paymentOrders                  PaymentOrder[]
+  financialTotal                 CompanyFinancialTotal? @relation(fields: [companyFinancialTotalCompanyId], references: [companyId])
+  companyFinancialTotalCompanyId Int?
+
+  @@map("company")
+}
+
+model Worker {
+  id           Int            @id @default(autoincrement())
+  name         String
+  PaymentOrder PaymentOrder[]
+
+  @@map("worker")
+}
+
+model PaymentOrder {
+  id        Int         @id @default(autoincrement())
+  companyId Int         @map("company_id")
+  workerId  Int?        @map("worker_id")
+  amount    Decimal     @map("amount")
+  status    OrderStatus @default(PENDING) @map("status")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  worker  Worker? @relation(fields: [workerId], references: [id])
+  events  Event[]
+
+  @@map("payment_order")
+}
+
+model Event {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @map("order_id")
+  type      String   @map("type")
+  timestamp DateTime @default(now()) @map("timestamp")
+
+  order PaymentOrder @relation(fields: [orderId], references: [id])
+
+  @@map("event")
+}
+
+model OperationProjection {
+  id             Int         @id @default(autoincrement())
+  orderId        Int         @unique @map("order_id")
+  companyId      Int         @map("company_id")
+  workerId       Int?        @map("worker_id")
+  status         OrderStatus @map("status")
+  amount         Decimal     @map("amount")
+  eventTimestamp DateTime    @map("event_timestamp")
+
+  @@index([companyId, status, eventTimestamp(sort: Desc)], name: "idx_company_status_event_ts")
+  @@map("operation_projection")
+}
+
+model CompanyFinancialTotal {
+  companyId      Int       @id @map("company_id")
+  totalAmount    Decimal   @default(0) @map("total_amount")
+  approvedAmount Decimal   @default(0) @map("approved_amount")
+  Company        Company[]
+
+  @@map("company_financial_total")
+}

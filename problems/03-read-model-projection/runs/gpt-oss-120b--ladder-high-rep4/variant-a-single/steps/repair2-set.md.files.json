@@ -1,0 +1,9 @@
+[
+  "src/app.module.ts",
+  "src/nestjs-schedule.ts",
+  "src/nestjs-testing.ts",
+  "src/operations/operations.service.ts",
+  "src/payment-order/payment-order.service.ts",
+  "src/scheduler/repair.scheduler.ts",
+  "test/operations.spec.ts"
+]

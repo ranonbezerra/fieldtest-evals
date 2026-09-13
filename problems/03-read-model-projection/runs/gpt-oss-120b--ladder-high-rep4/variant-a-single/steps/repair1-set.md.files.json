@@ -1,0 +1,16 @@
+[
+  "src/app.module.ts",
+  "src/company-totals/company-totals.module.ts",
+  "src/company-totals/company-totals.repository.ts",
+  "src/company-totals/company-totals.service.ts",
+  "src/main.ts",
+  "src/operations/operations.controller.ts",
+  "src/operations/operations.module.ts",
+  "src/operations/operations.repository.ts",
+  "src/operations/operations.service.ts",
+  "src/payment-order/payment-order.module.ts",
+  "src/payment-order/payment-order.repository.ts",
+  "src/payment-order/payment-order.service.ts",
+  "src/prisma.module.ts",
+  "src/scheduler/repair.scheduler.ts"
+]
