@@ -1,0 +1,21 @@
+[
+  "SECURITY.md",
+  "prisma/migrations/20240101000000_init/migration.sql",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/auth/argon2.config.ts",
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.spec.ts",
+  "src/auth/auth.service.ts",
+  "src/auth/dto/sign-in.dto.ts",
+  "src/auth/dto/sign-up.dto.ts",
+  "src/auth/errors/invalid-credentials.exception.ts",
+  "src/errors/all-exceptions.filter.ts",
+  "src/mailer/mailer.module.ts",
+  "src/mailer/mailer.service.ts",
+  "src/mailer/mailer.token.ts",
+  "src/main.ts",
+  "src/prisma/prisma.service.ts"
+]
