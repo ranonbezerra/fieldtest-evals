@@ -283,15 +283,44 @@ def main():
         BASE + "/chat/completions", method="POST",
         headers=headers, data=json.dumps(payload).encode())
 
+    # A 429 is the provider asking us to wait, not a result. Left unretried it lands
+    # as an empty reply, and an empty reply on a fixture problem used to reach the gate
+    # as a workspace holding only the seeded files -- which typechecks clean and passes
+    # its own tests. Two whole rounds of `ling-3.0-flash` were recorded that way before
+    # the gate learned to refuse them.
+    #
+    # Backoff is honoured from `Retry-After` when the provider sends one, and otherwise
+    # doubles from 30s. Five attempts spans about eight minutes, which is short beside
+    # a request that legitimately runs for twenty.
     t0 = time.time()
-    try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            body = json.loads(r.read())
-        err = None
-    except urllib.error.HTTPError as e:
-        body, err = {}, f"HTTP {e.code}: {e.read().decode()[:600]}"
-    except Exception as e:
-        body, err = {}, repr(e)[:600]
+    attempts = int(os.environ.get("FT_RATE_LIMIT_RETRIES", "5"))
+    delay = float(os.environ.get("FT_RATE_LIMIT_BACKOFF", "30"))
+    body, err = {}, None
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                body = json.loads(r.read())
+            err = None
+            break
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode()[:600]
+            err = f"HTTP {e.code}: {detail}"
+            if e.code not in (429, 503) or attempt == attempts - 1:
+                body = {}
+                break
+            wait = delay * (2 ** attempt)
+            hdr = e.headers.get("Retry-After") if e.headers else None
+            if hdr:
+                try:
+                    wait = max(wait, float(hdr))
+                except ValueError:
+                    pass
+            print(f"[{a.label}] HTTP {e.code} from the provider; waiting {wait:.0f}s "
+                  f"(attempt {attempt + 1} of {attempts})", file=sys.stderr, flush=True)
+            time.sleep(wait)
+        except Exception as e:
+            body, err = {}, repr(e)[:600]
+            break
     wall = time.time() - t0
 
     Path(a.raw).parent.mkdir(parents=True, exist_ok=True)
