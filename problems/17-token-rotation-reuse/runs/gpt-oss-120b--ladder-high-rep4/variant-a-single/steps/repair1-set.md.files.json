@@ -1,0 +1,9 @@
+[
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.module.ts",
+  "src/auth/auth.repository.ts",
+  "src/auth/auth.service.ts",
+  "src/express.d.ts",
+  "src/uuid.d.ts",
+  "test/auth.spec.ts"
+]

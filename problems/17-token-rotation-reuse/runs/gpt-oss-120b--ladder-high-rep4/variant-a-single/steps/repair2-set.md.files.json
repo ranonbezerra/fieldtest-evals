@@ -1,0 +1,6 @@
+[
+  "src/auth/auth.controller.ts",
+  "src/auth/auth.service.ts",
+  "src/express.d.ts",
+  "src/nest-testing.d.ts"
+]

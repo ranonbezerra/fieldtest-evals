@@ -1,0 +1,21 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  token     String    @unique @map("token")
+  userId    String    @map("user_id")
+  familyId  String    @map("family_id")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revoked   Boolean   @default(false) @map("revoked")
+  revokedAt DateTime? @map("revoked_at")
+
+  @@map("refresh_token")
+}
