@@ -1,0 +1,119 @@
+{
+  "model": "inclusionai/ling-3.0-flash",
+  "model_repo": "Qwen/Qwen3.8-27B",
+  "quantization": "6-bit MLX, group_size 64, affine",
+  "architecture": "64 layers, hidden 5120 \u2014 16 x (3 x Gated DeltaNet -> 1 x Gated Attention)",
+  "modality": "natively multimodal; text path only",
+  "server": "oMLX",
+  "harness": "fieldtest ft-go",
+  "problem": "10-adapt-existing-screen",
+  "variant": "variant-a",
+  "date": "2026-09-13T03:55:00+00:00",
+  "wall_seconds": 5,
+  "wall_minutes": 0.1,
+  "wall_is_this_invocation_only": false,
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_tokens": "provider maximum",
+    "context_window": 1000000,
+    "reasoning": {
+      "effort": "the model's own default",
+      "repair_phase_effort": "low",
+      "lowered_to_low_after_ceiling": [],
+      "test_write_pass_effort": "low"
+    }
+  },
+  "cost": null,
+  "runner": "api",
+  "spec_source": "ladder",
+  "shape": "single",
+  "asked_again_after_empty": true,
+  "manifest": {
+    "declared": 32,
+    "built": 0,
+    "truncated": true
+  },
+  "requests": 2,
+  "resumed": false,
+  "requests_this_invocation": 2,
+  "tokens": {
+    "prompt_total": 0,
+    "completion_total": 0,
+    "reasoning_total": null,
+    "cached_total": null,
+    "completion_this_invocation": 0,
+    "are_estimates": false
+  },
+  "throughput": {
+    "output_tokens_per_second_mean": null,
+    "output_tokens_per_second_overall": null,
+    "generation_seconds": 0,
+    "model_load_seconds": 0,
+    "overhead_seconds": 5
+  },
+  "revisions": {
+    "self_repairs": 0,
+    "max_allowed": 2,
+    "note": "revisions by the model under test, carrying the compiler's exact messages. A repaired run is not a pass."
+  },
+  "host": {
+    "pressure_samples": 0,
+    "samples": 0,
+    "started_under_pressure": false,
+    "ran_with_ignore_pressure": false,
+    "ceiling_gib_min": null,
+    "ceiling_gib_max": null,
+    "swap_used_gib_max": null,
+    "free_percent_min": null,
+    "trace": []
+  },
+  "output_ceiling_hits": [],
+  "two_pass_test_files": [],
+  "files_declared": 0,
+  "files_empty": [],
+  "gate": {
+    "ran": true,
+    "passed": true,
+    "repairs": 0,
+    "skipped": null,
+    "gate_scaffold_added": []
+  },
+  "tests": {
+    "ran": false
+  },
+  "failures": [
+    {
+      "phase": "solution",
+      "exit": 5,
+      "reason": "request failed: HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"inclusionai/ling-3.0-flash is temporarily rate-limited upstream. Please re"
+    },
+    {
+      "phase": "solution-retry",
+      "exit": 5,
+      "reason": "request failed: HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"inclusionai/ling-3.0-flash is temporarily rate-limited upstream. Please re"
+    },
+    {
+      "phase": "solution",
+      "exit": 5,
+      "reason": "two requests, neither wrote a file. The replies are in steps/ and are reasoning that ran out of budget before answering."
+    }
+  ],
+  "phases": [
+    {
+      "label": "solution",
+      "error": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"inclusionai/ling-3.0-flash is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"DeepInfra\",\"is_byok\":false,\"provider_error_code\":\"engine_overloaded\",\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing",
+      "wall_seconds": 0.7,
+      "exit": 5,
+      "runner": "api"
+    },
+    {
+      "label": "solution-retry",
+      "error": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"inclusionai/ling-3.0-flash is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"DeepInfra\",\"is_byok\":false,\"provider_error_code\":\"engine_overloaded\",\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing",
+      "wall_seconds": 1.2,
+      "exit": 5,
+      "runner": "api"
+    }
+  ]
+}
