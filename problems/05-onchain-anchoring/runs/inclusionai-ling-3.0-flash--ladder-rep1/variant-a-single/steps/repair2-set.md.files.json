@@ -1,0 +1,9 @@
+[
+  "src/anchor/anchor.recovery.ts",
+  "src/anchor/anchor.repository.ts",
+  "src/anchor/anchor.service.ts",
+  "src/anchor/anchor.worker.ts",
+  "src/canonicalization/canonicalization.ts",
+  "src/chain/chain.interface.ts",
+  "src/chain/chain.mock.ts"
+]
