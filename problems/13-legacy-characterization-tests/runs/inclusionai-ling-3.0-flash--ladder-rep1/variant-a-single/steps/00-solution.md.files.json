@@ -1,0 +1,6 @@
+[
+  "FINDINGS.md",
+  "package.json",
+  "test/feeCalculator.spec.ts",
+  "vitest.config.ts"
+]
