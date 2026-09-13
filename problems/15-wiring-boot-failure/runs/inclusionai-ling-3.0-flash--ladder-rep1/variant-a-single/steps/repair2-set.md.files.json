@@ -1,0 +1,5 @@
+[
+  "src/exports/exports.controller.ts",
+  "src/jobs/jobs.module.ts",
+  "src/types/nestjs-testing.d.ts"
+]

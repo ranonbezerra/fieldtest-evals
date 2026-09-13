@@ -1,0 +1,5 @@
+[
+  "package.json",
+  "test/app.wiring.spec.ts",
+  "tsconfig.json"
+]

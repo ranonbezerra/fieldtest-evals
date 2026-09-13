@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "importsNotUsedAsValues": "remove",
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "lib": ["ES2022"],
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nestjs/testing": ["node_modules/@nestjs/testing"]
+    }
+  },
+  "include": ["src", "test"]
+}
