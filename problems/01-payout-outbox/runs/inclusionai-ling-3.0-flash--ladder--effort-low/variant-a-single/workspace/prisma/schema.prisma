@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id              String        @id @default(cuid())
+  settledBalance  BigInt        @default(0)
+  reservedBalance BigInt        @default(0)
+  payouts         Payout[]
+  ledgerEntries   LedgerEntry[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String        @id @default(cuid())
+  accountId          String
+  amount             BigInt
+  destinationAddress String
+  idempotencyKey     String        @unique
+  status             PayoutStatus
+  txHash             String?
+  createdAt          DateTime      @default(now())
+  processedAt        DateTime?
+  completedAt        DateTime?
+  retries            Int           @default(0)
+  account            Account       @relation(fields: [accountId], references: [id])
+  messages           Message[]
+  ledgerEntries      LedgerEntry[]
+
+  @@map("payouts")
+}
+
+model Message {
+  id            String        @id @default(cuid())
+  payoutId      String        @unique
+  status        MessageStatus @default(PENDING)
+  attempts      Int           @default(0)
+  nextAttemptAt DateTime
+  payout        Payout        @relation(fields: [payoutId], references: [id])
+
+  @@map("messages")
+}
+
+model LedgerEntry {
+  id        String     @id @default(cuid())
+  accountId String
+  amount    BigInt
+  type      LedgerType
+  payoutId  String?
+  createdAt DateTime   @default(now())
+  account   Account    @relation(fields: [accountId], references: [id])
+  payout    Payout?    @relation(fields: [payoutId], references: [id])
+
+  @@map("ledger_entries")
+}
+
+enum PayoutStatus {
+  CREATED
+  PROCESSING
+  SENT
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum MessageStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum LedgerType {
+  HOLD
+  SETTLEMENT
+  RELEASE
+}

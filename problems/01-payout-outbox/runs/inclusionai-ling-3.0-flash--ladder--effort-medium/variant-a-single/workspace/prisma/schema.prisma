@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Account {
+  id              String        @id @default(uuid())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  settledBalance  BigInt        @default(0) @map("settled_balance")
+  reservedBalance BigInt        @default(0) @map("reserved_balance")
+  payouts         Payout[]
+  ledgerEntries   LedgerEntry[]
+
+  @@map("accounts")
+}
+
+model Payout {
+  id                 String        @id @default(uuid())
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  accountId          String        @map("account_id")
+  amount             BigInt
+  destinationAddress String        @map("destination_address")
+  idempotencyKey     String        @unique @map("idempotency_key")
+  status             String        @default("created")
+  txHash             String?
+  retries            Int           @default(0)
+  account            Account       @relation(fields: [accountId], references: [id])
+  ledgerEntries      LedgerEntry[]
+  Message            Message?
+
+  @@map("payouts")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  payoutId  String   @unique @map("payout_id")
+  status    String   @default("pending")
+  payout    Payout   @relation(fields: [payoutId], references: [id])
+
+  @@map("messages")
+}
+
+model LedgerEntry {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  payoutId     String?  @map("payout_id")
+  accountId    String   @map("account_id")
+  amount       BigInt
+  balanceAfter BigInt   @map("balance_after")
+  entryType    String   @map("entry_type")
+  reason       String
+  payout       Payout?  @relation(fields: [payoutId], references: [id])
+  account      Account  @relation(fields: [accountId], references: [id])
+
+  @@map("ledger_entries")
+}

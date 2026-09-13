@@ -1,0 +1,4 @@
+[
+  "src/payout/payout.module.ts",
+  "src/prisma/prisma.service.ts"
+]

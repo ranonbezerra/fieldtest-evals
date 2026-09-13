@@ -1,0 +1,6 @@
+[
+  "prisma/migrations/20240101000000_init/migration.sql",
+  "prisma/schema.prisma",
+  "src/app.module.ts",
+  "src/main.ts"
+]

@@ -557,3 +557,61 @@ wired into the gate.
 
 The contaminated `ling-3.0-flash` cells were deleted rather than kept. They are not
 samples of anything.
+
+## 5. `ling-3.0-flash` cannot be measured on this grid, and the probe that said it could
+
+The 124B MoE is the one model found in eight weeks of releases that does **not** fit
+48 GB, **does** fit 128, and is fast — which makes it the only candidate that could
+justify the hardware. It cannot be measured here, and the reason is worth recording.
+
+Both OpenRouter endpoints for the general variant cap output at **32,768 tokens**
+(DeepInfra bf16, Novita undeclared). On the ladder grid the model spends that budget on
+reasoning:
+
+| | output | ceiling hit | reasoning | content |
+|---|---|---|---|---|
+| 01-payout-outbox | 32,768 | **yes** | 126,866 | **0** |
+| 03-read-model-projection | 32,768 | **yes** | 121,749 | 3,333 |
+| 04-grounded-llm-product | 32,768 | **yes** | 118,526 | **0** |
+| 12-orm-migration | 32,768 | **yes** | 123,371 | **0** |
+
+**Eight of fifteen cells hit the ceiling; three delivered nothing at all.**
+
+### The reasoning dial does not rescue it
+
+Problem 01, the worst case, run through the real harness at each setting:
+
+    default   ceiling   reasoning 126,866   content      0   files  0
+    medium    ceiling   reasoning 123,483   content  4,268   files  4
+    low       ceiling   reasoning  44,587   content 79,924   files 15
+
+`low` cuts reasoning threefold and turns nothing into fifteen files — and still hits the
+ceiling, still truncates, and the run fails with 29 `TS2307`s naming modules it referred
+to and was cut before writing.
+
+### The probe that validated the wrong thing
+
+Before spending the grid I probed problem 03 and reported 20,191 output tokens against a
+32,768 ceiling — 38% of headroom, and I said so. The probe sent a bare instruction; the
+campaign sends the cheatsheet, the seeded files and the single-shot instruction.
+
+    probe      prompt 1,279   output 20,191   reasoning   7,931
+    campaign   prompt 2,238   output 32,768   reasoning 121,749
+
+A prompt 959 tokens longer produced **fifteen times** the reasoning. The probe was not a
+smaller version of the campaign; it was a different question. **A probe has to run the
+path the campaign runs**, and this one did not.
+
+### What did work
+
+The guard added the same day — `ft-go` refusing to grade a run that wrote no files —
+caught all three zero-content cells and recorded them as skipped. Without it, problems
+01, 04 and 12 would have entered the grid as clean passes on their seeded fixtures.
+
+### What is left
+
+`ling-3.0-flash-fin` is the only variant with headroom (235,929) and it carries two
+confounds: **fp4**, the quantization this repository pins providers to avoid, and a
+finance-domain fine-tune. The asymmetry is what makes it still worth running: a good
+score would be informative, since both confounds push downward; a bad one would not
+distinguish the quantization from the tune from the model.
