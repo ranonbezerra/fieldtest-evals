@@ -1,7 +1,0 @@
-[
-  "src/modules/trips/entities/trip.entity.ts",
-  "src/modules/trips/invites.controller.ts",
-  "src/modules/trips/trips.controller.ts",
-  "src/modules/trips/trips.repository.ts",
-  "src/modules/trips/trips.service.ts"
-]

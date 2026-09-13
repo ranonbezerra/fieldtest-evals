@@ -99,6 +99,21 @@ def run(cmd, cwd=None, timeout=1800, env=None):
         return 127, f"{cmd[0]}: not found"
 
 
+def _model_wrote_anything(steps):
+    """Did any request in this run extract a file the model wrote?
+
+    Counted across every step rather than the solution alone, because a repair that
+    writes files is the model producing work just as much as a first reply is.
+    """
+    for fj in Path(steps).glob("*.files.json"):
+        try:
+            if len(json.loads(fj.read_text())) > 0:
+                return True
+        except Exception:
+            continue
+    return False
+
+
 def resolve_problem(token):
     # A path is taken as given, which is how harness/selftest is run: the machinery
     # is exercised on something that costs minutes before a campaign costs hours.
@@ -919,6 +934,25 @@ def main():
                     "apply to this deliverable and is skipped")
                 gate["ran"] = False
                 gate["skipped"] = "no TypeScript in the workspace"
+            elif not _model_wrote_anything(steps):
+                # A workspace seeded from a fixture typechecks clean and passes its
+                # own tests -- that is what makes it a fixture. So a run in which the
+                # model wrote nothing scores exactly like a perfect one, and scores it
+                # on the problems where a codebase already exists.
+                #
+                # Found when DeepInfra rate-limited `ling-3.0-flash`: both attempts
+                # returned HTTP 429, the workspace held only the seeded files, and the
+                # gate reported "typecheck clean, 5 passed (5)". Two whole rounds came
+                # back identical because neither contained any model output at all.
+                #
+                # An audit of every clean cell in the qwen and gpt-oss grids found none
+                # of this, so it cost no recorded result -- but only because those runs
+                # happened not to fail this way.
+                say("\n[gate] the model wrote no files; the workspace is the fixture "
+                    "as supplied. Not graded — a seeded workspace passes on its own "
+                    "and would be recorded as a perfect run")
+                gate["ran"] = False
+                gate["skipped"] = "no files written by the model"
             elif (ws / "tsconfig.json").exists():
                 gate["ran"] = True
                 # When `prisma generate` never produced a client, every import from

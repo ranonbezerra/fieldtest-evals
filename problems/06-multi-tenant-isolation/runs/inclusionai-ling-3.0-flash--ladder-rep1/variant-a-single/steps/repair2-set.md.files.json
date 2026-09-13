@@ -1,7 +1,0 @@
-[
-  "src/common/express.d.ts",
-  "src/customers/customers.controller.ts",
-  "src/customers/customers.service.ts",
-  "src/orders/orders.module.ts",
-  "src/plans/plans.module.ts"
-]

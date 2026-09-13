@@ -519,3 +519,41 @@ impossible task and stops the logs overstating a single defect fifty-fold.
 **The headline result is unaffected.** Ladder 85% against model 80%, p = 0.632, is a
 null result, and removing five schema failures distributed 3-2 across the axes does not
 make it less null.
+
+## 4. A run that wrote nothing was scored as a perfect one
+
+Found 2026-09-13, on the first cells of the `ling-3.0-flash` campaign.
+
+DeepInfra rate-limited the model. Both the solution and its retry returned
+`HTTP 429`, the workspace was left holding only the seeded fixture, and the gate
+reported:
+
+    typecheck clean
+    Tests  5 passed (5)
+
+A fixture typechecks clean and passes its own tests — that is what makes it a fixture.
+So on every problem where a codebase already exists, **a run in which the model produced
+nothing scores identically to a perfect one.** Two whole rounds came back byte-identical
+because neither contained any model output.
+
+The tell was the identity itself: two independent runs at temperature 1.0 agreeing on
+test counts of 3, 5, 5 and 2 is not something generation does.
+
+`ft-go` now checks, before grading, whether any step extracted a file the model wrote —
+counted across every step, since a repair that writes files is work too. A run that
+wrote nothing is **skipped, not passed**, the same treatment already given to a
+deliverable with no TypeScript.
+
+### What it cost
+
+Nothing recorded. An audit of every clean cell in the qwen ladder, qwen model, and
+gpt-oss grids — 175 cells — found **no cell counted clean with zero extraction**. Those
+results stand.
+
+That is luck rather than design: the defect was always there, and those campaigns simply
+did not fail in the one way that triggers it. `ft-netcheck` looks for the same absence
+after the fact, which is why the two network casualties were caught; it just was not
+wired into the gate.
+
+The contaminated `ling-3.0-flash` cells were deleted rather than kept. They are not
+samples of anything.
