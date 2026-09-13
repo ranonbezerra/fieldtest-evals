@@ -838,6 +838,8 @@ def main():
                 say("\n[gate] installing dependencies")
                 rc, out = run(["pnpm", "install", "--ignore-scripts"], cwd=ws, timeout=1800)
                 gate["log"] += f"$ pnpm install -> {rc}\n{out[-2000:]}\n"
+            if (ws / "package.json").is_file():
+                gate["_pkg_mtime"] = (ws / "package.json").stat().st_mtime
             # Only after the dependencies exist. `npx --no-install prisma` finds
             # nothing before pnpm install has run, fails quietly, and the client is
             # never generated — leaving the typecheck unable to see the very thing
@@ -1049,6 +1051,24 @@ def main():
                     if untouched:
                         say(f"         {untouched} of {len(bad)} failing file(s) "
                             f"came back unchanged")
+                    # A repair that rewrites the manifest has to be installed before
+                    # the next typecheck, or the gate judges the previous one. On
+                    # problem 18 the model imported `supertest`, `@nestjs/testing` and
+                    # `@node-rs/argon2` without a package.json, was told the modules
+                    # were missing, and answered with exactly the right manifest --
+                    # which was never installed. The same three errors came back and
+                    # the cell was recorded as the model using dependencies it had
+                    # failed to declare. It had declared them.
+                    _pkg = ws / "package.json"
+                    if _pkg.is_file() and not a.no_install:
+                        _now = _pkg.stat().st_mtime
+                        if _now != gate.get("_pkg_mtime"):
+                            say("         package.json changed; reinstalling")
+                            rc_i, out_i = run(["pnpm", "install", "--ignore-scripts"],
+                                              cwd=ws, timeout=1800)
+                            gate["log"] += (f"$ pnpm install (manifest changed) -> "
+                                            f"{rc_i}\n{out_i[-1200:]}\n")
+                            gate["_pkg_mtime"] = _pkg.stat().st_mtime
             else:
                 say("\n[gate] no tsconfig.json in the workspace; typecheck skipped")
 

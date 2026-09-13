@@ -2053,3 +2053,42 @@ methodological decoration.
 measured at its best, delivers **37% against 88%**.
 
 Buying memory to run this class of model buys a worse result.
+
+
+## 4.26 Problem 18 declared its dependencies, and the gate threw the answer away
+
+§4.24 and the round-three notes record problem 18 as *dependencies used without being
+declared in `package.json`*. That is wrong, and the run says so in order:
+
+    00-solution   13 files, no package.json   -- imports supertest, @nestjs/testing,
+                                                 @node-rs/argon2
+    gate          pnpm install, against the SCAFFOLD's manifest
+    typecheck     Cannot find module 'supertest' ...
+    repair1       6 files, still no package.json
+    repair2       package.json -- every dependency declared, correctly
+    gate          does not reinstall; it installs once, when node_modules is absent
+    typecheck     the same three errors
+
+**The model diagnosed its own failure and fixed it on the last repair. The gate never
+installed the fix**, handed back the same errors, and the cell was recorded against the
+model.
+
+Verified rather than assumed: `pnpm install --ignore-scripts` run against the manifest
+the model wrote installs all four packages in three seconds.
+
+`ft-go` now reinstalls whenever a repair changes `package.json`, before the next
+typecheck.
+
+### How much of the record this moves
+
+Four `Cannot find module` occurrences across the failing cells of the qwen ladder grid.
+Three were **declared and not installed**; one — `express` on the same problem — was
+genuinely undeclared. So it is one cell of sixty, and the 85% does not move.
+
+What it changes is the reading. "Uses dependencies it does not declare" was a finding
+about the model, repeated in the round-three notes and in §4.24. On the only evidence
+this repository had for it, the model declared them.
+
+The same defect, found first in a different repository: `wt-go` never ran `bun install`
+at all, and four of the fourteen errors quoted in its repair prompts were packages its
+own `package.json` declared and `node_modules` did not hold.
