@@ -1,0 +1,14 @@
+[
+  "class-validator/index.ts",
+  "src/anchor/anchor-confirmation.service.ts",
+  "src/anchor/anchor.controller.ts",
+  "src/anchor/anchor.module.ts",
+  "src/anchor/anchor.service.ts",
+  "src/anchor/dto/anchor-document.dto.ts",
+  "src/anchor/dto/verify.dto.ts",
+  "src/anchor/fake-chain-client.ts",
+  "src/app.module.ts",
+  "src/main.ts",
+  "test/anchor.spec.ts",
+  "uuid/index.ts"
+]

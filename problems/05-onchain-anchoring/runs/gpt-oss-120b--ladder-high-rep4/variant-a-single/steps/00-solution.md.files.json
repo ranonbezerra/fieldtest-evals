@@ -1,0 +1,18 @@
+[
+  "prisma/schema.prisma",
+  "src/anchor/anchor-confirmation.service.ts",
+  "src/anchor/anchor.controller.ts",
+  "src/anchor/anchor.module.ts",
+  "src/anchor/anchor.repository.ts",
+  "src/anchor/anchor.service.ts",
+  "src/anchor/chain-client.interface.ts",
+  "src/anchor/dto/anchor-document.dto.ts",
+  "src/anchor/dto/verify.dto.ts",
+  "src/anchor/fake-chain-client.ts",
+  "src/app.module.ts",
+  "src/common/api-exception.ts",
+  "src/main.ts",
+  "src/prisma/prisma.module.ts",
+  "src/prisma/prisma.service.ts",
+  "test/anchor.spec.ts"
+]
