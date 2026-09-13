@@ -1,0 +1,131 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RuleSource {
+  REGULATOR_RESTRICTED
+  CURATED_WATCH
+}
+
+model Ingredient {
+  id        String              @id @default(uuid())
+  name      String              @unique
+  createdAt DateTime            @default(now())
+  synonyms  Synonym[]
+  findings  IngredientFinding[]
+
+  @@map("ingredients")
+}
+
+model Synonym {
+  id            String     @id @default(uuid())
+  alternateName String
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId  String
+  createdAt     DateTime   @default(now())
+
+  @@unique([alternateName, ingredientId])
+  @@map("synonyms")
+}
+
+model MethodologyVersion {
+  id              String                 @id @default(uuid())
+  version         String                 @unique
+  publishedAt     DateTime               @default(now())
+  isPublished     Boolean                @default(false)
+  active          Boolean                @default(false)
+  rules           Rule[]
+  findings        IngredientFinding[]
+  classifications ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id                   String             @id @default(uuid())
+  name                 String
+  ingredientName       String
+  severity             String
+  sourceCitation       String
+  source               RuleSource
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+  methodologyVersionId String
+
+  @@unique([ingredientName, methodologyVersionId])
+  @@map("rules")
+}
+
+model Product {
+  id              String                 @id @default(uuid())
+  name            String
+  inciList        String[]
+  findings        IngredientFinding[]
+  classifications ClassificationResult[]
+  createdAt       DateTime               @default(now())
+
+  @@map("products")
+}
+
+model Profile {
+  id              String                 @id @default(uuid())
+  name            String
+  modifier        ProfileModifier[]
+  classifications ClassificationResult[]
+  createdAt       DateTime               @default(now())
+
+  @@map("profiles")
+}
+
+model ProfileModifier {
+  id               String  @id @default(uuid())
+  targetIngredient String
+  newSeverity      String
+  profile          Profile @relation(fields: [profileId], references: [id])
+  profileId        String
+
+  @@unique([targetIngredient, profileId])
+  @@map("profile_modifiers")
+}
+
+model ClassificationResult {
+  id                   String              @id @default(uuid())
+  product              Product             @relation(fields: [productId], references: [id])
+  productId            String
+  methodologyVersion   MethodologyVersion  @relation(fields: [methodologyVersionId], references: [id])
+  methodologyVersionId String
+  profile              Profile?            @relation(fields: [profileId], references: [id])
+  profileId            String?
+  confidence           Float
+  disclaimer           String
+  findings             IngredientFinding[]
+  createdAt            DateTime            @default(now())
+
+  @@unique([productId, methodologyVersionId, profileId])
+  @@map("classification_results")
+}
+
+model IngredientFinding {
+  id                     String               @id @default(uuid())
+  ingredientName         String
+  canonicalIngredient    String?
+  severity               String?
+  sourceCitation         String?
+  flag                   Boolean
+  isUnknown              Boolean
+  classificationResult   ClassificationResult @relation(fields: [classificationResultId], references: [id])
+  classificationResultId String
+  Ingredient             Ingredient?          @relation(fields: [ingredientId], references: [id])
+  ingredientId           String?
+  MethodologyVersion     MethodologyVersion?  @relation(fields: [methodologyVersionId], references: [id])
+  methodologyVersionId   String?
+  Product                Product?             @relation(fields: [productId], references: [id])
+  productId              String?
+
+  @@map("ingredient_findings")
+}
