@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  BANNED
+  RESTRICTED
+  WATCH
+}
+
+model Ingredient {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  synonyms Synonym[]
+  rules    Rule[]
+
+  @@map("ingredients")
+}
+
+model Synonym {
+  id           Int        @id @default(autoincrement())
+  name         String     @unique
+  ingredientId Int        @map("ingredient_id")
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@map("synonyms")
+}
+
+model MethodologyVersion {
+  id          Int                    @id @default(autoincrement())
+  version     String                 @unique
+  publishedAt DateTime               @default(now()) @map("published_at")
+  rules       Rule[]
+  results     ClassificationResult[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id                   Int                @id @default(autoincrement())
+  methodologyVersionId Int                @map("methodology_version_id")
+  ingredientId         Int?               @map("ingredient_id")
+  severity             Severity
+  sourceCitation       String             @map("source_citation")
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+  ingredient           Ingredient?        @relation(fields: [ingredientId], references: [id])
+
+  @@map("rules")
+}
+
+model Product {
+  id          Int                    @id @default(autoincrement())
+  name        String
+  ingredients String[]               @map("ingredients")
+  results     ClassificationResult[]
+
+  @@map("products")
+}
+
+model Profile {
+  id          Int     @id @default(autoincrement())
+  name        String
+  childUnder3 Boolean @default(false) @map("child_under_3")
+  pregnant    Boolean @default(false) @map("pregnant")
+
+  @@map("profiles")
+}
+
+model ClassificationResult {
+  id                   Int                @id @default(autoincrement())
+  productId            Int                @map("product_id")
+  methodologyVersionId Int                @map("methodology_version_id")
+  resultData           Json               @map("result_data")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  product              Product            @relation(fields: [productId], references: [id])
+  methodologyVersion   MethodologyVersion @relation(fields: [methodologyVersionId], references: [id])
+
+  @@unique([productId, methodologyVersionId])
+  @@map("classification_results")
+}

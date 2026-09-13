@@ -1,0 +1,11 @@
+[
+  "src/app.module.ts",
+  "src/classification/classification.controller.ts",
+  "src/classification/classification.module.ts",
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/classification/methodology.service.ts",
+  "src/common/filters/http-exception.filter.ts",
+  "src/main.ts",
+  "test/classification.spec.ts"
+]

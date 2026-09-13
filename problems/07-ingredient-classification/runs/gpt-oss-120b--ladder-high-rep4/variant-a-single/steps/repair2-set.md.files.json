@@ -1,0 +1,6 @@
+[
+  "src/classification/classification.repository.ts",
+  "src/classification/classification.service.ts",
+  "src/common/filters/http-exception.filter.ts",
+  "test/classification.spec.ts"
+]
