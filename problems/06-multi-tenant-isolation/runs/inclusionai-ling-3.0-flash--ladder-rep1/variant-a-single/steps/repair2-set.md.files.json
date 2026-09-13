@@ -1,0 +1,6 @@
+[
+  "src/app.module.ts",
+  "src/customers/customers.repository.ts",
+  "src/plans/plans.repository.ts",
+  "src/tenant/tenant.middleware.ts"
+]
