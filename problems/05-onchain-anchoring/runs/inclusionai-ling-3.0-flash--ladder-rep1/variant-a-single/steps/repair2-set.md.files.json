@@ -1,0 +1,6 @@
+[
+  "src/anchor/anchor.module.ts",
+  "src/anchor/anchor.service.ts",
+  "src/anchor/anchor.types.ts",
+  "test/anchor.spec.ts"
+]

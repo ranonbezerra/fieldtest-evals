@@ -1,0 +1,15 @@
+[
+  "prisma/schema.prisma",
+  "src/anchor/anchor.controller.ts",
+  "src/anchor/anchor.module.ts",
+  "src/anchor/anchor.repository.ts",
+  "src/anchor/anchor.service.ts",
+  "src/anchor/anchor.types.ts",
+  "src/anchor/confirmation-worker.ts",
+  "src/anchor/recovery-sweep.ts",
+  "src/app.module.ts",
+  "src/chain/chain-client.interface.ts",
+  "src/chain/fake-chain-client.ts",
+  "src/main.ts",
+  "test/anchor.spec.ts"
+]
