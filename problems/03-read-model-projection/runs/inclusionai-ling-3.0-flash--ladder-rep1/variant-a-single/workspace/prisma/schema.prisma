@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String        @id @default(uuid())
+  name      String
+  createdAt DateTime      @default(now())
+  orders    Order[]
+  total     CompanyTotal?
+  Worker    Worker[]
+
+  @@map("companies")
+}
+
+model Worker {
+  id        String   @id @default(uuid())
+  name      String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  orders    Order[]
+
+  @@map("workers")
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id])
+  status    String
+  amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+
+  @@map("orders")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  type      String
+  createdAt DateTime @default(now())
+
+  @@map("events")
+}
+
+model OperationsProjection {
+  id         String   @id @default(uuid())
+  companyId  String
+  orderId    String
+  workerId   String
+  workerName String
+  status     String
+  amount     Float
+  createdAt  DateTime
+  eventCount Int      @default(0)
+
+  @@unique([orderId])
+  @@index([companyId, status, createdAt], map: "idx_ops_proj_co_st_cr")
+  @@map("operations_projection")
+}
+
+model CompanyTotal {
+  id             String  @id @default(uuid())
+  companyId      String  @unique
+  company        Company @relation(fields: [companyId], references: [id])
+  totalAmount    Float   @default(0)
+  pendingAmount  Float   @default(0)
+  approvedAmount Float   @default(0)
+  pendingCount   Int     @default(0)
+  approvedCount  Int     @default(0)
+
+  @@map("company_total")
+}
