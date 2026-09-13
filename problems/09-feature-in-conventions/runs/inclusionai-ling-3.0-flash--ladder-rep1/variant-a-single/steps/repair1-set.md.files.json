@@ -1,0 +1,5 @@
+[
+  "drizzle/schema.ts",
+  "src/common/app-error.ts",
+  "src/modules/trips/entities/trip.entity.ts"
+]
