@@ -1,0 +1,20 @@
+{
+  "name": "run-workspace",
+  "private": true,
+  "type": "module",
+  "_note": "Supplied by the harness before the gate, never by the model. The problem statements ask for a schema, a module, tests and a design note — they do not ask for build configuration, and the phase-0 instruction explicitly tells the model not to deliberate about whether config is in scope. Without this file the typecheck cannot run at all, which made the gate decorative. Recorded per run in meta.yaml as gate_scaffold_added.",
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@nestjs/common": "^10.4.4",
+    "@nestjs/core": "^10.4.4",
+    "@prisma/client": "^5.19.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "prisma": "^5.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
