@@ -1,0 +1,19 @@
+[
+  "drizzle/0001_create_trips.sql",
+  "drizzle/0002_create_trip_members.sql",
+  "drizzle/0003_create_invites.sql",
+  "drizzle/schema.ts",
+  "src/app.module.ts",
+  "src/modules/trips/dto/create-invite.dto.ts",
+  "src/modules/trips/dto/create-trip.dto.ts",
+  "src/modules/trips/entities/invite.entity.ts",
+  "src/modules/trips/entities/trip-details.entity.ts",
+  "src/modules/trips/entities/trip-member.entity.ts",
+  "src/modules/trips/entities/trip.entity.ts",
+  "src/modules/trips/invites.controller.ts",
+  "src/modules/trips/trips.controller.ts",
+  "src/modules/trips/trips.module.ts",
+  "src/modules/trips/trips.repository.ts",
+  "src/modules/trips/trips.service.spec.ts",
+  "src/modules/trips/trips.service.ts"
+]
