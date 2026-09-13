@@ -1,0 +1,15 @@
+[
+  "package.json",
+  "src/answer.service.ts",
+  "src/eval-harness.ts",
+  "src/eval-scenarios.ts",
+  "src/eval.judges.ts",
+  "src/grounding.gate.ts",
+  "src/hint.redactor.ts",
+  "src/index.ts",
+  "src/llm-client.interface.ts",
+  "test/answer.spec.ts",
+  "test/eval.spec.ts",
+  "tsconfig.json",
+  "vitest.config.ts"
+]
