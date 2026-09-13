@@ -1,0 +1,73 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id        Int           @id @default(autoincrement())
+  domain    String        @unique
+  orgClaim  String        @map("org_claim")
+  createdAt DateTime      @default(now()) @map("created_at")
+  config    TenantConfig?
+  customers Customer[]
+  plans     Plan[]
+  orders    Order[]
+
+  @@map("tenants")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @map("tenant_id")
+  email     String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  Order  Order[]
+
+  @@unique([tenantId, email])
+  @@map("customers")
+}
+
+model Plan {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @map("tenant_id")
+  name      String
+  price     Float
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  orders Order[]
+
+  @@unique([tenantId, name])
+  @@map("plans")
+}
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @map("tenant_id")
+  customerId Int      @map("customer_id")
+  planId     Int      @map("plan_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  plan     Plan     @relation(fields: [planId], references: [id])
+
+  @@map("orders")
+}
+
+model TenantConfig {
+  tenantId     Int   @id @map("tenant_id")
+  branding     Json?
+  featureFlags Json? @map("feature_flags")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_configs")
+}
