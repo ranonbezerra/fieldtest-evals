@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Ingredient {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  synonyms Synonym[]
+
+  @@map("ingredients")
+}
+
+model Synonym {
+  id           String     @id @default(uuid())
+  text         String     @unique
+  normalized   String
+  type         String // "synonym" | "ocr_typo"
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@map("synonyms")
+}
+
+model MethodologyVersion {
+  id          String    @id @default(uuid())
+  version     String    @unique
+  status      String // "draft" | "published"
+  publishedAt DateTime?
+  rules       Rule[]
+
+  @@map("methodology_versions")
+}
+
+model Rule {
+  id            String             @id @default(uuid())
+  name          String
+  severity      String // "banned" | "restricted" | "watch"
+  source        String
+  methodology   MethodologyVersion @relation(fields: [methodologyId], references: [id])
+  methodologyId String
+
+  @@map("rules")
+}
+
+model Profile {
+  id        String            @id @default(uuid())
+  name      String
+  modifiers ProfileModifier[]
+
+  @@map("profiles")
+}
+
+model ProfileModifier {
+  id          String  @id @default(uuid())
+  field       String
+  severity    String // "banned" | "restricted" | "watch"
+  description String
+  profileId   String
+  profile     Profile @relation(fields: [profileId], references: [id])
+
+  @@map("profile_modifiers")
+}
+
+model Product {
+  id              String                 @id @default(uuid())
+  name            String
+  ingredientList  String
+  classifications ClassificationResult[]
+
+  @@map("products")
+}
+
+model ClassificationResult {
+  id                   String              @id @default(uuid())
+  productId            String
+  product              Product             @relation(fields: [productId], references: [id])
+  methodologyVersionId String
+  confidence           Float
+  disclaimer           String
+  createdAt            DateTime            @default(now())
+  findings             Finding[]
+  unknownIngredients   UnknownIngredient[]
+
+  @@unique([productId, methodologyVersionId])
+  @@map("classification_results")
+}
+
+model Finding {
+  id               String               @id @default(uuid())
+  classificationId String
+  classification   ClassificationResult @relation(fields: [classificationId], references: [id])
+  ingredientName   String
+  listedAs         String
+  isFlagged        Boolean
+  severity         String?
+  source           String?
+
+  @@map("findings")
+}
+
+model UnknownIngredient {
+  id               String               @id @default(uuid())
+  classificationId String
+  classification   ClassificationResult @relation(fields: [classificationId], references: [id])
+  ingredientText   String
+
+  @@map("unknown_ingredients")
+}
