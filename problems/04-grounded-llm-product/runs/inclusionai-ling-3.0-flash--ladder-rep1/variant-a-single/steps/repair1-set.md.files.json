@@ -1,0 +1,5 @@
+[
+  "src/guide-assistant/answer.service.ts",
+  "src/guide-assistant/eval-harness.ts",
+  "src/guide-assistant/scenarios.ts"
+]
