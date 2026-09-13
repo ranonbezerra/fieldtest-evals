@@ -1990,3 +1990,66 @@ it lost and would have thrown away a good draw.
 
 Degraded cells are deliberately **not** decided by whether the gate passed. Re-running
 only the ones that failed would select on the very number the campaign measures.
+
+## 4.25 The 120B loses to the 27B, and loses the same way every time
+
+A closed grid on the model that answers the hardware question. `openai/gpt-oss-120b`,
+pinned to **bf16** endpoints at `reasoning_effort: high` — better than the 6-bit a
+128 GB machine could give it, so the number is an upper bound.
+
+    grid          15 problems x 4 repetitions, ladder axis, same harness
+    gpt-oss-120b  22/59 = 37%
+    qwen3.8-27b   49/56 = 88%
+    Fisher        p < 0.0000001
+
+### The rate is not the finding
+
+| never compiles, 0 of 4 | always compiles, 4 of 4 |
+|---|---|
+| 01 payout-outbox | 11 behavior-preserving-refactor |
+| 03 read-model-projection | 13 legacy-characterization-tests |
+| 06 multi-tenant-isolation | 15 wiring-boot-failure |
+| 07 ingredient-classification | |
+| 10 adapt-existing-screen (0 of 3) | |
+| 17 token-rotation-reuse | |
+
+Six problems it never once compiled in four attempts, and the 27B compiles four of
+those four times out of four. Three it compiles every time.
+
+The three it always gets are **the ones where a codebase already exists and the job is
+to read it and change a little.** The six it never gets are **build-a-system-from-a-
+description.** That is the same split §4.14 recorded for this model in the first
+campaign — *9 greenfield problems, 9 failures; 4 fixture problems, 1 PASS and 3
+PASS_WITH_NOTES* — reproduced now under a corrected harness, at full precision, at
+maximum reasoning effort, with four samples instead of one.
+
+A property that survives that many changes to the instrument is the model's.
+
+### What the reasoning dial did, and what it did not
+
+At its own default this model emits **7,914 characters** of reasoning where qwen emits
+187,062. The first round at default effort scored 4/15; at `high` it emits ~73,000 and
+scored 8/15. **The dial doubled the rate**, which is why the default-effort round was
+discarded from the grid and kept as its own axis rather than reported.
+
+It did not close the gap. 73k against 187k is still 2.5×, and no setting goes further.
+
+### Round 1 was the outlier, and I reported it as the result
+
+    round 1   8/15 = 53%
+    round 2   4/14 = 29%
+    round 3   4/15 = 27%
+    round 4   6/15 = 40%
+
+Rounds 2 and 3 agree; round 1 does not. Had the campaign stopped after one round — which
+is what every earlier campaign in this repository did — the recorded figure would have
+been 53%, and the conclusion correspondingly softer. Four repetitions is not
+methodological decoration.
+
+### For the hardware question
+
+`gpt-oss-120b` at MXFP4 is ~63 GB and needs a 128 GB machine. `qwen3.8-27b` at 6-bit is
+22.27 GiB and fits the 48 GB laptop this repository was built on. The larger model,
+measured at its best, delivers **37% against 88%**.
+
+Buying memory to run this class of model buys a worse result.
